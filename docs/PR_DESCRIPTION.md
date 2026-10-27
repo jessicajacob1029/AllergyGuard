@@ -193,7 +193,7 @@ Every screen restyled after the Figma prototype (`design/figma-reference/`, styl
 - `npm run test`: 423 tests, including new tests for the bottom tabs, app bar, password toggle, pills and the home dashboard. `npm run lint`, `tsc` and `npm run build` pass.
 - Every screen checked in Chromium at 390px (and 320px for the profile and picker), in light and dark mode.
 - Offline, on a production build: `/emergency` shows the card, `tel:` link and Nunito with the network off; other pages fall back to `/~offline`.
-- **Not yet done:** a click-through of the signed-in screens with a real login (the Supabase project was paused); they were checked with sample data.
+- **Not yet done:** a click-through of the signed-in screens with a real login; they were checked with sample data.
 
 ## Phase 4: Barcode scanning
 
@@ -230,7 +230,7 @@ Scan a barcode (or type it), look the product up on Open Food Facts, check it wi
   - an optional `declared` input for the product's allergen and trace tags: declared allergen → Unsafe, declared trace → Caution;
   - a declared allergen that is missing from the text marks the text incomplete → Caution;
   - matches carry their position for highlighting.
-- **Migration `20261026000000_scans.sql`:** `scans` table and `scan_verdict` enum, RLS through `profiles`, with select/insert/delete only (results are never edited). **Not yet applied.**
+- **Migration `20261026000000_scans.sql`:** `scans` table and `scan_verdict` enum, RLS through `profiles`, with select/insert/delete only (results are never edited). **Already applied** to the shared project as version `20261026000000` (2026-10-27); don't re-run it.
 - The Scan tab and the home "Start scanning" button now link to `/scan`.
 
 ### New dependencies
@@ -239,19 +239,35 @@ Scan a barcode (or type it), look the product up on Open Food Facts, check it wi
 
 ### Testing
 
-- `npm run test`: 499 tests, covering:
+- `npm run test`: 505 tests, covering:
   - barcode validation;
   - OFF parsing (fixtures from the live API);
   - the scan record and its enum checked against the migration;
   - the declared-allergen rules;
   - highlighting;
   - the verdict screen;
-  - manual entry, error and retry in the scanner.
+  - manual entry, error and retry in the scanner;
+  - the `/auth/confirm` route.
 - Live OFF lookups run through the real code: Nutella → Unsafe for milk (from its allergen tags), Caution for peanut and egg.
+- Live check against a real profile (kiwi) and a milk + peanut + wheat profile:
+
+  | Product | Kiwi | Milk + peanut + wheat |
+  |---|---|---|
+  | Nutella | Caution (allergen tags not in the text, so the text is incomplete) | Unsafe |
+  | Maggi Masala noodles | Safe | Unsafe (wheat, "Hydrolyzed peanut protein") |
+  | Amul butter | Safe | Unsafe |
+  | Yippee noodles (no ingredients on OFF) | Caution | Caution |
+  | Parle-G (not on OFF) | Caution | Caution |
 - `/scan` and the verdict screens checked at 390px with sample data, including the blocked-camera message.
-- **Still to do:**
-  - apply the migration and run a real scan end to end, once the Supabase project is restored;
+- **Still to do (by hand):**
+  - a signed-in click-through and a real scan saved to the database, reloading `/scans/[id]`;
   - scan a real product on a phone (HTTPS needed).
+
+### Fixes found while deploying
+
+- **Email confirmation:** `/auth/confirm` also accepts Supabase's default `?code=` link. Before this, new users who used it were confirmed but never signed in.
+- **Explanation wording:** the same word in different case ("wheat", "Wheat") is named once.
+- `origin/main` (Jenkins and Docker files) merged in; no conflicts.
 
 ### Phase 4 "Done when"
 

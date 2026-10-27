@@ -20,16 +20,18 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   verified on iPhone. **Android is untested** (no Android phone available).
 - [x] Phase 3: Allergen matching engine (`checkAllergens()`). Closed 2026-10-04.
 - [ ] Frontend redesign (before Phase 4): see the "Frontend redesign" section below
-- [ ] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Built 2026-10-26; waiting
-  on the Supabase restore, the migration and the real-phone test (see "Phase 4" below).
+- [ ] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Built 2026-10-26; migration
+  applied 2026-10-27. Waiting on the signed-in click-through and the iPhone camera test (see "Phase 4" below).
+  **Do not start Phase 5 until the user has done the phone test.**
 - [ ] Phase 5: Ingredient label photo (Tesseract.js OCR)
 - [ ] Phase 6: Reaction diary
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 3 is closed** (commits `67600b9`..`951dc5b`). Phase 2 is closed apart from Android, which is untested.
-Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
+**Phase 4 and the redesign are waiting on the user's manual checks** (signed-in click-through, a real scan
+saved, iPhone camera). Phase 5 starts only after the phone test. Phase 3 is closed; Phase 2 is closed apart
+from Android. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
 
 ## Phase 4: Barcode scanning
 Built 2026-10-26 (commits `969106d`..`e355dbd`). Decisions made with the user:
@@ -45,10 +47,37 @@ Built 2026-10-26 (commits `969106d`..`e355dbd`). Decisions made with the user:
 - Results are saved snapshots (`scans`, no update policy) shown at `/scans/[id]`; reloading never re-scans.
 - Match positions (`start`/`end`) were added to matches for highlighting.
 
-Checked: unit and component tests (499); live OFF lookups through the real code (Nutella: Unsafe for milk,
+Checked: unit and component tests; live OFF lookups through the real code (Nutella: Unsafe for milk,
 Caution for peanut and egg); `/scan` and the verdict screens at 390px with sample data; blocked camera
-message. **Not yet checked:** the Server Function and `/scans/[id]` against the database (Supabase paused),
-and decoding from a real camera.
+message.
+
+**2026-10-27 (close-out session):**
+- **Supabase** Active. `20261026000000_scans.sql` applied through the Supabase connector (the Supabase CLI
+  isn't installed, so not `db push`); its version was set to `20261026000000` so `list_migrations` matches the
+  files: `20260924000000` phase1_profiles, `20260925000000` onboarding_progress, `20260925010000`
+  contact_functions, `20261004000000` phone_country_code, `20261026000000` scans. RLS on, 3 policies.
+- **The user kept the extra rule** (declared allergen missing from the text → Caution, never Safe).
+- **Live verdicts** (real OFF data through `fetchProduct` + `checkAllergens`, same as the Server Function):
+
+  | Barcode | Product | User's real profile (kiwi) | milk + peanut + wheat |
+  |---|---|---|---|
+  | 3017620422003 | Nutella | Caution (declared milk/nuts/soy missing from text → incomplete) | Unsafe (declared milk; "nuts" may include peanuts) |
+  | 8901058851298 | Maggi Masala noodles | Safe | Unsafe (wheat, gluten, "Hydrolyzed peanut protein") |
+  | 8901262010016 | Amul butter | Safe | Unsafe (milk: "Butter") |
+  | 8901725181222 | Yippee noodles (on OFF, no ingredients) | Caution | Caution |
+  | 8901719110016 | Parle-G (not on OFF) | Caution | Caution |
+
+- **Fixed:** the explanation listed the same word twice in different case ("wheat", "Wheat" on Maggi).
+  Every match is still kept for highlighting.
+- **Fixed:** `/auth/confirm` only accepted `?token_hash=` links. After the project restore, Supabase sent its
+  default link (`/verify` → `?code=`), so new users were confirmed but never signed in and landed on
+  `/signup?error=confirmation_failed`. It now accepts `?code=` too (same-browser only), with route tests.
+- **Deployed:** the user's fork `jessicajacob1029/AllergyGuard` on Vercel (`allergy-guard-nine.vercel.app`).
+  `origin/main` (Jenkins/Docker files from teammates) merged into this branch; fork `main` = this branch.
+- **Not checked (needs the user):** the signed-in click-through and a real scan saved to the database with
+  `/scans/[id]` reloaded. Claude's test browser couldn't be signed in (the user couldn't reach the window),
+  and creating a test user directly in `auth.users` was blocked by permissions. Steps are in
+  "Manual steps for me".
 
 ## Next
 **Phase 4 manual steps** (below), then Phase 5 when the user asks.
@@ -78,15 +107,15 @@ tap, and Restaurants and Travel stay hidden; the password field gets a working s
 - [x] `/onboarding` + `AllergenPicker` (each step's band takes its section colour)
 - [x] `/profile` (`profile-view.tsx`); phone links raised to 44px
 - [x] PWA icons: white shield on purple
-- [ ] **Signed-in screens not yet checked against real data:** the Supabase project was paused on
-  2026-10-26, so `/`, `/onboarding` and `/profile` were checked at 390px (and 320px) with sample data
-  on a temporary preview page. Restore the project and click through once with a real login.
+- [ ] **Signed-in screens not yet checked against real data:** `/`, `/onboarding` and `/profile` were
+  checked at 390px (and 320px) with sample data. Supabase is restored (2026-10-27), but Claude couldn't get
+  signed in to its test browser; the user does the click-through (see "Manual steps for me").
 
 Deliberate differences from the prototype screens:
 - **Emergency (12):** the Call button stays at the top, not the bottom; the title stays "Emergency"; our
   section names (Allergies, Medications, Other contacts).
-- **Home (05):** no bell and no "Last scanned" (no data yet). The scan card says Coming soon with no
-  button. 2×2 tiles: Diary and Medication are marked Coming soon; Restaurants and Travel are hidden.
+- **Home (05):** no bell and no "Last scanned" (no data yet). The scan card has a **Start scanning**
+  button to `/scan` and the Scan tab is live (since Phase 4). 2×2 tiles: Diary and Medication are marked Coming soon; Restaurants and Travel are hidden.
 - **Login (02):** our copy ("Log in", "Welcome back to AllergyGuard."); no "Forgot password" or Terms of
   Service links (not built).
 - **Create profile (03/04):** stays a 6-step wizard, not one long form; step bands take the section
@@ -198,12 +227,30 @@ Deliberate differences from the prototype screens:
 - Login: "Resend confirmation email" button for `email_not_confirmed`.
 
 ## Manual steps for me
-- [ ] **Phase 4: restore the Supabase project** (Dashboard → `allergyguard` → Restore project; it was
-  paused on 2026-10-26). Then tell Claude, who will run `supabase db push` for
-  `20261026000000_scans.sql` (with your OK) and do a real scan end to end.
-- [ ] **Phase 4: scan a real product on a phone.** The camera needs HTTPS: push the branch and use the
-  Vercel preview URL, or use `cloudflared tunnel --url http://localhost:3000` as in Phase 2. Try a product
-  that is on Open Food Facts and one that isn't (it must show Caution, never Safe).
+- [x] ~~Phase 4: restore Supabase and apply the scans migration~~ (done 2026-10-27).
+- [ ] **Supabase Auth settings** (Dashboard → Authentication):
+  - Emails → Confirm signup: link `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email&next=/onboarding`
+    (the restore seems to have reset it; without it the link only works in the browser that signed up).
+  - URL Configuration: Site URL `https://allergy-guard-nine.vercel.app`; Redirect URLs add `https://*.vercel.app/**`
+    and `https://*.trycloudflare.com/**`.
+  - The built-in email sender allows only a few emails an hour. Add SMTP (e.g. Resend) before others sign up.
+- [ ] **Signed-in click-through at 390px** (laptop, Chrome DevTools device mode, or the phone): `/`, `/profile`
+  (each section's Save), `/onboarding` (only reachable for a new account), then `/scan`. Report anything broken.
+- [ ] **Real scan saved and reloaded:** on `/scan` type `3017620422003` (Nutella), `8901058851298` (Maggi) and
+  `8901719110016` (Parle-G, not on OFF). Expected for your profile (kiwi): Caution, Safe, Caution. On each result,
+  reload the page: same result and time, no "Looking up…". Claude can confirm the rows with SQL afterwards.
+- [ ] **Phase 4: camera scan on the iPhone through a cloudflared tunnel** (camera needs HTTPS):
+  1. Laptop: `brew install cloudflared` (it's no longer installed), then `npm run build && npm start`.
+  2. Second terminal: `cloudflared tunnel --url http://localhost:3000`. Copy the `https://….trycloudflare.com` URL.
+     It changes every run, so add `https://*.trycloudflare.com/**` to the Supabase Redirect URLs once.
+  3. iPhone Safari: open the URL, log in, tap **Scan** (tab) → **Open camera** → **Allow**.
+  4. Point at a barcode (Nutella or Maggi): it should open the result by itself. Try a product not on OFF
+     (must be Caution, never Safe).
+  5. Tap **Stop camera** mid-scan, and try with camera access denied (Settings → Safari → Camera → Deny):
+     the blocked-camera message shows and manual entry still works.
+  6. Airplane mode on `/scan`: "You're offline" and Open camera is disabled; the Emergency button still works.
+  7. A Home Screen app installed from an old tunnel URL points to that old URL; open the new URL in Safari instead.
+  Simpler alternative: the Vercel site is already HTTPS. Do steps 3–6 there.
 - [ ] **Security:** `npm audit` reports a critical advisory for `next` 16.0.0–16.4.0 (we have 16.3.6).
   Upgrading is a dependency change: decide whether to upgrade.
 - [x] **Offline check on the laptop:** done by Claude with `next start` + Chromium (Playwright) on 2026-10-03, using a
