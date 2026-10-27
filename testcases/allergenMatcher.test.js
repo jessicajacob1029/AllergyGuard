@@ -1,7 +1,7 @@
 // Test cases for the shared allergen matching engine (SPEC F7).
 // Run with: npx jest testcases/allergenMatcher.test.js
 
-const { analyzeIngredients } = require("../api/allergenMatcher");
+const { analyzeIngredients } = require("../legacy/api/allergenMatcher");
 
 describe("analyzeIngredients", () => {
   test("returns unsafe when an ingredient matches the user's own allergen", () => {
