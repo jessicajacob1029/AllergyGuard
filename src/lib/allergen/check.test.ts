@@ -88,6 +88,14 @@ describe("checkAllergens: result shape", () => {
     expect(checkAllergens("butter", allergens).verdict).toBe("unsafe");
   });
 
+  it("the explanation names a word once, whatever its case (Maggi: 'wheat' and 'Wheat')", () => {
+    const r = checkAllergens("Refined wheat flour, salt, Wheat gluten", [p("wheat_gluten")]);
+    expect(r.verdict).toBe("unsafe");
+    expect(texts(r, "contains")).toContain("Wheat"); // every match is still kept for highlighting
+    expect(r.explanation).toContain("“wheat”");
+    expect(r.explanation).not.toContain("“Wheat”");
+  });
+
   it("only the user's allergens count", () => {
     expect(checkAllergens("Wheat flour, egg, soy", MILK).verdict).toBe("safe");
   });

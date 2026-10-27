@@ -310,13 +310,15 @@ function listText(items: readonly string[]): string {
 }
 
 function byAllergen(matches: readonly AllergenMatch[]): string {
-  const groups = new Map<string, Set<string>>();
+  // Same word in different case ("wheat", "Wheat") is listed once, as first seen.
+  const groups = new Map<string, Map<string, string>>();
   for (const m of matches) {
-    const set = groups.get(m.allergen) ?? new Set<string>();
-    set.add(quote(m.text));
-    groups.set(m.allergen, set);
+    const texts = groups.get(m.allergen) ?? new Map<string, string>();
+    const key = m.text.toLowerCase();
+    if (!texts.has(key)) texts.set(key, quote(m.text));
+    groups.set(m.allergen, texts);
   }
-  return listText([...groups].map(([allergen, texts]) => `${allergen} (${[...texts].join(", ")})`));
+  return listText([...groups].map(([allergen, texts]) => `${allergen} (${[...texts.values()].join(", ")})`));
 }
 
 function uniqueAllergens(matches: readonly AllergenMatch[]): string[] {
