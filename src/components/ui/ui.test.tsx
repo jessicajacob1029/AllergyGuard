@@ -36,6 +36,15 @@ describe("BottomTabs", () => {
     expect(tabs.getByText(/^Diary/).textContent).toMatch(/coming soon/);
   });
 
+  it("keeps the Soon badge out of the Diary label, so the label never wraps or gets covered", () => {
+    nav.pathname = "/";
+    render(<BottomTabs />);
+    const label = within(screen.getByRole("navigation", { name: "Main" })).getByText(/^Diary/);
+    expect(label.textContent).toBe("Diary, coming soon");
+    expect(label.className).toContain("whitespace-nowrap");
+    expect(screen.getByText("Soon").closest("span.relative")).not.toBeNull();
+  });
+
   it.each(["/onboarding", "/login", "/signup"])("is hidden on %s", (path) => {
     nav.pathname = path;
     render(<BottomTabs />);

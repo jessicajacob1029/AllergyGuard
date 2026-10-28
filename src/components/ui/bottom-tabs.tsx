@@ -62,15 +62,19 @@ export function BottomTabs() {
                   </Link>
                 ) : (
                   <span className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted">
-                    <span className="flex h-8 w-14 items-center justify-center">
+                    {/* "Soon" sits on the icon's corner, so the label keeps its own line at any width. */}
+                    <span className="relative flex h-8 w-14 items-center justify-center">
                       <Icon className="size-6" />
-                    </span>
-                    <span className="text-xs font-extrabold">
-                      {label}
-                      <span className="sr-only">, coming soon</span>
-                      <span aria-hidden="true" className="ml-1 rounded-full bg-page px-1 text-[10px]">
+                      <span
+                        aria-hidden="true"
+                        className="absolute -right-1.5 -top-1 rounded-full border border-line bg-page px-1 text-[10px] font-extrabold leading-tight"
+                      >
                         Soon
                       </span>
+                    </span>
+                    <span className="whitespace-nowrap text-xs font-extrabold">
+                      {label}
+                      <span className="sr-only">, coming soon</span>
                     </span>
                   </span>
                 )}
