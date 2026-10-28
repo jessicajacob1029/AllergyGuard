@@ -239,7 +239,7 @@ Scan a barcode (or type it), look the product up on Open Food Facts, check it wi
 
 ### Testing
 
-- `npm run test`: 505 tests, covering:
+- `npm run test`: 506 tests, covering:
   - barcode validation;
   - OFF parsing (fixtures from the live API);
   - the scan record and its enum checked against the migration;
@@ -259,17 +259,19 @@ Scan a barcode (or type it), look the product up on Open Food Facts, check it wi
   | Yippee noodles (no ingredients on OFF) | Caution | Caution |
   | Parle-G (not on OFF) | Caution | Caution |
 - `/scan` and the verdict screens checked at 390px with sample data, including the blocked-camera message.
-- **Still to do (by hand):**
-  - a signed-in click-through and a real scan saved to the database, reloading `/scans/[id]`;
-  - scan a real product on a phone (HTTPS needed).
+- **On the deployed site** (`allergy-guard-nine.vercel.app`, 2026-10-28):
+  - iPhone camera scan of a Nutella jar (`3017624010701`) gave Safe for a kiwi-only profile (its text lists hazelnuts, so the declared "nuts" is accounted for);
+  - Nutella (`3017620422003`) and Maggi typed in on the laptop gave Caution and Safe, and reloading `/scans/[id]` showed the same saved result;
+  - all three rows were confirmed in the `scans` table.
 
 ### Fixes found while deploying
 
 - **Email confirmation:** `/auth/confirm` also accepts Supabase's default `?code=` link. Before this, new users who used it were confirmed but never signed in.
 - **Explanation wording:** the same word in different case ("wheat", "Wheat") is named once.
+- **Diary tab label** was cut off on the iPhone ("Diarv"): the Soon badge wrapped under the label and covered it. The badge now sits on the icon's corner, and the label never wraps (checked at 390px and 320px, with a test).
 - `origin/main` (Jenkins and Docker files) merged in; no conflicts.
 
 ### Phase 4 "Done when"
 
-- [ ] Scanning a real product on a phone (via the Vercel URL) shows a verdict
-- [x] A product not found on Open Food Facts shows Caution with a clear message, never Safe (tested in code and on the verdict screen; to repeat end to end)
+- [x] Scanning a real product on a phone (via the Vercel URL) shows a verdict (iPhone, 2026-10-28)
+- [x] A product not found on Open Food Facts shows Caution with a clear message, never Safe (tested in code, on the verdict screen and with live OFF data)

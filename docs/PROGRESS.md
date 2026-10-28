@@ -20,8 +20,8 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   verified on iPhone. **Android is untested** (no Android phone available).
 - [x] Phase 3: Allergen matching engine (`checkAllergens()`). Closed 2026-10-04.
 - [ ] Frontend redesign (before Phase 4): see the "Frontend redesign" section below
-- [ ] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Built 2026-10-26; migration
-  applied 2026-10-27. Waiting on the signed-in click-through and the iPhone camera test (see "Phase 4" below).
+- [x] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Closed 2026-10-28;
+  camera scan verified on the user's iPhone (see "Phase 4" below).
   **Do not start Phase 5 until the user has done the phone test.**
 - [ ] Phase 5: Ingredient label photo (Tesseract.js OCR)
 - [ ] Phase 6: Reaction diary
@@ -29,9 +29,9 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 4 and the redesign are waiting on the user's manual checks** (signed-in click-through, a real scan
-saved, iPhone camera). Phase 5 starts only after the phone test. Phase 3 is closed; Phase 2 is closed apart
-from Android. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
+**Phase 4 is closed** (2026-10-28). The phone test is done, so Phase 5 can start when the user asks.
+Phase 3 is closed; Phase 2 is closed apart from Android. Next session: run `/clear`, then say
+"continue from docs/PROGRESS.md".
 
 ## Phase 4: Barcode scanning
 Built 2026-10-26 (commits `969106d`..`e355dbd`). Decisions made with the user:
@@ -74,20 +74,34 @@ message.
   `/signup?error=confirmation_failed`. It now accepts `?code=` too (same-browser only), with route tests.
 - **Deployed:** the user's fork `jessicajacob1029/AllergyGuard` on Vercel (`allergy-guard-nine.vercel.app`).
   `origin/main` (Jenkins/Docker files from teammates) merged into this branch; fork `main` = this branch.
-- **Not checked (needs the user):** the signed-in click-through and a real scan saved to the database with
-  `/scans/[id]` reloaded. Claude's test browser couldn't be signed in (the user couldn't reach the window),
-  and creating a test user directly in `auth.users` was blocked by permissions. Steps are in
-  "Manual steps for me".
+- Claude's test browser couldn't be signed in, and creating a test user directly in `auth.users` was blocked
+  by permissions, so the user ran the signed-in checks.
+
+**2026-10-28 (user's test on `allergy-guard-nine.vercel.app`; rows confirmed with SQL):**
+- **iPhone camera scan works:** a Nutella jar, `3017624010701`, gave **Safe** for the kiwi-only profile.
+  Correct: this OFF entry's text includes hazelnuts, so the declared "nuts" is in the text and the data
+  isn't incomplete.
+- **Saved rows** (`scans`, all on the user's profile):
+
+  | Time (UTC) | Barcode | Input | Product | Verdict |
+  |---|---|---|---|---|
+  | 04:02 | 3017620422003 | manual | Nutella | Caution (declared milk, nuts, soybeans; text incomplete) |
+  | 04:03 | 8901058851298 | manual | Maggi Masala | Safe |
+  | 04:04 | 3017624010701 | camera | Nutella | Safe |
+- **Reloads** of `/scans/[id]` showed the same result (user).
+- **Fixed:** on the iPhone the Diary tab label was cut off ("Diarv"). "Diary" and its Soon badge shared one
+  line; at phone width the badge wrapped under the label and its background covered the "y". The badge now
+  sits on the icon's corner and the label is `whitespace-nowrap`. Checked at 390px and 320px, with a test.
+- **Not reported (left blank in the user's note):** an Unsafe scan after adding Milk (the profile still only
+  has kiwi and there is no such row), Stop camera, Airplane mode on `/scan`, and a barcode not on OFF
+  end to end. The not-found → Caution rule is covered by tests and the live check above.
 
 ## Next
-**Phase 4 manual steps** (below), then Phase 5 when the user asks.
+**Phase 5: ingredient label photo (Tesseract.js OCR)** when the user asks. It adds a dependency, so ask
+first, show the plan and wait for approval. Reuse `checkAllergens()` and `VerdictView`.
 
-**Frontend redesign** is built (commits `cecddf9`..`496c0c1`). Left: one click-through with a real login once
-the Supabase project is restored. Do not start Phase 4 until the user says so.
-
-Then Phase 4: barcode scanning. Reuse `checkAllergens()` **without changing its rules**. Pass `incomplete: true` when
-Open Food Facts has no or partial ingredient text. A product that isn't found must give Caution. Phase 4 adds
-dependencies (`@zxing/browser`), so ask first. Show the plan and wait for approval before building.
+**Frontend redesign:** the only open item is the signed-in click-through of `/`, `/onboarding` and
+`/profile` at 390px (see "Manual steps for me").
 
 ## Frontend redesign
 Plan approved 2026-10-26. Reference: `design/figma-reference/STYLE.md` and `screens/` (style only).
@@ -236,10 +250,12 @@ Deliberate differences from the prototype screens:
   - The built-in email sender allows only a few emails an hour. Add SMTP (e.g. Resend) before others sign up.
 - [ ] **Signed-in click-through at 390px** (laptop, Chrome DevTools device mode, or the phone): `/`, `/profile`
   (each section's Save), `/onboarding` (only reachable for a new account), then `/scan`. Report anything broken.
-- [ ] **Real scan saved and reloaded:** on `/scan` type `3017620422003` (Nutella), `8901058851298` (Maggi) and
-  `8901719110016` (Parle-G, not on OFF). Expected for your profile (kiwi): Caution, Safe, Caution. On each result,
-  reload the page: same result and time, no "Looking up…". Claude can confirm the rows with SQL afterwards.
-- [ ] **Phase 4: camera scan on the iPhone through a cloudflared tunnel** (camera needs HTTPS):
+- [x] ~~Real scan saved and reloaded~~ (2026-10-28: Nutella and Maggi typed, rows confirmed with SQL).
+- [x] ~~Phase 4: camera scan on the iPhone~~ (2026-10-28, on the Vercel site; see "Phase 4").
+- [ ] **Optional Phase 4 extras (not reported yet):** add Milk to your profile and scan Nutella or Amul butter
+  (`8901262010016`): Unsafe with the word highlighted. Type `8901719110016` (Parle-G, not on OFF): Caution.
+  On the iPhone: Stop camera mid-scan, and Airplane mode on `/scan` ("You're offline", camera disabled).
+- Steps kept for re-testing the camera through a cloudflared tunnel (camera needs HTTPS):
   1. Laptop: `brew install cloudflared` (it's no longer installed), then `npm run build && npm start`.
   2. Second terminal: `cloudflared tunnel --url http://localhost:3000`. Copy the `https://….trycloudflare.com` URL.
      It changes every run, so add `https://*.trycloudflare.com/**` to the Supabase Redirect URLs once.
