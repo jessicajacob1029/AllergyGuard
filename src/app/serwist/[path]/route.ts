@@ -15,6 +15,10 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
     ".next/static/**/*.{js,css,html,ico,apng,png,avif,jpg,jpeg,jfif,pjpeg,pjp,gif,svg,webp,json,webmanifest,woff2}",
     "public/**/*",
   ],
+  // Serwist's default (node_modules) plus the Tesseract.js OCR files (~15 MB,
+  // copied by scripts/copy-tesseract.mjs). Only people who take a label photo
+  // need them, and Tesseract caches its language data itself.
+  globIgnores: ["**/node_modules/**/*", "public/tesseract/**/*"],
   additionalPrecacheEntries: [
     { url: "/emergency", revision },
     { url: "/~offline", revision },

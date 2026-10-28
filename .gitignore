@@ -58,3 +58,6 @@ next-env.d.ts
 # database (legacy)
 *.sqlite
 *.db
+
+# Tesseract.js runtime, copied from node_modules by scripts/copy-tesseract.mjs
+/public/tesseract/
