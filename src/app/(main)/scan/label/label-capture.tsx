@@ -6,12 +6,12 @@ import { formAlertClass, labelClass, primaryButtonClass, secondaryButtonClass } 
 import { SectionCard } from "@/components/ui/section-card";
 import { DEFAULT_MIN_OCR_CONFIDENCE } from "@/lib/allergen/check";
 import { joinOcrLines } from "@/lib/ocr/ocr-text";
-import type { OcrProgress } from "@/lib/ocr/run-ocr";
+import type { OcrOutput, OcrProgress } from "@/lib/ocr/run-ocr";
 import { summarizeOcr, type OcrSummary } from "@/lib/ocr/summary";
 import { useOnline } from "@/lib/use-online";
 import { checkLabel } from "./actions";
 
-type Read = { ocrText: string; summary: OcrSummary };
+type Read = { ocrText: string; summary: OcrSummary; debug: OcrOutput | null };
 
 type State =
   | { step: "start" }
@@ -37,7 +37,7 @@ function progressText(p: OcrProgress): string {
  * The photo stays in this page's memory: only the text and the confidence are
  * sent to checkLabel().
  */
-export function LabelCapture() {
+export function LabelCapture({ debug = false }: { debug?: boolean }) {
   const online = useOnline();
   const [state, setState] = useState<State>({ step: "start" });
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -69,10 +69,15 @@ export function LabelCapture() {
     setState({ step: "reading", progress: { stage: "loading" } });
     try {
       const { readLabelPhoto } = await import("@/lib/ocr/run-ocr");
-      const out = await readLabelPhoto(photo, (progress) => setState({ step: "reading", progress }), controller.signal);
+      const out = await readLabelPhoto(photo, (progress) => setState({ step: "reading", progress }), controller.signal, {
+        debug,
+      });
       if (controller.signal.aborted) return;
       setText(joinOcrLines(out.text));
-      setState({ step: "review", read: { ocrText: out.text, summary: summarizeOcr(out.lines) } });
+      setState({
+        step: "review",
+        read: { ocrText: out.text, summary: summarizeOcr(out.lines), debug: debug ? out : null },
+      });
     } catch (e) {
       if (controller.signal.aborted) return;
       console.error("Label OCR failed", e);
@@ -217,6 +222,7 @@ export function LabelCapture() {
           online={online}
         />
       )}
+      {state.step === "review" && state.read.debug && <DebugPanel out={state.read.debug} />}
     </div>
   );
 }
@@ -301,5 +307,60 @@ function ReviewStep(props: {
         </button>
       </div>
     </>
+  );
+}
+
+// TEMPORARY (Phase 5 iPhone diagnosis, preview deployments only): shows exactly
+// what Tesseract got and read. Remove before merging to main.
+function DebugPanel({ out }: { out: OcrOutput }) {
+  const { info } = out;
+  const rows: [string, string][] = [
+    ["File", `${info.fileType}, ${Math.round(info.fileBytes / 1024)} KB`],
+    [
+      "EXIF",
+      info.jpeg
+        ? `orientation ${info.jpeg.orientation}, stored ${info.jpeg.width}×${info.jpeg.height}`
+        : "not a JPEG / no EXIF read",
+    ],
+    ["Decoded", `${info.decoded.width}×${info.decoded.height} via ${info.decoder}`],
+    ["Rotation", info.rotation],
+    ["Sent to OCR", `${info.sent.width}×${info.sent.height} (scale ${info.scale})`],
+    ["Time", `${out.ms} ms`],
+    [
+      "Line height",
+      out.lines.length
+        ? `median ${[...out.lines].map((l) => l.height).sort((a, b) => a - b)[Math.floor(out.lines.length / 2)]} px`
+        : "no lines",
+    ],
+    ["User agent", typeof navigator === "undefined" ? "" : navigator.userAgent],
+  ];
+  return (
+    <details open className="rounded-card border-2 border-dashed border-line bg-card p-3 text-xs text-ink">
+      <summary className="cursor-pointer font-extrabold">Debug (preview only)</summary>
+      {out.sentImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={out.sentImage} alt="Exact image sent to Tesseract" className="mt-2 w-full border border-line" />
+      )}
+      <table className="mt-2 w-full">
+        <tbody>
+          {rows.map(([k, v]) => (
+            <tr key={k} className="align-top">
+              <th className="pr-2 text-left font-bold">{k}</th>
+              <td className="break-all">{v}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-2 font-bold">Lines (confidence · height px · text)</p>
+      <ol className="mt-1 space-y-1 font-mono">
+        {out.lines.map((l, i) => (
+          <li key={i} className="break-words">
+            {Math.round(l.confidence)} · {l.height} · {l.text}
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 font-bold">Raw text</p>
+      <pre className="mt-1 whitespace-pre-wrap break-words font-mono">{out.text}</pre>
+    </details>
   );
 }

@@ -3,6 +3,10 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OcrOutput } from "@/lib/ocr/run-ocr";
+import type { OcrLine } from "@/lib/ocr/summary";
+
+/** What the review step needs; the debug fields are optional for most tests. */
+type FakeOcr = { text: string; lines: OcrLine[] };
 
 const checkLabel = vi.hoisted(() => vi.fn());
 const readLabelPhoto = vi.hoisted(() => vi.fn());
@@ -11,7 +15,7 @@ vi.mock("@/lib/ocr/run-ocr", () => ({ readLabelPhoto }));
 
 import { LabelCapture } from "./label-capture";
 
-const CLEAR: OcrOutput = {
+const CLEAR: FakeOcr = {
   text: "INGREDIENTS: Sugar, cocoa butter,\nmilk powder. May contain traces of\npeanuts.",
   lines: [
     { text: "INGREDIENTS: Sugar, cocoa butter,", confidence: 95 },
@@ -19,7 +23,7 @@ const CLEAR: OcrOutput = {
     { text: "peanuts.", confidence: 96 },
   ],
 };
-const BILINGUAL: OcrOutput = {
+const BILINGUAL: FakeOcr = {
   text: "HAART: TE, FT AT, LF q13eY\nINGREDIENTS: Wheat flour, sugar",
   lines: [
     { text: "HAART: TE, FT AT, LF q13eY", confidence: 25 },
@@ -37,7 +41,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-async function takePhoto(out: OcrOutput) {
+async function takePhoto(out: FakeOcr | OcrOutput) {
   readLabelPhoto.mockResolvedValueOnce(out);
   const user = userEvent.setup();
   render(<LabelCapture />);
@@ -170,5 +174,43 @@ describe("LabelCapture: reading", () => {
     await user.click(await screen.findByRole("button", { name: "Cancel" }));
     expect(signal.aborted).toBe(true);
     expect(screen.getByRole("button", { name: /Take photo/ })).toBeTruthy();
+  });
+});
+
+describe("LabelCapture: debug panel (preview deployments only)", () => {
+  const withInfo: OcrOutput = {
+    ...CLEAR,
+    lines: CLEAR.lines.map((l) => ({ ...l, height: 24 })),
+    info: {
+      fileType: "image/jpeg",
+      fileBytes: 2_400_000,
+      jpeg: { orientation: 6, width: 4032, height: 3024 },
+      decoder: "createImageBitmap",
+      decoded: { width: 3024, height: 4032 },
+      rotation: "browser",
+      sent: { width: 1500, height: 2000 },
+      scale: 0.496,
+    },
+    ms: 3100,
+    sentImage: "data:image/jpeg;base64,AAAA",
+  };
+
+  it("is hidden by default", async () => {
+    await takePhoto(withInfo);
+    expect(screen.queryByText("Debug (preview only)")).toBeNull();
+  });
+
+  it("shows the image sent, sizes, orientation and per-line confidence when enabled", async () => {
+    readLabelPhoto.mockResolvedValueOnce(withInfo);
+    const user = userEvent.setup();
+    render(<LabelCapture debug />);
+    await user.upload(screen.getByTestId("camera-input"), photo());
+    await screen.findByText("Debug (preview only)");
+    expect(readLabelPhoto.mock.calls[0][3]).toEqual({ debug: true });
+    expect(screen.getByAltText("Exact image sent to Tesseract").getAttribute("src")).toBe("data:image/jpeg;base64,AAAA");
+    expect(screen.getByText("orientation 6, stored 4032×3024")).toBeTruthy();
+    expect(screen.getByText("1500×2000 (scale 0.496)")).toBeTruthy();
+    expect(screen.getByText("median 24 px")).toBeTruthy();
+    expect(screen.getByText(/93 · 24 · milk powder/)).toBeTruthy();
   });
 });

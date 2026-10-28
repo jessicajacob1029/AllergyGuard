@@ -19,7 +19,8 @@ export default async function LabelPhotoPage() {
     <main className="flex flex-1 flex-col bg-page">
       <HeaderBand title="Photo of the label" emoji="🏷️" subtitle="Check an ingredients list against your allergies." />
       <div className="mx-auto w-full max-w-sm px-4 py-6">
-        <LabelCapture />
+        {/* TEMPORARY: the OCR debug panel shows everywhere except the production deployment. */}
+        <LabelCapture debug={process.env.VERCEL_ENV !== "production"} />
       </div>
     </main>
   );
