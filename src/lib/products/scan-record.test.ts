@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkAllergens } from "@/lib/allergen/check";
 import type { Product } from "./open-food-facts";
-import { readStoredResult, SCAN_VERDICTS, toScanInsert } from "./scan-record";
+import { readStoredResult, SCAN_VERDICTS, toLabelScanInsert, toScanInsert } from "./scan-record";
 
 const product: Product = {
   found: true,
@@ -71,6 +71,50 @@ describe("toScanInsert", () => {
       result,
     });
     expect(row.product_name).toHaveLength(500);
+  });
+});
+
+describe("toLabelScanInsert", () => {
+  it("stores the checked text, the OCR text and confidence, and no product or image data", () => {
+    const result = checkAllergens("Sugar, milk powder", [{ kind: "predefined", code: "milk" }], { ocrConfidence: 88 });
+    const row = toLabelScanInsert({
+      profileId: "p1",
+      text: "Sugar, milk powder",
+      ocrText: "Sugar, milk\npowder",
+      ocrConfidence: 88,
+      result,
+    });
+    expect(row).toEqual({
+      profile_id: "p1",
+      barcode: null,
+      input: "photo",
+      product_found: false,
+      product_name: null,
+      brands: null,
+      ingredients_text: "Sugar, milk powder",
+      declared_allergens: [],
+      declared_traces: [],
+      data_notes: [],
+      verdict: "unsafe",
+      result,
+      off_last_modified: null,
+      ocr_text: "Sugar, milk\npowder",
+      ocr_confidence: 88,
+    });
+  });
+
+  it("a barcode row has no OCR fields", () => {
+    const result = checkAllergens(null, [{ kind: "predefined", code: "milk" }]);
+    const row = toScanInsert({ profileId: "p1", barcode: "5000000000000", input: "manual", lookup: { found: false }, result });
+    expect(row).toMatchObject({ ocr_text: null, ocr_confidence: null });
+  });
+
+  it("the migrations allow photo rows and require their OCR fields", () => {
+    const dir = join(process.cwd(), "supabase", "migrations");
+    const sql = readFileSync(join(dir, "20261028000000_label_scans.sql"), "utf8");
+    expect(sql).toMatch(/input in \('camera', 'manual', 'photo'\)/);
+    expect(sql).toMatch(/alter column barcode drop not null/);
+    expect(sql).toMatch(/input = 'photo' and barcode is null and ocr_text is not null and ocr_confidence is not null/);
   });
 });
 

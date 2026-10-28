@@ -1,16 +1,23 @@
-// Mapping between a barcode check and a row of public.scans. Pure.
+// Mapping between a check (barcode or label photo) and a row of public.scans. Pure.
 import type { CheckResult, Verdict } from "@/lib/allergen/check";
 import type { ProductLookup } from "./open-food-facts";
 
 /** Must match the public.scan_verdict enum (a test checks this). */
 export const SCAN_VERDICTS = ["safe", "caution", "unsafe"] as const satisfies readonly Verdict[];
 
+/** How a barcode was entered. */
 export type ScanInput = "camera" | "manual";
+/** Every kind of scan row: a barcode, or a label photo (Phase 5). */
+export type ScanSource = ScanInput | "photo";
+
+/** Column limit for ingredient and OCR text (same as the migration). */
+export const MAX_SCAN_TEXT = 20000;
 
 export type ScanInsert = {
   profile_id: string;
-  barcode: string;
-  input: ScanInput;
+  /** Null for a label photo. */
+  barcode: string | null;
+  input: ScanSource;
   product_found: boolean;
   product_name: string | null;
   brands: string | null;
@@ -21,6 +28,10 @@ export type ScanInsert = {
   verdict: Verdict;
   result: CheckResult;
   off_last_modified: string | null;
+  /** Label photos only: what Tesseract read, before any edits. */
+  ocr_text: string | null;
+  /** Label photos only: 0–100, the lowest line confidence. */
+  ocr_confidence: number | null;
 };
 
 export type ScanRow = ScanInsert & { id: string; created_at: string };
@@ -43,13 +54,48 @@ export function toScanInsert(args: {
     product_found: lookup.found,
     product_name: clip(found?.name ?? null, 500),
     brands: clip(found?.brands ?? null, 500),
-    ingredients_text: clip(found?.ingredientsText ?? null, 20000),
+    ingredients_text: clip(found?.ingredientsText ?? null, MAX_SCAN_TEXT),
     declared_allergens: found?.declared.contains ?? [],
     declared_traces: found?.declared.mayContain ?? [],
     data_notes: found?.notes ?? [],
     verdict: result.verdict,
     result,
     off_last_modified: found?.lastModified ?? null,
+    ocr_text: null,
+    ocr_confidence: null,
+  };
+}
+
+/**
+ * A label photo check. Only text and a number: the photo itself is never
+ * stored or sent anywhere. `text` is what was checked (the user may have
+ * edited it); it must already fit MAX_SCAN_TEXT (the Server Action rejects
+ * longer text rather than checking one thing and storing another).
+ */
+export function toLabelScanInsert(args: {
+  profileId: string;
+  text: string;
+  ocrText: string;
+  ocrConfidence: number;
+  result: CheckResult;
+}): ScanInsert {
+  const { profileId, text, ocrText, ocrConfidence, result } = args;
+  return {
+    profile_id: profileId,
+    barcode: null,
+    input: "photo",
+    product_found: false,
+    product_name: null,
+    brands: null,
+    ingredients_text: text,
+    declared_allergens: [],
+    declared_traces: [],
+    data_notes: [],
+    verdict: result.verdict,
+    result,
+    off_last_modified: null,
+    ocr_text: ocrText,
+    ocr_confidence: ocrConfidence,
   };
 }
 
