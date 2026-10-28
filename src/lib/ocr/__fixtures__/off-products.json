@@ -1,0 +1,160 @@
+{
+  "8901058851298": {
+    "code": "8901058851298",
+    "product": {
+      "allergens_tags": [
+        "en:gluten"
+      ],
+      "brands": "Maggi",
+      "code": "8901058851298",
+      "ingredients_text": "Noodles : Refined wheat flour, Palm oil , salt , Wheat gluten , Thickeners(508 & 412) ,  mineral(calcium carbonate) and Humectant(451(i))\r\nTaste maker : Hydrolyzed peanut protein ,Mixed spices(23.6%) ,Dehydrated onion , coriander powder , red Chili powder (3%), Turmeric powder , dried Garlic (2.5%), Cumin powder , Aniseed powder , Fenugreek powder , ginger powder , black pepper powder (0.4%), Clove powder(0.1%), green cardamom powder(0.1%), nutmeg powder  , Noodle powder ( refined wheat flour, palm oil ,wheat gluten ,Acid regulators(170(i) , 501(i) & 500(i)) , Thickeners(508 & 412) , Humectant(451(i)) , calcium carbonate, guar gum), starch, garlic powder, caramel salt mix (salt , color(150d), & palm oil)  , acidity regulators(330 & 500(ii)) , Flavour enhancer(635) and mineral ( ferric pyrophosphate)",
+      "ingredients_text_en": "Noodles : Refined wheat flour, Palm oil , salt , Wheat gluten , Thickeners(508 & 412) ,  mineral(calcium carbonate) and Humectant(451(i))\r\nTaste maker : Hydrolyzed peanut protein ,Mixed spices(23.6%) ,Dehydrated onion , coriander powder , red Chili powder (3%), Turmeric powder , dried Garlic (2.5%), Cumin powder , Aniseed powder , Fenugreek powder , ginger powder , black pepper powder (0.4%), Clove powder(0.1%), green cardamom powder(0.1%), nutmeg powder  , Noodle powder ( refined wheat flour, palm oil ,wheat gluten ,Acid regulators(170(i) , 501(i) & 500(i)) , Thickeners(508 & 412) , Humectant(451(i)) , calcium carbonate, guar gum), starch, garlic powder, caramel salt mix (salt , color(150d), & palm oil)  , acidity regulators(330 & 500(ii)) , Flavour enhancer(635) and mineral ( ferric pyrophosphate)",
+      "lang": "en",
+      "last_modified_t": 1790938028,
+      "product_name": "Maggi Noodles Masala 70Grm Pc",
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated",
+        "en:packaging-photo-to-be-selected",
+        "en:nutrition-photo-selected",
+        "en:ingredients-photo-selected",
+        "en:front-photo-selected",
+        "en:photos-uploaded"
+      ],
+      "traces_tags": []
+    },
+    "status": 1,
+    "status_verbose": "product found"
+  },
+  "8901262010016": {
+    "code": "8901262010016",
+    "product": {
+      "allergens_tags": [
+        "en:milk"
+      ],
+      "brands": "Amul",
+      "code": "8901262010016",
+      "ingredients_text": "Butter, common salt. CONTAINS PERMITTED NATURAL COLOUR [ANNATTO]",
+      "ingredients_text_en": "Butter, common salt. CONTAINS PERMITTED NATURAL COLOUR [ANNATTO]",
+      "lang": "en",
+      "last_modified_t": 1792707944,
+      "product_name": "Amul Pasteurized Butter",
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-completed",
+        "en:origins-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated",
+        "en:packaging-photo-to-be-selected",
+        "en:nutrition-photo-selected",
+        "en:ingredients-photo-selected",
+        "en:front-photo-selected",
+        "en:photos-uploaded"
+      ],
+      "traces_tags": []
+    },
+    "status": 1,
+    "status_verbose": "product found"
+  },
+  "3017620422003": {
+    "code": "3017620422003",
+    "product": {
+      "allergens_tags": [
+        "en:milk",
+        "en:nuts",
+        "en:soybeans"
+      ],
+      "brands": "Nutella, Ferrero",
+      "code": "3017620422003",
+      "ingredients_text": "sugar, palm oil",
+      "ingredients_text_en": "sugar, palm oil",
+      "lang": "en",
+      "last_modified_t": 1793108523,
+      "product_name": "Nutella",
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-validated",
+        "en:packaging-photo-selected",
+        "en:nutrition-photo-selected",
+        "en:ingredients-photo-selected",
+        "en:front-photo-selected",
+        "en:photos-uploaded"
+      ],
+      "traces_tags": []
+    },
+    "status": 1,
+    "status_verbose": "product found"
+  },
+  "3017624010701": {
+    "code": "3017624010701",
+    "product": {
+      "allergens_tags": [
+        "en:nuts"
+      ],
+      "brands": "Ferrero",
+      "code": "3017624010701",
+      "ingredients_text": "sugar, palm oil, hazelnuts, skimmed milk powder, fat reduced cocoa, emulsifier, vanillin",
+      "ingredients_text_en": "sugar, palm oil, hazelnuts (13%), skimmed milk powder (8.7%), fat reduced cocoa (7.4%), emulsifier: lecithins (soya), vanillin",
+      "lang": "de",
+      "last_modified_t": 1790963552,
+      "product_name": "Nutella",
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated",
+        "en:packaging-photo-to-be-selected",
+        "en:nutrition-photo-to-be-selected",
+        "en:ingredients-photo-to-be-selected",
+        "en:front-photo-selected",
+        "en:photos-uploaded"
+      ],
+      "traces_tags": [
+        "en:milk",
+        "en:nuts",
+        "en:soybeans"
+      ]
+    },
+    "status": 1,
+    "status_verbose": "product found"
+  }
+}

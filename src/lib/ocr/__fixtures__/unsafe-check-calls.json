@@ -1,0 +1,1063 @@
+[
+ {
+  "text": "Sugar, _whey_ powder. May contain milk.",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Sugar, skimmed milk powder, cocoa",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "sugar, palm oil",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "Sugar, whey powder, emulsifier",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "sugar, palm oil",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk"
+    ],
+    "mayContain": [
+     "peanuts"
+    ]
+   }
+  }
+ },
+ {
+  "text": "whey",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Milk chocolate (sugar, cocoa butter, whey). May contain milk and nuts.",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "whey",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {
+   "ocrConfidence": 20,
+   "incomplete": true
+  }
+ },
+ {
+  "text": "Sugar, _WHEY_ powder, sodium cas-\nein",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "milk",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "butter",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk",
+    "severity": "mild"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Refined wheat flour, salt, Wheat gluten",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Skimmed milk powder, casein",
+  "allergens": [
+   {
+    "kind": "custom",
+    "name": "whey"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Sugar, sodium caseinate",
+  "allergens": [
+   {
+    "kind": "custom",
+    "name": "Dairy"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Apple, kiwis, lime",
+  "allergens": [
+   {
+    "kind": "custom",
+    "name": "Kiwi"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Lupin flour",
+  "allergens": [
+   {
+    "kind": "custom",
+    "name": "lupin"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Colour (E120), sugar",
+  "allergens": [
+   {
+    "kind": "custom",
+    "name": "E120)"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Almond milk",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "tree_nuts"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Peanut butter",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Bean curd",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Cocoa butter, butter, sugar",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Groundnut",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Groundnut oil",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Moongphali",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Moongfali",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Arachis oil",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Ghee",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Paneer",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Khoa",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Khoya",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Curd",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Dahi",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Malai",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Buttermilk",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Chhena",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Chenna",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Milk solids",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Casein",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Sodium caseinate",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Kaju",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "tree_nuts"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Badam",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "tree_nuts"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Pista",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "tree_nuts"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Akhrot",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "tree_nuts"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Sooji",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Suji",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Rava",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Semolina",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Dalia",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Daliya",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Fish sauce",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "fish"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Surimi",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "fish"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "May contain nuts. Ingredients: milk, sugar",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "May contain nuts\nmilk, sugar",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "May contain nuts, contains milk",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Molluscs",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "shellfish"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Made with fresh milk in a factory that handles nuts.",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Dairy-free chocolate: sugar, cocoa butter, whey powder",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Non-dairy creamer (glucose syrup, sodium caseinate)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Lactose-free milk",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Milk-free recipe. Contains: milk",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "No milk added. Ingredients: cream, sugar",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Without milk, sugar, cream",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Made without nuts, contains wheat flour, milk.",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   },
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Mixed nuts (almonds, peanuts)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Peanuts",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "peanut"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Mixed nuts",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "tree_nuts"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Worcestershire sauce (vinegar, anchovies)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "fish"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Asafoetida (wheat flour, gum arabic)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Emulsifier: soy lecithin",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Emulsifier: lecithin (soy)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Soya lecithin (E322)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "lecithin (from soya)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Flour (wheat)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Wheat flour",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Maida",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Atta",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Whole wheat atta",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Maida (refined wheat flour)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Hydrolysed vegetable protein (soy)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Hydrolysed vegetable protein (wheat)",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "Crème fraîche, beurre, lait",
+  "allergens": [
+   {
+    "kind": "custom",
+    "name": "lait"
+   }
+  ],
+  "options": {}
+ },
+ {
+  "text": "sugar, palm oil",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk",
+     "nuts",
+     "soybeans"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "sugar, palm oil",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "tree_nuts"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk",
+     "nuts",
+     "soybeans"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "sugar, palm oil",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk",
+     "nuts",
+     "soybeans"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "water",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "shellfish"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "crustaceans"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "water",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "shellfish"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "molluscs"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "water",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "sesame"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "sesame seeds"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "water",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "wheat_gluten"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "gluten"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "water",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "egg"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "eggs"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "water",
+  "allergens": [
+   {
+    "kind": "custom",
+    "name": "Lupin"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "lupin",
+     "celery"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": null,
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "Sugar, whey",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "Sugar, whey",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   },
+   {
+    "kind": "predefined",
+    "code": "soy"
+   }
+  ],
+  "options": {
+   "declared": {
+    "contains": [
+     "milk",
+     "nuts",
+     "soybeans"
+    ],
+    "mayContain": []
+   }
+  }
+ },
+ {
+  "text": "Sugar, whey",
+  "allergens": [
+   {
+    "kind": "predefined",
+    "code": "milk"
+   }
+  ],
+  "options": {}
+ }
+]
