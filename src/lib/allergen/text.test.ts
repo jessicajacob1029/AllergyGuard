@@ -19,6 +19,13 @@ describe("normalizeIngredientText", () => {
     expect(normalizeIngredientText("milk-free").text).toBe("milk-free");
   });
 
+  it("keeps the hyphen of a claim split before “free”, dropping only the line break", () => {
+    expect(normalizeIngredientText("Milk-\nfree chocolate").text).toBe("milk-free chocolate");
+    expect(normalizeIngredientText("Dairy- \r\n FREE").text).toBe("dairy-free");
+    // Only the whole word "free": "free-range" style words still join normally.
+    expect(normalizeIngredientText("anti-\nfreeze").text).toBe("antifreeze");
+  });
+
   it("expands ligatures from OCR", () => {
     expect(normalizeIngredientText("ﬂour").text).toBe("flour");
   });

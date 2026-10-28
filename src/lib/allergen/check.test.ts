@@ -249,6 +249,9 @@ describe("checkAllergens: free-from claims", () => {
     ["Dairy & gluten free. Rice", "milk"],
     ["Dairy and gluten free. Rice", "wheat_gluten"],
     ["Eggless mayonnaise (oil, water, sugar)", "egg"],
+    // Split across two lines on a label photo (Phase 5).
+    ["Milk-\nfree chocolate: sugar, cocoa", "milk"],
+    ["Gluten-\r\nfree bread: rice, water", "wheat_gluten"],
   ] as const)("a claim alone is Caution: %j for %s", (text, code) => {
     const r = checkAllergens(text, [p(code)]);
     expect(r.verdict).toBe("caution");

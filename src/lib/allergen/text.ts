@@ -13,13 +13,16 @@ export type NormalizedText = {
 
 // "cas-\nein": a hyphen at the end of an OCR line, then the rest of the word.
 const LINE_BREAK_HYPHEN = /^-[ \t]*\r?\n[ \t]*/;
+// "free" as a whole word, after such a break.
+const FREE_WORD = /^free(?!\p{L})/iu;
 
 /**
  * Prepares ingredient text for matching:
  * - lowercase, accents removed, ligatures expanded ("Crème" → "creme", "ﬂ" → "fl");
  * - `_` becomes a space: Open Food Facts writes allergens as `_milk_`, and
  *   `_` counts as a word character, so it would hide the word from matching;
- * - words split across lines by a hyphen are joined again.
+ * - words split across lines by a hyphen are joined again, except before
+ *   "free": "Milk-⏎free" stays "milk-free" so the claim is still seen.
  */
 export function normalizeIngredientText(raw: string): NormalizedText {
   let text = "";
@@ -29,8 +32,15 @@ export function normalizeIngredientText(raw: string): NormalizedText {
     const ch = raw[i];
     if (ch === "-") {
       const skip = LINE_BREAK_HYPHEN.exec(raw.slice(i, i + 64));
-      if (skip && /\p{L}/u.test(raw[i - 1] ?? "") && /\p{L}/u.test(raw[i + skip[0].length] ?? "")) {
-        i += skip[0].length;
+      const after = skip ? i + skip[0].length : i;
+      if (skip && /\p{L}/u.test(raw[i - 1] ?? "") && /\p{L}/u.test(raw[after] ?? "")) {
+        // "Milk-⏎free" is a free-from claim, not one word: keep the hyphen
+        // ("milk-free"), drop only the line break.
+        if (FREE_WORD.test(raw.slice(after, after + 6))) {
+          text += "-";
+          map.push(i);
+        }
+        i = after;
         continue;
       }
     }
