@@ -13,7 +13,10 @@ Site: **https://allergy-guard-nine.vercel.app** (the fork's `main`). Phone in po
 | Primary contact | `<name>`, `+91 …` |
 | Medication | `<e.g. EpiPen 0.3 mg>` |
 
-Keep the password off the slides. Set the account up the day before (see "Before the demo").
+Keep the password off the slides. Use a **separate demo account** (e.g. `yourname+demo@gmail.com`), not your
+personal one: the personal account currently has only "kiwi" and an EpiPen that shows **Expired 2026-10-10** on
+the emergency card, which would distract. Set the demo account up the day before (see "Before the demo"); give
+its medication a future expiry date.
 
 ## Barcodes (checked live on 2026-10-28 for a Milk + Peanut profile)
 
@@ -36,7 +39,7 @@ Tap **Profile**: show allergies with severity, the emergency contact marked **Pr
 "Everything is saved to the cloud and to the phone at the same time."
 
 **1:15 – Scan: Unsafe (60 s).** Tap **Scan**. Type `8901262010016` → **Check product** (or **Open camera** and
-scan the real pack if you have one). Result **Unsafe**: "It says *why*: Milk, from 'Butter', highlighted in the
+scan the real pack if you have one). The lookup takes **3–4 seconds** ("Looking up…"): keep talking through it. Result **Unsafe**: "It says *why*: Milk, from 'Butter', highlighted in the
 ingredient list we got from Open Food Facts. Unsafe is never softened to Caution."
 
 **2:15 – Safe and Caution (60 s).** **Scan another** → `8901030865237` → **Safe**: "Safe only when we actually
@@ -54,6 +57,9 @@ not medical advice.
 
 ## Before the demo
 
+0. **Supabase confirm-email link:** Authentication → Emails → Confirm signup must use
+   `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email&next=/onboarding`. Otherwise a new account's link only
+   works in the browser that signed up (opened elsewhere, the app now says "Your email is confirmed. Log in…").
 1. **The day before:** open the Supabase dashboard and check the project is **Active** (free projects pause
    after about a week without use; **Restore** takes a few minutes). Log in to the site once.
 2. **On the demo phone:** log in, open **Home** once (this saves the emergency card), open **Emergency** once,
@@ -69,8 +75,26 @@ not medical advice.
 | Supabase is paused or down (login or scans fail) | The emergency card still opens from the phone (it doesn't need Supabase). Show the scan part from the backup screenshots/recording below. |
 | Open Food Facts is slow or down | The app says "We couldn't reach the product database… Try again" and saves nothing. Show the saved results from the backup, or try the spare barcode once. |
 | Camera doesn't focus on a barcode | Type the number under the barcode instead (same result). |
-| Logged out by accident | Log in again; then open Home once so the emergency card is saved again. |
+| Logged out by accident | Log in again; then open Home once so the emergency card is saved again. Logging out on the laptop no longer logs the phone out (fixed 2026-10-28). |
+| A page shows "Page not found" | Tap **Go to home**. |
 
 **Backup material to prepare the day before:** a 60-second screen recording of the full script on the phone
 (Control Centre → Screen Recording), and screenshots of each result (Unsafe, Safe, Caution) and of the
 emergency card. Keep them in Photos, ready to show.
+
+## QA before the demo (2026-10-28, production, 390px)
+
+Checked on `allergy-guard-nine.vercel.app` (WebKit and Chromium at 390px):
+- **Signed out:** home, log in, sign up, emergency (empty), offline page, 404, and every signed-in page
+  redirecting to Log in and back. Wrong password, empty fields, invalid email, short password, offline submit:
+  all show plain messages. Signing up with an existing email shows the same "Check your email" screen (on purpose).
+- **Signed in (the personal account, nothing changed):** home links, profile (forms open, validate and cancel),
+  emergency card online and with the network fully cut (card loads; every other page shows "You're offline"),
+  typed scans for the four barcodes (3–4 s each, saved, reload shows the same result, Scan another / Home work),
+  bad barcode message, another user's scan id → "Page not found", Log out → card cleared on that device.
+- **Fixed:** styled 404 page; confirm link opened in another browser now goes to Log in; Log out only ends this
+  device's session (it used to end every session); "Milk-⏎free" split across lines is Caution again.
+- **Not yet run on a fresh account** (needs a new confirmed account so nothing real changes): onboarding (Milk +
+  Peanut with severity, +91 contact, medication), then profile saves (second contact, make primary, delete one,
+  edit allergies). Do this while setting up the demo account and note anything odd.
+- **Camera scan:** check once on the demo phone (the test browser has no camera).

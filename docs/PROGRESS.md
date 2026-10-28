@@ -33,6 +33,20 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 Phase 3 is closed; Phase 2 is closed apart from Android. Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
 
+## Demo prep (2026-10-28, on the fork's `main`)
+Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on local branch `fork-main`
+(tracks `fork/main`; push with `git push fork fork-main:main`; never push to `origin`, the team repo).
+- QA on production at 390px: signed out fully; signed in on the user's personal account **without changing it**
+  (views, forms opened and cancelled, offline card, typed scans, log out). 7 scan rows were added to that account
+  by the QA (23:37–23:40 IST), nothing deleted. Results and script: `docs/DEMO.md`.
+- Fixed: styled 404 page; confirm link opened in another browser → Log in ("Your email is confirmed"); Log out is
+  `scope: "local"` (it ended every session); "Milk-⏎free" fix cherry-picked from `phase-5`.
+- Offline testing note: Playwright's `setOffline` and `route` don't cover service-worker fetches in Chromium; use
+  `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1` with `context.route("**/*", r => r.abort())` for a real cut-off.
+  WebKit can't test offline at all (its offline mode also blocks the service worker).
+- **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
+  camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
+
 ## Phase 4: Barcode scanning
 Built 2026-10-26 (commits `969106d`..`e355dbd`). Decisions made with the user:
 - **Dependencies:** `@zxing/browser` 0.2.1 + `@zxing/library` 0.23.0 (iPhone Safari has no BarcodeDetector).
