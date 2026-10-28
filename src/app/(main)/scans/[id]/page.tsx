@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
 import { VerdictView } from "@/components/verdict/verdict-view";
 import { APP_NAME } from "@/lib/constants";
+import { joinOcrLines } from "@/lib/ocr/ocr-text";
 import { readStoredResult } from "@/lib/products/scan-record";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,7 +24,7 @@ export default async function ScanResultPage({ params }: PageProps<"/scans/[id]"
   // RLS: only the owner's scans are visible, so another user's id is "not found".
   const { data: scan } = await supabase
     .from("scans")
-    .select("barcode, product_found, product_name, brands, data_notes, result, created_at")
+    .select("barcode, input, product_found, product_name, brands, data_notes, result, ocr_text, created_at")
     .eq("id", id)
     .maybeSingle();
   if (!scan) notFound();
@@ -31,10 +32,35 @@ export default async function ScanResultPage({ params }: PageProps<"/scans/[id]"
   const result = readStoredResult(scan.result);
   if (!result) notFound();
 
+  if (scan.input === "photo") {
+    const ocrText = scan.ocr_text ?? "";
+    // Shown only when the user changed the text, not for the automatic line joining.
+    const edited = result.rawText !== joinOcrLines(ocrText);
+    return (
+      <VerdictView
+        result={result}
+        product={null}
+        checkedAt={scan.created_at}
+        textLabel="Text read from your photo"
+        originalText={edited ? ocrText : null}
+        actions={
+          <>
+            <Link href="/scan/label" className={primaryButtonClass}>
+              Check another label
+            </Link>
+            <Link href="/" className={secondaryButtonClass}>
+              Home
+            </Link>
+          </>
+        }
+      />
+    );
+  }
+
   return (
     <VerdictView
       result={result}
-      product={{ found: scan.product_found, name: scan.product_name, brands: scan.brands, barcode: scan.barcode }}
+      product={{ found: scan.product_found, name: scan.product_name, brands: scan.brands, barcode: scan.barcode ?? "" }}
       notes={scan.data_notes ?? []}
       checkedAt={scan.created_at}
       attribution={

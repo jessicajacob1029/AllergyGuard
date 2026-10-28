@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import {
   fieldErrorClass,
   formAlertClass,
@@ -10,26 +11,17 @@ import {
   secondaryButtonClass,
 } from "@/components/form-styles";
 import { ScanIcon } from "@/components/ui/icons";
-import { ComingSoon } from "@/components/ui/pill";
 import { SectionCard } from "@/components/ui/section-card";
 import { normalizeBarcode, validateBarcode } from "@/lib/products/barcode";
 import type { ScanInput } from "@/lib/products/scan-record";
+import { useOnline } from "@/lib/use-online";
 import { checkBarcode } from "./actions";
 
 type CameraState = "off" | "starting" | "on" | "denied" | "unavailable";
 
-function subscribeOnline(callback: () => void) {
-  window.addEventListener("online", callback);
-  window.addEventListener("offline", callback);
-  return () => {
-    window.removeEventListener("online", callback);
-    window.removeEventListener("offline", callback);
-  };
-}
-
 /** Camera scanning (rear camera, @zxing/browser loaded on demand) plus manual entry. */
 export function Scanner() {
-  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
+  const online = useOnline();
   const [camera, setCamera] = useState<CameraState>("off");
   const [manual, setManual] = useState("");
   const [manualError, setManualError] = useState<string | null>(null);
@@ -246,13 +238,15 @@ export function Scanner() {
         </form>
       </SectionCard>
 
-      <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-caution-band p-4">
-        <span className="flex items-center gap-2 text-base font-black text-caution-ink">
+      <SectionCard tone="primary" label="No barcode?">
+        <p className="mb-4 text-base font-semibold text-ink">
+          Take a photo of the ingredients list and we&apos;ll check the text. The photo stays on your phone.
+        </p>
+        <Link href="/scan/label" className={secondaryButtonClass}>
           <span aria-hidden="true">🏷️</span>
-          Label photo
-        </span>
-        <ComingSoon />
-      </div>
+          Photo of the ingredients
+        </Link>
+      </SectionCard>
     </div>
   );
 }

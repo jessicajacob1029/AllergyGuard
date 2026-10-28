@@ -51,6 +51,10 @@ type Props = {
   checkedAt: string;
   /** Data attribution shown at the bottom, e.g. Open Food Facts. */
   attribution?: ReactNode;
+  /** Heading of the checked-text card. */
+  textLabel?: string;
+  /** Label photos: the text as first read, shown when the user changed it. */
+  originalText?: string | null;
   actions: ReactNode;
 };
 
@@ -81,7 +85,16 @@ function visibleMatches(matches: CheckResult["matches"]) {
   return matches.filter((m) => m.source === "ingredients" || !inText.has(`${m.allergen}|${m.kind}`));
 }
 
-export function VerdictView({ result, product, notes = [], checkedAt, attribution, actions }: Props) {
+export function VerdictView({
+  result,
+  product,
+  notes = [],
+  checkedAt,
+  attribution,
+  textLabel = "Ingredients as received",
+  originalText = null,
+  actions,
+}: Props) {
   const v = VERDICT[result.verdict];
   const shownMatches = visibleMatches(result.matches);
   const segments = highlightSegments(result.rawText, result.matches);
@@ -150,7 +163,7 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
           )}
         </SectionCard>
 
-        <SectionCard tone="neutral" label="Ingredients as received">
+        <SectionCard tone="neutral" label={textLabel}>
           {result.rawText.trim() === "" ? (
             <p className="text-base font-semibold text-muted">No ingredient text was available.</p>
           ) : (
@@ -180,6 +193,14 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
                 </p>
               )}
             </>
+          )}
+          {originalText !== null && (
+            <details className="mt-4 rounded-field border border-line p-3">
+              <summary className="cursor-pointer text-sm font-extrabold text-primary-ink">
+                You edited this text. Show what was read from the photo
+              </summary>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted">{originalText}</p>
+            </details>
           )}
         </SectionCard>
 

@@ -70,3 +70,27 @@ describe("VerdictView", () => {
     expect(screen.getByText(/aid, not medical advice/)).toBeTruthy();
   });
 });
+
+describe("VerdictView for a label photo", () => {
+  const result = checkAllergens("Sugar, whey", MILK, { ocrConfidence: 90 });
+
+  it("titles the text card and shows no product card", () => {
+    render(
+      <VerdictView result={result} product={null} checkedAt={checkedAt} textLabel="Text read from your photo" actions={null} />,
+    );
+    expect(screen.getByText("Text read from your photo")).toBeTruthy();
+    expect(screen.queryByText(/Barcode/)).toBeNull();
+    expect(screen.queryByText(/Open Food Facts/)).toBeNull();
+  });
+
+  it("shows the original OCR text only when the user edited it", () => {
+    render(
+      <VerdictView result={result} product={null} checkedAt={checkedAt} originalText={"Sugar, wh3y"} actions={null} />,
+    );
+    expect(screen.getByText(/You edited this text/)).toBeTruthy();
+    expect(screen.getByText("Sugar, wh3y")).toBeTruthy();
+    cleanup();
+    render(<VerdictView result={result} product={null} checkedAt={checkedAt} actions={null} />);
+    expect(screen.queryByText(/You edited this text/)).toBeNull();
+  });
+});
