@@ -22,16 +22,50 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [ ] Frontend redesign (before Phase 4): see the "Frontend redesign" section below
 - [x] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Closed 2026-10-28;
   camera scan verified on the user's iPhone (see "Phase 4" below).
-  **Do not start Phase 5 until the user has done the phone test.**
-- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR)
+- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Built 2026-10-28 on branch `phase-5`; waiting for the
+  migration and the iPhone test (see "Phase 5" below). `main` stays the live demo until it passes.
 - [ ] Phase 6: Reaction diary
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 4 is closed** (2026-10-28). The phone test is done, so Phase 5 can start when the user asks.
-Phase 3 is closed; Phase 2 is closed apart from Android. Next session: run `/clear`, then say
+**Phase 5 is built on branch `phase-5`** (2026-10-28). Before the phone test: apply migration
+`20261028000000_label_scans.sql` (needs the user's go-ahead) and push `phase-5` to the fork (not `main`).
+Then the user tests on the branch's Vercel preview. Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
+
+## Phase 5: Ingredient label photo
+Built 2026-10-28 on branch `phase-5` (from `feature/full-build`). Plan approved with these decisions:
+- **A. Self-hosted OCR files** (not the jsdelivr CDN): `scripts/copy-tesseract.mjs` copies them to `public/tesseract/`
+  before `dev`/`build`; git-ignored, lint-ignored and left out of the service-worker precache (`globIgnores`).
+- **B. Low confidence is sticky**: the photo's confidence counts even after the user edits the text.
+- **C. Phone test on the Vercel preview of `phase-5`** on the fork (`jessicajacob1029/AllergyGuard`), no Vercel CLI.
+- **`joinOcrLines()` was written by Jessica.** Rules: join after a comma (only when the next line starts lowercase,
+  decided after review: OCR misreads full stops as commas), a letter-hyphen (repaired, except before "free"), or an
+  open bracket; join a lowercase line only after a connector word; never across a blank line.
+- **Confidence = lowest line confidence**, not the page average (my choice, from real OCR runs): Hindi read with the
+  English model gives nonsense lines at 17–29, real lines 74–96 even when blurred. A blurred Maggi label scored 82
+  overall while Tesseract silently **dropped the first line**: page confidence can't catch that, which is why the
+  review step and "read the label" matter.
+- **Hindi typed into the box** counts as incomplete (Caution).
+- **Fixed (Phase 3 code, approved):** "Milk-⏎free" split across lines was rejoined to "milkfree", so the free-from
+  claim was missed (Safe instead of Caution). Affected barcode text too.
+- **Unsafe corpus:** `src/lib/ocr/__fixtures__/unsafe-check-calls.json` holds every Unsafe `checkAllergens()` call
+  made by the Phase 3/4 suites (recorded 2026-10-28 with a temporary Vitest setup file that wrapped the function).
+  Re-record it if new Unsafe cases are added there.
+- **OCR fixtures** (`ocr-samples.json`) are real Tesseract.js 7 output on labels rendered with the exact Open Food
+  Facts text (Python/PIL, Arial; Devanagari MT for Hindi).
+
+Checked: 695 tests; lint; build; real OCR in Chromium from the self-hosted files (no requests to other sites, no
+uploads, language file fetched once); precache has no Tesseract files; `/emergency` offline still works and
+`/scan/label` offline shows "You're offline"; start and review screens at 390px.
+
+**Not done yet:**
+- [ ] Migration `20261028000000_label_scans.sql` on Supabase. It only adds: existing rows (3 barcode scans) pass
+  the new check, and `main`'s barcode code keeps working. Claude's attempt was blocked by the permission check
+  (production database), so it needs the user's go-ahead. After applying, set its version to `20261028000000` as
+  in Phase 4.
+- [ ] iPhone test on the `phase-5` preview (steps in "Manual steps for me").
 
 ## Phase 4: Barcode scanning
 Built 2026-10-26 (commits `969106d`..`e355dbd`). Decisions made with the user:
@@ -97,8 +131,7 @@ message.
   end to end. The not-found → Caution rule is covered by tests and the live check above.
 
 ## Next
-**Phase 5: ingredient label photo (Tesseract.js OCR)** when the user asks. It adds a dependency, so ask
-first, show the plan and wait for approval. Reuse `checkAllergens()` and `VerdictView`.
+**Phase 6: reaction diary**, only after Phase 5 passes the phone test and the user asks.
 
 **Frontend redesign:** the only open item is the signed-in click-through of `/`, `/onboarding` and
 `/profile` at 390px (see "Manual steps for me").
@@ -241,6 +274,20 @@ Deliberate differences from the prototype screens:
 - Login: "Resend confirmation email" button for `email_not_confirmed`.
 
 ## Manual steps for me
+- [ ] **Phase 5 phone test** on the Vercel preview of `phase-5` (URL in the chat / Vercel dashboard → Deployments).
+  If the preview asks for a Vercel login, that's Vercel's Deployment Protection: log in, or turn it off for previews.
+  The preview needs the Supabase env vars for the **Preview** environment (Vercel → Settings → Environment Variables).
+  1. Log in. Tap **Scan** → **Photo of the ingredients**. Check the tips show.
+  2. **Take photo** of a clear English ingredients list (Maggi is ideal), filling the frame. The first time it says it
+     is downloading the text reader (about 4 MB). Check the text matches the label; fix a mistake if there is one.
+  3. **Check ingredients**: the verdict matches what the barcode gives for the same product (kiwi profile: Safe).
+  4. Add Milk to your profile and photograph Amul butter (or edit the text to add "milk"): **Unsafe**, word highlighted.
+  5. Take a deliberately blurry or angled photo: the "weren't read clearly" message and **Caution**.
+  6. Photograph a label with Hindi on it: the message mentions Hindi, result **Caution**.
+  7. **Retake photo** works; **Choose from photos** works with a photo from your library.
+  8. Reload the result page: same result. On the result, "You edited this text" shows only if you changed it.
+  9. Airplane mode on `/scan/label`: "You're offline", Take photo disabled; Emergency still works.
+  10. Note how long reading takes the first time and the second time.
 - [x] ~~Phase 4: restore Supabase and apply the scans migration~~ (done 2026-10-27).
 - [ ] **Supabase Auth settings** (Dashboard → Authentication):
   - Emails → Confirm signup: link `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email&next=/onboarding`

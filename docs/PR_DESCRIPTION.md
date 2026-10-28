@@ -275,3 +275,39 @@ Scan a barcode (or type it), look the product up on Open Food Facts, check it wi
 
 - [x] Scanning a real product on a phone (via the Vercel URL) shows a verdict (iPhone, 2026-10-28)
 - [x] A product not found on Open Food Facts shows Caution with a clear message, never Safe (tested in code, on the verdict screen and with live OFF data)
+
+## Phase 5: Ingredient label photo
+
+Take (or choose) a photo of an ingredients list. Tesseract.js reads it **on the phone**, the user checks and edits the text, then the same `checkAllergens()` and `VerdictView` as barcodes give the verdict.
+
+### What's included
+
+- **`/scan/label`**: capture tips (good light, label flat, fill the frame, hold still, English only), **Take photo** (opens the rear camera: `capture="environment"`) and **Choose from photos**. The `/scan` page links to it ("No barcode?").
+- **Review step, always shown**: the photo preview, the extracted text in an editable box, **Retake photo**, **Check ingredients**. Wrapped lines are rejoined first with `joinOcrLines()` (written by Jessica): it joins only lines that clearly continue, so a wrapped "May contain traces of⏎peanuts" is Caution, while "May contain nuts⏎milk" stays Unsafe for milk.
+- **Low confidence**: the confidence passed to `checkAllergens()` is the **lowest line confidence**, not the page average (one unreadable line can hide an allergen). Below 70: a plain message ("Parts of this label weren't read clearly… Your result will be Caution, not Safe.") with the unclear lines listed. The confidence still counts after the user edits the text (decision: editing can't turn a doubtful read into Safe).
+- **Hindi**: English OCR only. With the English model, Devanagari comes out as nonsense Latin letters with very low line confidence (17–29 in tests), so a bilingual or Hindi label is always Caution and the message names Hindi. Hindi typed into the box counts as incomplete (Caution). An allergen printed only in Hindi can't be detected; the "always read the label" disclaimer covers it.
+- **Privacy**: the photo is decoded, shrunk (longest side 2000 px, greyscale) and read in the browser. It is never uploaded or stored; the Server Action accepts only `{ text, ocrText, ocrConfidence }` and rejects anything else (tested). Saved with the scan: the checked text, the OCR text and the confidence.
+- **Self-hosted OCR files**: `scripts/copy-tesseract.mjs` (runs before `dev` and `build`) copies the worker, the WASM engine and the English data from `node_modules` to `public/tesseract/` (git-ignored). They are left out of the service-worker precache (`globIgnores`), so installing the app doesn't download ~15 MB. Tesseract caches the language data in IndexedDB after the first photo.
+- **Result page**: photo scans show "Text read from your photo", no product card or Open Food Facts credit, and the text as first read when the user edited it. Rows are still snapshots.
+- **Migration `20261028000000_label_scans.sql`**: `input` allows `'photo'`; `barcode` nullable; `ocr_text` and `ocr_confidence` columns; a check that barcode rows have a barcode and no OCR fields and photo rows the reverse. RLS unchanged.
+- **Fix (Phase 3 text clean-up)**: "Milk-⏎free" split across lines was rejoined to "milkfree" and missed as a free-from claim (Safe instead of Caution). The hyphen before "free" is now kept, in `normalizeIngredientText()` and `joinOcrLines()`.
+
+### New dependencies
+
+- `tesseract.js` 7.0.0 (Apache-2.0): OCR in the browser (WebAssembly in a Web Worker).
+- `@tesseract.js-data/eng` 1.0.0: the English model (`best_int`), so it can be served from our own site instead of the jsdelivr CDN.
+- First photo downloads about 4.4 MB (worker 32 KB, engine 1.4 MB, English data 2.9 MB, gzipped); later photos almost nothing.
+
+### Testing
+
+- `joinOcrLines()`: join/keep rules, plus **every Unsafe call the Phase 3 and 4 test suites make to `checkAllergens()`** (94 cases, recorded by wrapping the function during a test run) and the Phase 4 Open Food Facts products run through it: none gets weaker.
+- **Same verdict via barcode and photo**: real Tesseract output (fixtures) for labels printed with the exact Open Food Facts text of Maggi, Amul and Nutella, checked against the barcode path for six profiles.
+- `summarizeOcr()` and `checkLabelText()` with real line confidences (clear, blurred, bilingual, Hindi-only); input validation (no image, no extra fields, confidence 0–100, length).
+- `LabelCapture` component tests (tips, offline, joined text, edits, low-confidence message, only text sent, Retake, Cancel, errors).
+- In Chromium (production build): OCR from the self-hosted files works (about 1.2 s a photo), **no requests to other sites and no uploads**; the language file is fetched once. Service worker precache: 57 entries, none from `public/tesseract/`. Offline: `/emergency` still loads, `/scan/label` shows "You're offline". Layout at 390px (start and review screens), no horizontal scroll.
+
+### Phase 5 "Done when"
+
+- [x] The same ingredients give the same verdict via barcode and via photo (tests on real OCR output)
+- [x] Raw extracted text is always shown (review box, and on the result page)
+- [ ] Label photo checked on the iPhone (Vercel preview of `phase-5`)
