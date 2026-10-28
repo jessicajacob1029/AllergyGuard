@@ -41,9 +41,9 @@ describe("/auth/confirm", () => {
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith("xyz");
   });
 
-  it("sends a failed code exchange back to sign-up with an error", async () => {
+  it("sends a failed code exchange to log in (the email is already confirmed by then)", async () => {
     auth.exchangeCodeForSession.mockResolvedValue({ error: { message: "bad code" } });
-    expect(await visit("?code=xyz")).toBe("/signup?error=confirmation_failed");
+    expect(await visit("?code=xyz")).toBe("/login?confirm=other_browser&next=%2Fonboarding");
   });
 
   it("rejects a missing or unsupported link without calling Supabase", async () => {

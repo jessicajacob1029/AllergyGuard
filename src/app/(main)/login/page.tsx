@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; logged_out?: string }>;
+  searchParams: Promise<{ next?: string; logged_out?: string; confirm?: string }>;
 }) {
   const params = await searchParams;
   const next = safeNextPath(params.next, "/");
@@ -29,6 +29,12 @@ export default async function LoginPage({
       {params.logged_out === "1" && (
         <p role="status" className={`mt-6 ${formSuccessClass}`}>
           You&apos;ve been logged out.
+        </p>
+      )}
+
+      {params.confirm === "other_browser" && (
+        <p role="status" className={`mt-6 ${formSuccessClass}`}>
+          Your email is confirmed. Log in with your email and password to continue.
         </p>
       )}
 
