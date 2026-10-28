@@ -29,9 +29,8 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 5 is built on branch `phase-5`** (2026-10-28). Before the phone test: apply migration
-`20261028000000_label_scans.sql` (needs the user's go-ahead) and push `phase-5` to the fork (not `main`).
-Then the user tests on the branch's Vercel preview. Next session: run `/clear`, then say
+**Phase 5 is built on branch `phase-5`** (2026-10-28), migration applied, pushed to the fork's `phase-5` (not
+`main`). Waiting for the user's iPhone test on the branch's Vercel preview. Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
 
 ## Phase 5: Ingredient label photo
@@ -61,10 +60,9 @@ uploads, language file fetched once); precache has no Tesseract files; `/emergen
 `/scan/label` offline shows "You're offline"; start and review screens at 390px.
 
 **Not done yet:**
-- [ ] Migration `20261028000000_label_scans.sql` on Supabase. It only adds: existing rows (3 barcode scans) pass
-  the new check, and `main`'s barcode code keeps working. Claude's attempt was blocked by the permission check
-  (production database), so it needs the user's go-ahead. After applying, set its version to `20261028000000` as
-  in Phase 4.
+- [x] Migration `20261028000000_label_scans.sql` applied 2026-10-28 through the Supabase connector (user approved),
+  version set to `20261028000000`. Checked: `barcode` nullable, `ocr_text` and `ocr_confidence` added; the 3
+  existing barcode rows passed the new check. Security advisor: only the existing "leaked password protection" warning.
 - [ ] iPhone test on the `phase-5` preview (steps in "Manual steps for me").
 
 ## Phase 4: Barcode scanning
