@@ -1,46 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition, type ChangeEvent } from "react";
-import { formAlertClass, labelClass, primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
+import { useEffect, useRef, useState, useTransition, type ChangeEvent, type ClipboardEvent, type ReactNode } from "react";
+import {
+  formAlertClass,
+  labelClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  tertiaryButtonClass,
+} from "@/components/form-styles";
 import { SectionCard } from "@/components/ui/section-card";
 import { DEFAULT_MIN_OCR_CONFIDENCE } from "@/lib/allergen/check";
+import { DEFAULT_CROP, WHOLE_PHOTO, type CropRect } from "@/lib/ocr/crop";
 import { joinOcrLines } from "@/lib/ocr/ocr-text";
+import { prepareOcrText } from "@/lib/ocr/prepare-text";
 import type { OcrOutput, OcrProgress } from "@/lib/ocr/run-ocr";
 import { summarizeOcr, type OcrSummary } from "@/lib/ocr/summary";
 import { useOnline } from "@/lib/use-online";
 import { checkLabel } from "./actions";
+import { CropBox } from "./crop-box";
 
-type Read = { ocrText: string; summary: OcrSummary; debug: OcrOutput | null };
+type Read = { ocrText: string; summary: OcrSummary; boosted: boolean; debug: OcrOutput | null };
 
 type State =
   | { step: "start" }
+  | { step: "crop" }
   | { step: "reading"; progress: OcrProgress }
-  | { step: "review"; read: Read };
+  | { step: "review"; read: Read }
+  | { step: "paste" };
+
+type Photo = { blob: Blob; url: string };
 
 const TIPS = [
   ["💡", "Good light, no glare or shadow on the text."],
   ["📄", "Hold the label flat. Smooth out a crinkled packet."],
-  ["🔍", "Fill the frame with the ingredients list."],
+  ["🔍", "Get close: the ingredients should fill most of the photo."],
   ["✋", "Hold still until the photo is sharp."],
+  ["📐", "Next, you'll drag a box around just the ingredients."],
   ["🔤", "English text only for now. Hindi can't be read yet."],
 ] as const;
 
+export const PASTE_TIP = "On iPhone, open the photo, press and hold the text, then Copy.";
+
 function progressText(p: OcrProgress): string {
-  return p.stage === "loading"
-    ? "Getting the text reader ready… The first time, this downloads about 4 MB."
-    : `Reading the label… ${Math.round(p.progress * 100)}%`;
+  if (p.stage === "loading") return "Getting the text reader ready… The first time, this downloads about 4 MB.";
+  const percent = Math.round(p.progress * 100);
+  return p.pass === 2 ? `The text is small. Reading it again, larger… ${percent}%` : `Reading the label… ${percent}%`;
 }
 
 /**
- * Label photo → text (Tesseract.js in the browser) → review and edit → check.
- * The photo stays in this page's memory: only the text and the confidence are
- * sent to checkLabel().
+ * Label photo → crop → text (Tesseract.js in the browser) → review and edit →
+ * check. Or: paste text → review → check. The photo stays in this page's
+ * memory: only text (and the photo's confidence) is sent to checkLabel().
  */
 export function LabelCapture({ debug = false }: { debug?: boolean }) {
   const online = useOnline();
   const [state, setState] = useState<State>({ step: "start" });
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<Photo | null>(null);
+  const [rect, setRect] = useState<CropRect>(DEFAULT_CROP);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -51,37 +68,46 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
   // The preview is a local blob: URL. Free it when it's replaced or the page closes.
   useEffect(() => {
     return () => {
-      if (photoUrl) URL.revokeObjectURL(photoUrl);
+      if (photo) URL.revokeObjectURL(photo.url);
     };
-  }, [photoUrl]);
+  }, [photo]);
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  async function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
-    const photo = event.target.files?.[0];
+  function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const blob = event.target.files?.[0];
     event.target.value = ""; // so choosing the same photo again still fires
-    if (!photo) return;
+    if (!blob) return;
+    abortRef.current?.abort();
+    setError(null);
+    setPhoto({ blob, url: URL.createObjectURL(blob) });
+    setRect(DEFAULT_CROP);
+    setState({ step: "crop" });
+  }
 
+  async function read(crop: CropRect, boost: boolean) {
+    if (!photo) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setError(null);
-    setPhotoUrl(URL.createObjectURL(photo));
     setState({ step: "reading", progress: { stage: "loading" } });
     try {
       const { readLabelPhoto } = await import("@/lib/ocr/run-ocr");
-      const out = await readLabelPhoto(photo, (progress) => setState({ step: "reading", progress }), controller.signal, {
+      const out = await readLabelPhoto(photo.blob, (progress) => setState({ step: "reading", progress }), controller.signal, {
+        crop,
+        boost,
         debug,
       });
       if (controller.signal.aborted) return;
-      setText(joinOcrLines(out.text));
+      setText(prepareOcrText(out.text));
       setState({
         step: "review",
-        read: { ocrText: out.text, summary: summarizeOcr(out.lines), debug: debug ? out : null },
+        read: { ocrText: out.text, summary: summarizeOcr(out.lines), boosted: boost, debug: debug ? out : null },
       });
     } catch (e) {
       if (controller.signal.aborted) return;
       console.error("Label OCR failed", e);
-      setState({ step: "start" });
+      setState({ step: "crop" });
       setError(
         navigator.onLine
           ? "We couldn't read this photo. Try again, or take a new photo."
@@ -90,27 +116,38 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
     }
   }
 
-  function cancel() {
+  function cancelReading() {
     abortRef.current?.abort();
-    setPhotoUrl(null);
-    setState({ step: "start" });
+    setState({ step: "crop" });
   }
 
-  function retake() {
+  function takePhoto() {
     cameraInput.current?.click();
   }
 
-  function submit(read: Read) {
+  function startPaste() {
+    setError(null);
+    setText("");
+    setState({ step: "paste" });
+  }
+
+  function backToStart() {
+    setError(null);
+    setPhoto(null);
+    setState({ step: "start" });
+  }
+
+  function submit(input: Parameters<typeof checkLabel>[0]) {
     setError(null);
     startTransition(async () => {
-      // Only text and a number go to the server; never the photo.
-      const result = await checkLabel({ text, ocrText: read.ocrText, ocrConfidence: read.summary.confidence });
+      // Only text (and a photo's confidence) goes to the server; never the photo.
+      const result = await checkLabel(input);
       if (result?.error) setError(result.error);
     });
   }
 
-  const fileInputs = (
-    <>
+  return (
+    <div className="space-y-6">
       <input
         ref={cameraInput}
         type="file"
@@ -132,18 +169,6 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
         aria-hidden="true"
         data-testid="library-input"
       />
-    </>
-  );
-
-  const preview = photoUrl && (
-    // A local blob: URL for this device only; next/image can't optimise it.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={photoUrl} alt="Your label photo" className="max-h-56 w-full rounded-card bg-viewfinder object-contain" />
-  );
-
-  return (
-    <div className="space-y-6">
-      {fileInputs}
 
       {!online && (
         <p role="status" className="rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
@@ -174,7 +199,7 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
             the result.
           </p>
           <div className="space-y-3">
-            <button type="button" onClick={retake} disabled={!online} className={primaryButtonClass}>
+            <button type="button" onClick={takePhoto} disabled={!online} className={primaryButtonClass}>
               <span aria-hidden="true">📷</span>
               Take photo
             </button>
@@ -186,16 +211,43 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
             >
               Choose from photos
             </button>
-            <Link href="/scan" className="block text-center text-sm font-bold text-primary-ink underline">
-              Scan a barcode instead
-            </Link>
+          </div>
+          <div className="space-y-2 rounded-card border border-line bg-card p-4">
+            <button type="button" onClick={startPaste} disabled={!online} className={tertiaryButtonClass}>
+              <span aria-hidden="true">📋</span>
+              Paste text instead
+            </button>
+            <p className="text-sm font-semibold text-muted">{PASTE_TIP}</p>
+          </div>
+          <Link href="/scan" className="block text-center text-sm font-bold text-primary-ink underline">
+            Scan a barcode instead
+          </Link>
+        </>
+      )}
+
+      {state.step === "crop" && photo && (
+        <>
+          <p className="text-base font-bold text-ink">
+            Drag the box around just the ingredients list. Leave out pictures and other text.
+          </p>
+          <CropBox src={photo.url} rect={rect} onChange={setRect} />
+          <div className="space-y-3">
+            <button type="button" onClick={() => read(rect, false)} disabled={!online} className={primaryButtonClass}>
+              Read this part
+            </button>
+            <button type="button" onClick={() => read(WHOLE_PHOTO, false)} disabled={!online} className={secondaryButtonClass}>
+              Use whole photo
+            </button>
+            <button type="button" onClick={takePhoto} className={tertiaryButtonClass}>
+              <span aria-hidden="true">📷</span>
+              Retake photo
+            </button>
           </div>
         </>
       )}
 
       {state.step === "reading" && (
         <>
-          {preview}
           <div role="status" className="flex flex-col items-center gap-3 rounded-card bg-band p-6 text-center">
             <span
               aria-hidden="true"
@@ -204,109 +256,161 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
             <p className="text-base font-extrabold text-primary-ink">{progressText(state.progress)}</p>
             <p className="text-sm font-semibold text-muted">This happens on your phone.</p>
           </div>
-          <button type="button" onClick={cancel} className={secondaryButtonClass}>
+          <button type="button" onClick={cancelReading} className={secondaryButtonClass}>
             Cancel
           </button>
         </>
       )}
 
       {state.step === "review" && (
-        <ReviewStep
-          read={state.read}
-          preview={preview}
-          text={text}
-          onTextChange={setText}
-          onRetake={retake}
-          onCheck={() => submit(state.read)}
-          pending={pending}
-          online={online}
-        />
+        <>
+          <PhotoReview read={state.read} />
+          <TextBox
+            label="Text read from your photo"
+            hint="Check it against the label and fix any mistakes before checking."
+            text={text}
+            onChange={setText}
+          />
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() =>
+                submit({
+                  source: "photo",
+                  text,
+                  ocrText: state.read.ocrText,
+                  ocrConfidence: state.read.summary.confidence,
+                })
+              }
+              disabled={pending || !online || text.trim() === ""}
+              className={primaryButtonClass}
+            >
+              {pending ? "Checking…" : "Check ingredients"}
+            </button>
+            <button type="button" onClick={() => setState({ step: "crop" })} disabled={pending} className={secondaryButtonClass}>
+              Adjust the box
+            </button>
+            <button type="button" onClick={takePhoto} disabled={pending} className={secondaryButtonClass}>
+              <span aria-hidden="true">📷</span>
+              Retake photo
+            </button>
+            {!state.read.boosted && (
+              <button type="button" onClick={() => read(rect, true)} disabled={pending || !online} className={tertiaryButtonClass}>
+                Text looks wrong? Boost faded or shiny text
+              </button>
+            )}
+          </div>
+          {state.read.debug && <DebugPanel out={state.read.debug} />}
+        </>
       )}
-      {state.step === "review" && state.read.debug && <DebugPanel out={state.read.debug} />}
+
+      {state.step === "paste" && (
+        <>
+          <p className="rounded-card border border-line bg-band p-3 text-sm font-semibold text-ink">{PASTE_TIP}</p>
+          <TextBox
+            label="Ingredients you pasted"
+            hint="Check the pasted text matches the label. You can edit it."
+            text={text}
+            onChange={setText}
+            onPaste={(pasted) => joinOcrLines(pasted)}
+            autoFocus
+          />
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => submit({ source: "paste", text })}
+              disabled={pending || !online || text.trim() === ""}
+              className={primaryButtonClass}
+            >
+              {pending ? "Checking…" : "Check ingredients"}
+            </button>
+            <button type="button" onClick={backToStart} disabled={pending} className={secondaryButtonClass}>
+              <span aria-hidden="true">📷</span>
+              Take a photo instead
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function ReviewStep(props: {
-  read: Read;
-  preview: React.ReactNode;
+/** Low-confidence and no-text messages for a photo read. */
+function PhotoReview({ read }: { read: Read }) {
+  if (read.ocrText.trim() === "") {
+    return (
+      <p role="alert" className="rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
+        We couldn&apos;t find any text. Adjust the box around the ingredients, or retake the photo closer and in good
+        light. You can also type the ingredients below.
+      </p>
+    );
+  }
+  if (read.summary.confidence >= DEFAULT_MIN_OCR_CONFIDENCE) return null;
+  return (
+    <div role="alert" className="space-y-2 rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
+      <p>
+        Parts of this label weren&apos;t read clearly. They may be blurred, or in another language such as Hindi, which
+        AllergyGuard can&apos;t read yet. Compare the text with the label and fix any mistakes. Your result will be
+        Caution, not Safe.
+      </p>
+      {read.summary.unclearLines.length > 0 && (
+        <>
+          <p>Unclear lines:</p>
+          <ul className="list-disc space-y-1 pl-5 font-semibold">
+            {read.summary.unclearLines.slice(0, 5).map((line) => (
+              <li key={line} className="break-words">
+                “{line}”
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TextBox(props: {
+  label: string;
+  hint: string;
   text: string;
-  onTextChange: (t: string) => void;
-  onRetake: () => void;
-  onCheck: () => void;
-  pending: boolean;
-  online: boolean;
+  onChange: (t: string) => void;
+  /** Transforms pasted text before it is inserted at the cursor. */
+  onPaste?: (pasted: string) => string;
+  autoFocus?: boolean;
 }) {
-  const { read, preview, text, onTextChange, onRetake, onCheck, pending, online } = props;
-  const unclear = read.summary.confidence < DEFAULT_MIN_OCR_CONFIDENCE;
-  const nothingRead = read.ocrText.trim() === "";
+  const { label, hint, text, onChange, onPaste, autoFocus } = props;
+
+  function handlePaste(e: ClipboardEvent<HTMLTextAreaElement>) {
+    if (!onPaste) return;
+    const pasted = e.clipboardData.getData("text/plain");
+    if (!pasted) return;
+    e.preventDefault();
+    const box = e.currentTarget;
+    const start = box.selectionStart ?? text.length;
+    const end = box.selectionEnd ?? text.length;
+    onChange(text.slice(0, start) + onPaste(pasted) + text.slice(end));
+  }
 
   return (
-    <>
-      {preview}
-
-      {nothingRead ? (
-        <p role="alert" className="rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
-          We couldn&apos;t find any text. Retake the photo closer to the ingredients, in good light. You can also
-          type the ingredients below.
-        </p>
-      ) : (
-        unclear && (
-          <div role="alert" className="space-y-2 rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
-            <p>
-              Parts of this label weren&apos;t read clearly. They may be blurred, or in another language such as
-              Hindi, which AllergyGuard can&apos;t read yet. Compare the text with the label and fix any mistakes.
-              Your result will be Caution, not Safe.
-            </p>
-            {read.summary.unclearLines.length > 0 && (
-              <>
-                <p>Unclear lines:</p>
-                <ul className="list-disc space-y-1 pl-5 font-semibold">
-                  {read.summary.unclearLines.slice(0, 5).map((line) => (
-                    <li key={line} className="break-words">
-                      “{line}”
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-        )
-      )}
-
-      <div>
-        <label htmlFor="label-text" className={labelClass}>
-          Text read from your photo
-        </label>
-        <p id="label-text-hint" className="mb-2 mt-1 text-sm font-semibold text-muted">
-          Check it against the label and fix any mistakes before checking.
-        </p>
-        <textarea
-          id="label-text"
-          value={text}
-          onChange={(e) => onTextChange(e.target.value)}
-          rows={10}
-          spellCheck={false}
-          aria-describedby="label-text-hint"
-          className="w-full rounded-field border-2 border-line bg-card p-3 text-base leading-relaxed text-ink focus:border-primary focus:outline-none"
-        />
-      </div>
-
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={onCheck}
-          disabled={pending || !online || text.trim() === ""}
-          className={primaryButtonClass}
-        >
-          {pending ? "Checking…" : "Check ingredients"}
-        </button>
-        <button type="button" onClick={onRetake} disabled={pending} className={secondaryButtonClass}>
-          <span aria-hidden="true">📷</span>
-          Retake photo
-        </button>
-      </div>
-    </>
+    <div>
+      <label htmlFor="label-text" className={labelClass}>
+        {label}
+      </label>
+      <p id="label-text-hint" className="mb-2 mt-1 text-sm font-semibold text-muted">
+        {hint}
+      </p>
+      <textarea
+        id="label-text"
+        value={text}
+        onChange={(e) => onChange(e.target.value)}
+        onPaste={handlePaste}
+        rows={10}
+        spellCheck={false}
+        autoFocus={autoFocus}
+        aria-describedby="label-text-hint"
+        className="w-full rounded-field border-2 border-line bg-card p-3 text-base leading-relaxed text-ink focus:border-primary focus:outline-none"
+      />
+    </div>
   );
 }
 
@@ -314,7 +418,7 @@ function ReviewStep(props: {
 // what Tesseract got and read. Remove before merging to main.
 function DebugPanel({ out }: { out: OcrOutput }) {
   const { info } = out;
-  const rows: [string, string][] = [
+  const rows: [string, ReactNode][] = [
     ["File", `${info.fileType}, ${Math.round(info.fileBytes / 1024)} KB`],
     [
       "EXIF",
@@ -324,14 +428,21 @@ function DebugPanel({ out }: { out: OcrOutput }) {
     ],
     ["Decoded", `${info.decoded.width}×${info.decoded.height} via ${info.decoder}`],
     ["Rotation", info.rotation],
-    ["Sent to OCR", `${info.sent.width}×${info.sent.height} (scale ${info.scale})`],
-    ["Time", `${out.ms} ms`],
+    ["Crop", `${info.crop.width}×${info.crop.height} at ${info.crop.left},${info.crop.top}`],
     [
-      "Line height",
-      out.lines.length
-        ? `median ${[...out.lines].map((l) => l.height).sort((a, b) => a - b)[Math.floor(out.lines.length / 2)]} px`
-        : "no lines",
+      "Steps",
+      Object.entries(info.steps)
+        .filter(([, on]) => on)
+        .map(([k]) => k)
+        .join(", ") || "none",
     ],
+    [
+      "Reads",
+      info.passes
+        .map((p) => `${p.width}×${p.height} (scale ${p.scale}), median line ${p.medianLineHeight} px${p.kept ? ", kept" : ""}`)
+        .join(" · "),
+    ],
+    ["Time", `${out.ms} ms`],
     ["User agent", typeof navigator === "undefined" ? "" : navigator.userAgent],
   ];
   return (

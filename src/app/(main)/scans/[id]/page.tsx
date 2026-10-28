@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
 import { VerdictView } from "@/components/verdict/verdict-view";
 import { APP_NAME } from "@/lib/constants";
-import { joinOcrLines } from "@/lib/ocr/ocr-text";
+import { prepareOcrText } from "@/lib/ocr/prepare-text";
 import { readStoredResult } from "@/lib/products/scan-record";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,16 +32,18 @@ export default async function ScanResultPage({ params }: PageProps<"/scans/[id]"
   const result = readStoredResult(scan.result);
   if (!result) notFound();
 
-  if (scan.input === "photo") {
+  if (scan.input === "photo" || scan.input === "paste") {
+    const photo = scan.input === "photo";
     const ocrText = scan.ocr_text ?? "";
-    // Shown only when the user changed the text, not for the automatic line joining.
-    const edited = result.rawText !== joinOcrLines(ocrText);
+    // Shown only when the user changed the text, not for the automatic tidying and line joining.
+    const edited = photo && result.rawText !== prepareOcrText(ocrText);
     return (
       <VerdictView
         result={result}
         product={null}
         checkedAt={scan.created_at}
-        textLabel="Text read from your photo"
+        textLabel={photo ? "Text read from your photo" : "Text you pasted"}
+        notes={photo ? [] : ["Pasted text: make sure it matches the label on the pack."]}
         originalText={edited ? ocrText : null}
         actions={
           <>
