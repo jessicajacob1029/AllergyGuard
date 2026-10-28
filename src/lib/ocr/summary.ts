@@ -16,16 +16,15 @@ export type OcrSummary = {
   unclearLines: string[];
 };
 
-// Lines with fewer letters than this ("(3%)", "·") don't count: their
-// confidence says little and they can't hold an ingredient name.
-const MIN_LETTERS = 3;
-
-const letterCount = (s: string) => s.match(/\p{L}/gu)?.length ?? 0;
+// Only lines with no letters and no digits are left out (borders, rules,
+// stray symbols: "|", "———"). A line of E-numbers still counts: a misread
+// "E322" (soy lecithin) must pull the confidence down (decided 2026-10-28).
+const hasLetterOrDigit = (s: string) => /[\p{L}\p{N}]/u.test(s);
 
 export function summarizeOcr(lines: readonly OcrLine[], min = DEFAULT_MIN_OCR_CONFIDENCE): OcrSummary {
   const counted = lines
     .map((l) => ({ text: l.text.trim(), confidence: Number.isFinite(l.confidence) ? l.confidence : 0 }))
-    .filter((l) => letterCount(l.text) >= MIN_LETTERS);
+    .filter((l) => hasLetterOrDigit(l.text));
   if (counted.length === 0) return { confidence: 0, unclearLines: [] };
   const confidence = Math.round(Math.min(...counted.map((l) => l.confidence)));
   return {

@@ -24,8 +24,21 @@ describe("summarizeOcr", () => {
     expect(s.unclearLines).toEqual(["HAART: TE, FT AT, LF q13eY, HI+1, THF,", "H_THAT FTAA"]);
   });
 
-  it("ignores lines with fewer than 3 letters", () => {
-    expect(summarizeOcr([{ text: "Sugar, salt", confidence: 92 }, { text: "(3%) ·", confidence: 10 }]).confidence).toBe(92);
+  it("ignores only lines with no letters and no digits (borders, rules)", () => {
+    expect(summarizeOcr([{ text: "Sugar, salt", confidence: 92 }, { text: "| ——— |", confidence: 10 }]).confidence).toBe(92);
+  });
+
+  it("an E-number line still counts: a misread E322 must lower the confidence", () => {
+    const s = summarizeOcr([
+      { text: "Sugar, cocoa butter, emulsifier", confidence: 94 },
+      { text: "(E322), 330", confidence: 41 },
+    ]);
+    expect(s.confidence).toBe(41);
+    expect(s.unclearLines).toEqual(["(E322), 330"]);
+  });
+
+  it("a digits-only line counts too", () => {
+    expect(summarizeOcr([{ text: "Sugar", confidence: 90 }, { text: "(3%)", confidence: 30 }]).confidence).toBe(30);
   });
 
   it("no readable line gives 0", () => {
