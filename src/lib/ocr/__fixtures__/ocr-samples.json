@@ -1,0 +1,173 @@
+{
+ "off-3017624010701": {
+  "text": "INGREDIENTS: sugar, palm oil, hazelnuts (13%), skimmed milk\npowder (8.7%), fat reduced cocoa (7.4%), emulsifier: lecithins\n(soya), vanillin\n",
+  "lines": [
+   {
+    "text": "INGREDIENTS: sugar, palm oil, hazelnuts (13%), skimmed milk",
+    "confidence": 96
+   },
+   {
+    "text": "powder (8.7%), fat reduced cocoa (7.4%), emulsifier: lecithins",
+    "confidence": 94
+   },
+   {
+    "text": "(soya), vanillin",
+    "confidence": 96
+   }
+  ]
+ },
+ "off-8901058851298": {
+  "text": "INGREDIENTS: Noodles : Refined wheat flour, Palm oil , salt,\nWheat gluten , Thickeners(508 & 412), mineral(calcium\ncarbonate) and Humectant(451(i))\n\nTaste maker : Hydrolyzed peanut protein ,Mixed spices(23.6%)\n,Dehydrated onion , coriander powder , red Chili powder (3%),\nTurmeric powder , dried Garlic (2.5%), Cumin powder , Aniseed\npowder , Fenugreek powder , ginger powder , black pepper\npowder (0.4%), Clove powder(0.1%), green cardamom\npowder(0.1%), nutmeg powder , Noodle powder ( refined wheat\nflour, palm oil wheat gluten ,Acid regulators(170(i) , 501(i)\n\n& 500(i)) , Thickeners(508 & 412) , Humectant(451(i)) ,\n\ncalcium carbonate, guar gum), starch, garlic powder, caramel\nsalt mix (salt, color(150d), & palm oil) , acidity\n\nregulators(330 & 500(ii)) , Flavour enhancer(635) and mineral\n(ferric pyrophosphate)\n",
+  "lines": [
+   {
+    "text": "INGREDIENTS: Noodles : Refined wheat flour, Palm oil , salt,",
+    "confidence": 91
+   },
+   {
+    "text": "Wheat gluten , Thickeners(508 & 412), mineral(calcium",
+    "confidence": 87
+   },
+   {
+    "text": "carbonate) and Humectant(451(i))",
+    "confidence": 92
+   },
+   {
+    "text": "Taste maker : Hydrolyzed peanut protein ,Mixed spices(23.6%)",
+    "confidence": 92
+   },
+   {
+    "text": ",Dehydrated onion , coriander powder , red Chili powder (3%),",
+    "confidence": 91
+   },
+   {
+    "text": "Turmeric powder , dried Garlic (2.5%), Cumin powder , Aniseed",
+    "confidence": 93
+   },
+   {
+    "text": "powder , Fenugreek powder , ginger powder , black pepper",
+    "confidence": 88
+   },
+   {
+    "text": "powder (0.4%), Clove powder(0.1%), green cardamom",
+    "confidence": 94
+   },
+   {
+    "text": "powder(0.1%), nutmeg powder , Noodle powder ( refined wheat",
+    "confidence": 94
+   },
+   {
+    "text": "flour, palm oil wheat gluten ,Acid regulators(170(i) , 501(i)",
+    "confidence": 85
+   },
+   {
+    "text": "& 500(i)) , Thickeners(508 & 412) , Humectant(451(i)) ,",
+    "confidence": 83
+   },
+   {
+    "text": "calcium carbonate, guar gum), starch, garlic powder, caramel",
+    "confidence": 96
+   },
+   {
+    "text": "salt mix (salt, color(150d), & palm oil) , acidity",
+    "confidence": 91
+   },
+   {
+    "text": "regulators(330 & 500(ii)) , Flavour enhancer(635) and mineral",
+    "confidence": 91
+   },
+   {
+    "text": "(ferric pyrophosphate)",
+    "confidence": 87
+   }
+  ]
+ },
+ "off-8901262010016": {
+  "text": "INGREDIENTS: Butter, common salt. CONTAINS PERMITTED NATURAL\nCOLOUR [ANNATTO]\n",
+  "lines": [
+   {
+    "text": "INGREDIENTS: Butter, common salt. CONTAINS PERMITTED NATURAL",
+    "confidence": 96
+   },
+   {
+    "text": "COLOUR [ANNATTO]",
+    "confidence": 91
+   }
+  ]
+ },
+ "bilingual": {
+  "text": "HAART: TE, FT AT, LF q13eY, HI+1, THF,\nH_THAT FTAA\n\nINGREDIENTS: Wheat flour, sugar, salt, edible\nvegetable oil.\n",
+  "lines": [
+   {
+    "text": "HAART: TE, FT AT, LF q13eY, HI+1, THF,",
+    "confidence": 25
+   },
+   {
+    "text": "H_THAT FTAA",
+    "confidence": 17
+   },
+   {
+    "text": "INGREDIENTS: Wheat flour, sugar, salt, edible",
+    "confidence": 96
+   },
+   {
+    "text": "vegetable oil.",
+    "confidence": 96
+   }
+  ]
+ },
+ "hindi": {
+  "text": "HAART: TE, FT AT, LF q13eY, HI+1, THF,\nH_TRAT HT To, TATTAT\n",
+  "lines": [
+   {
+    "text": "HAART: TE, FT AT, LF q13eY, HI+1, THF,",
+    "confidence": 25
+   },
+   {
+    "text": "H_TRAT HT To, TATTAT",
+    "confidence": 29
+   }
+  ]
+ },
+ "wrapped": {
+  "text": "INGREDIENTS: Sugar, cocoa butter, rice flour. May contain traces of\npeanuts and sesame.\n",
+  "lines": [
+   {
+    "text": "INGREDIENTS: Sugar, cocoa butter, rice flour. May contain traces of",
+    "confidence": 95
+   },
+   {
+    "text": "peanuts and sesame.",
+    "confidence": 96
+   }
+  ]
+ },
+ "maggi-blurry": {
+  "text": "Wheat ghuten. Thickeners (508 & 412). mineral (calcium\ncarbonate) and Humectant (451(1))\n\nTaste maker Hydrolyzed peanut proten. Mixed spices\n(23 6%). Dehydrated onion, conander powder, red Chili\npowder (3%). Turmeric powder.\n\nMay contain traces of milk and soy.\n",
+  "lines": [
+   {
+    "text": "Wheat ghuten. Thickeners (508 & 412). mineral (calcium",
+    "confidence": 80
+   },
+   {
+    "text": "carbonate) and Humectant (451(1))",
+    "confidence": 86
+   },
+   {
+    "text": "Taste maker Hydrolyzed peanut proten. Mixed spices",
+    "confidence": 78
+   },
+   {
+    "text": "(23 6%). Dehydrated onion, conander powder, red Chili",
+    "confidence": 74
+   },
+   {
+    "text": "powder (3%). Turmeric powder.",
+    "confidence": 86
+   },
+   {
+    "text": "May contain traces of milk and soy.",
+    "confidence": 94
+   }
+  ]
+ }
+}
