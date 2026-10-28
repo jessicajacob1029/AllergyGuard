@@ -25,12 +25,13 @@ export function joinOcrLines(text: string): string {
       continue;
     }
     // "glu-⏎ten" → "gluten" (only a letter right before the hyphen).
+    // "Milk-⏎free" keeps its hyphen: it's a free-from claim, not one word.
     if (/\p{L}-$/u.test(prev)) {
-      line = prev.slice(0, -1) + nextStart;
+      line = /^free(?!\p{L})/iu.test(nextStart) ? prev + nextStart : prev.slice(0, -1) + nextStart;
       continue;
     }
     // "Sugar,⏎milk" → "Sugar, milk"
-    if (prev.endsWith(",")) {
+    if (prev.endsWith(",") && /^\p{Ll}/u.test(nextStart)) {
       line = prev + " " + nextStart;
       continue;
     }

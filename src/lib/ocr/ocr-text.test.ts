@@ -35,6 +35,7 @@ describe("joinOcrLines: when to join", () => {
     ["ends with an open square bracket", "Colour [\nannatto]", "Colour [annatto]"],
     ["next line starts lowercase", "May contain traces of\npeanuts.", "May contain traces of peanuts."],
     ["Windows line breaks (Open Food Facts)", "Sugar,\r\nmilk solids", "Sugar, milk solids"],
+    ["keeps the hyphen of a split “-free” claim", "Milk-\nfree chocolate", "Milk-free chocolate"],
   ])("%s", (_name, input, expected) => {
     expect(joinOcrLines(input)).toBe(expected);
   });
@@ -43,6 +44,9 @@ describe("joinOcrLines: when to join", () => {
 describe("joinOcrLines: when to keep the line break", () => {
   it.each([
     ["next line starts uppercase", "May contain traces of peanuts\nMilk solids, sugar"],
+    // OCR often reads a full stop as a comma: a comma joins only a lowercase next line.
+    ["a comma, then an uppercase line", "May contain peanuts,\nMilk solids, sugar"],
+    ["a comma, then an uppercase ingredient", "Sugar,\nMilk solids"],
     ["a sentence ends", "Contains milk.\nStore in a cool place"],
     ["a blank line between paragraphs", "Ingredients: sugar, salt.\n\nbest before: see pack"],
     ["a closed bracket, then a new section", "Humectant (451(i))\r\nTaste maker: Hydrolyzed peanut protein"],
@@ -76,6 +80,16 @@ describe("joinOcrLines: verdicts after joining", () => {
     const r = checkAllergens(joinOcrLines(text), [p("peanut")]);
     expect(r.verdict).toBe("caution");
     expect(r.matches.map((m) => m.kind)).toEqual(["may_contain"]);
+  });
+
+  it("“May contain peanuts,⏎Milk solids” stays Unsafe for milk (a misread full stop)", () => {
+    expect(checkAllergens(joinOcrLines("May contain peanuts,\nMilk solids, sugar"), [p("milk")]).verdict).toBe("unsafe");
+  });
+
+  it("“Milk-⏎free chocolate” stays a free-from claim (Caution, never Safe)", () => {
+    const r = checkAllergens(joinOcrLines("Milk-\nfree chocolate: sugar, cocoa"), [p("milk")]);
+    expect(r.verdict).toBe("caution");
+    expect(r.warnings.map((w) => w.kind)).toContain("free_from_claim");
   });
 
   it("“May contain nuts⏎milk, sugar” stays Unsafe for milk (Phase 3 case)", () => {
