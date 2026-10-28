@@ -306,6 +306,16 @@ Take (or choose) a photo of an ingredients list. Tesseract.js reads it **on the 
 - `LabelCapture` component tests (tips, offline, joined text, edits, low-confidence message, only text sent, Retake, Cancel, errors).
 - In Chromium (production build): OCR from the self-hosted files works (about 1.2 s a photo), **no requests to other sites and no uploads**; the language file is fetched once. Service worker precache: 57 entries, none from `public/tesseract/`. Offline: `/emergency` still loads, `/scan/label` shows "You're offline". Layout at 390px (start and review screens), no horizontal scroll.
 
+### Second round after the first iPhone test
+
+The first test read the whole photo: the ingredients came out well, but the rest of the pack added junk lines, so
+results were always Caution. Added: a **crop step** (full-size crop, shrink only above 4000 px / 8 MP, enlarged
+re-read under 20 px lines), **sharpen** before OCR, an opt-in **Boost** (adaptive threshold) for faded or shiny
+labels, **`|` tidying** before `joinOcrLines()`, **Paste text instead** (judged on the text alone; migration
+`20261028010000_paste_scans.sql`), and an EXIF rotation safeguard. Choices were measured with
+`scripts/measure-ocr.mjs` (table in `docs/PROGRESS.md`). A preview-only debug panel is still in and is removed
+before this merges.
+
 ### Phase 5 "Done when"
 
 - [x] The same ingredients give the same verdict via barcode and via photo (tests on real OCR output)

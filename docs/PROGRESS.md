@@ -29,8 +29,9 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 5 is built on branch `phase-5`** (2026-10-28), migration applied, pushed to the fork's `phase-5` (not
-`main`). Waiting for the user's iPhone test on the branch's Vercel preview. Next session: run `/clear`, then say
+**Phase 5: second round on `phase-5`** (2026-10-28): crop step, image clean-up, `|` tidying, Paste text, and a
+preview-only debug panel, after the first iPhone test read mostly junk. Pushed to the fork's `phase-5` (not `main`).
+Waiting for the user's retest. The debug panel must be removed before merging to `main`. Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
 
 ## Phase 5: Ingredient label photo
@@ -58,6 +59,51 @@ Built 2026-10-28 on branch `phase-5` (from `feature/full-build`). Plan approved 
 Checked: 695 tests; lint; build; real OCR in Chromium from the self-hosted files (no requests to other sites, no
 uploads, language file fetched once); precache has no Tesseract files; `/emergency` offline still works and
 `/scan/label` offline shows "You're offline"; start and review screens at 390px.
+
+**iPhone test 1 (2026-10-28) and second round.** The user reported "almost nothing read correctly". Their
+result-page screenshots showed the ingredients panel read almost perfectly; the rest was ~20 lines of junk from the
+rest of the pack (logos, other panels, edges), plus `|` from the box border. The junk lines made the lowest-line
+confidence low, so the result was always Caution. Diagnosis and fixes (all approved by the user):
+- **Debug panel** (preview deployments only, `VERCEL_ENV !== "production"`): image sent to Tesseract, EXIF, sizes,
+  crop, steps, reads, per-line confidence and height, raw text. **TEMPORARY: remove before merging to `main`.**
+- **EXIF:** WebKit 26 applies the rotation (tested with an orientation-6 JPEG). Safeguard: if a browser ever doesn't,
+  `run-ocr.ts` rotates the photo itself (`jpeg-info.ts` reads the EXIF tag and stored size).
+- **Shrinking was the second problem:** the old pipeline shrank the whole photo to 2000 px, so small print fell to
+  ~7 px letters (stand-in: 11–20% of characters right vs 97% for a full-size crop).
+- **Crop step** (`crop-box.tsx`, `crop.ts`): drag a box around the ingredients (corners, move, arrow keys). Crop
+  first, from the full-size photo; shrink only above 4000 px or 8 MP; if lines are under 20 px, read again enlarged.
+- **Clean-up** (`preprocess.ts`, pure, same code in the browser and in `scripts/measure-ocr.mjs`). Measured on six
+  stand-in photos (12 MP, EXIF 6; clean, small print, glare, shadow, curved, faded). The user's original photos
+  weren't in `~/AllergyGuard-photos` yet: rerun `node scripts/measure-ocr.mjs <folder>` on them (see the script).
+
+  | accuracy (lowest line) | clean | small | glare | shadow | curved | faded | mean |
+  |---|---|---|---|---|---|---|---|
+  | old: whole photo shrunk | 100% (63) | 11% (0) | 33% (75) | 98% (56) | 89% (53) | 0% (0) | 55.2% |
+  | crop, no steps | 100% (76) | 97% (62) | 41% (57) | 100% (72) | 84% (33) | 0% (0) | 70.4% |
+  | **crop + sharpen (default)** | 100% (77) | 98% (64) | 43% (46) | 100% (80) | 88% (51) | 0% (0) | 71.5% |
+  | crop + threshold | 99% (67) | 88% (34) | 50% (6) | 100% (75) | 86% (59) | 68% (0) | 81.9% |
+  | **crop + sharpen + threshold (Boost)** | 99% (40) | 90% (45) | 53% (6) | 100% (41) | 90% (46) | 81% (17) | 85.5% |
+  | crop + contrast + threshold | 86% (13) | 75% (17) | 63% (35) | 95% (18) | 0% (13) | 82% (27) | 66.9% |
+
+  Decision: **sharpen always** (never hurt); **threshold only via "Boost faded or shiny text"** on the review screen
+  (faded 0% → 88% in WebKit, but small print 98% → 90% and confidence falls); contrast stretch not used. Glare hides
+  words outright ("skimmed ed cocoa": "milk" gone); its low confidence keeps it Caution. Fix is a retake.
+- **Model:** keep `best_int` (2.9 MB gz). `fast` is 1.9 MB and ~1 point worse; `best` (float, 12.5 MB) doesn't run
+  in Tesseract.js 7's WASM build (crashed: missing float dot product).
+- **4b (user's rule):** only lines with no letters and no digits are left out of the weakest-line check. E-number
+  lines still count: a misread "E322" (soy) must lower the confidence.
+- **4c (user's rule, one safety change):** `tidyOcrText()` (`prepare-text.ts`, runs before `joinOcrLines()`): a `|`
+  followed by a letter becomes `l` ("Mi|k", "|ecithin", "Mo||uscs"); every other `|` is removed. Changed from "touching
+  letters → l": a `|` with a letter only before it ("gluten|") is removed, because "glutenl" would hide the allergen.
+  Passes the never-weaker corpus, also with every corpus "l" misread as "|" plus border bars.
+- **Paste text instead:** capture screen button + "On iPhone, open the photo, press and hold the text, then Copy."
+  Pasted text goes through `joinOcrLines()` and the same review; judged on the text alone (no OCR confidence);
+  Hindi still Caution. Migration `20261028010000_paste_scans.sql` (input `'paste'`, no OCR fields) applied
+  2026-10-28 (user approved), version set to `20261028010000`.
+- Real-text check: the lines from the user's screenshots give wheat Unsafe (wheat, Maida, gluten), milk Caution
+  ("May⏎contain Milk"), peanut Caution ("Nut"), kiwi Safe once the junk is cropped out.
+- Checked: 1055 tests, lint, build, precache unchanged (42 entries, no OCR files); WebKit end to end through the real
+  UI with the crop dragged by mouse (same accuracy as the Node measurement); screens at 390px.
 
 **Not done yet:**
 - [x] Migration `20261028000000_label_scans.sql` applied 2026-10-28 through the Supabase connector (user approved),
@@ -272,20 +318,16 @@ Deliberate differences from the prototype screens:
 - Login: "Resend confirmation email" button for `email_not_confirmed`.
 
 ## Manual steps for me
-- [ ] **Phase 5 phone test** on the Vercel preview of `phase-5` (URL in the chat / Vercel dashboard → Deployments).
-  If the preview asks for a Vercel login, that's Vercel's Deployment Protection: log in, or turn it off for previews.
-  The preview needs the Supabase env vars for the **Preview** environment (Vercel → Settings → Environment Variables).
-  1. Log in. Tap **Scan** → **Photo of the ingredients**. Check the tips show.
-  2. **Take photo** of a clear English ingredients list (Maggi is ideal), filling the frame. The first time it says it
-     is downloading the text reader (about 4 MB). Check the text matches the label; fix a mistake if there is one.
-  3. **Check ingredients**: the verdict matches what the barcode gives for the same product (kiwi profile: Safe).
-  4. Add Milk to your profile and photograph Amul butter (or edit the text to add "milk"): **Unsafe**, word highlighted.
-  5. Take a deliberately blurry or angled photo: the "weren't read clearly" message and **Caution**.
-  6. Photograph a label with Hindi on it: the message mentions Hindi, result **Caution**.
-  7. **Retake photo** works; **Choose from photos** works with a photo from your library.
-  8. Reload the result page: same result. On the result, "You edited this text" shows only if you changed it.
-  9. Airplane mode on `/scan/label`: "You're offline", Take photo disabled; Emergency still works.
-  10. Note how long reading takes the first time and the second time.
+- [ ] **Phase 5 phone retest** on the Vercel preview of `phase-5`
+  (`https://allergy-guard-git-phase-5-j-deploys.vercel.app`, Vercel login first):
+  1. **Scan** → **Photo of the ingredients** → **Take photo** of the Maggi pack's ingredients panel.
+  2. On the crop screen, drag the corners to just the ingredients list → **Read this part**.
+  3. Scroll down: screenshot the **Debug** panel (crop size, median line height, line confidences).
+  4. Check the text matches the label; **Check ingredients**. Kiwi profile: Safe if every line was read clearly.
+  5. Try **Use whole photo** on the same photo to compare (expect Caution: junk lines).
+  6. A shiny or faded label: if the text looks wrong, tap **Boost faded or shiny text**.
+  7. **Paste text instead**: in Photos, open the label photo, press and hold the text, Copy, paste, Check.
+  8. Optional: AirDrop 3–5 original photos to `~/AllergyGuard-photos` for `scripts/measure-ocr.mjs`.
 - [x] ~~Phase 4: restore Supabase and apply the scans migration~~ (done 2026-10-27).
 - [ ] **Supabase Auth settings** (Dashboard → Authentication):
   - Emails → Confirm signup: link `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email&next=/onboarding`
