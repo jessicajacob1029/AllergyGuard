@@ -5,7 +5,7 @@ import { parseProduct } from "@/lib/products/open-food-facts";
 import offProducts from "./__fixtures__/off-products.json";
 import ocrSamples from "./__fixtures__/ocr-samples.json";
 import { checkLabelText, parseLabelCheckInput, type LabelCheckInput } from "./check-label";
-import { joinOcrLines } from "./ocr-text";
+import { prepareOcrText } from "./prepare-text";
 import { summarizeOcr, type OcrLine } from "./summary";
 
 const p = (code: AllergenCode): CheckAllergen => ({ kind: "predefined", code });
@@ -13,10 +13,12 @@ const p = (code: AllergenCode): CheckAllergen => ({ kind: "predefined", code });
 type Sample = { text: string; lines: OcrLine[] };
 const samples = ocrSamples as Record<string, Sample>;
 
-/** The photo path exactly as the app runs it: OCR text → joinOcrLines → checkLabelText. */
-function photoInput(name: string): LabelCheckInput {
+type PhotoInput = Extract<LabelCheckInput, { source: "photo" }>;
+
+/** The photo path exactly as the app runs it: OCR text → tidy + joinOcrLines → checkLabelText. */
+function photoInput(name: string): PhotoInput {
   const s = samples[name];
-  return { text: joinOcrLines(s.text), ocrText: s.text, ocrConfidence: summarizeOcr(s.lines).confidence };
+  return { source: "photo", text: prepareOcrText(s.text), ocrText: s.text, ocrConfidence: summarizeOcr(s.lines).confidence };
 }
 
 /** The barcode path exactly as the Server Function runs it. */
@@ -83,13 +85,13 @@ describe("checkLabelText", () => {
   });
 
   it("Hindi typed into the box counts as incomplete: Caution", () => {
-    const r = checkLabelText({ text: "चीनी, नमक", ocrText: "x", ocrConfidence: 95 }, [p("milk")]);
+    const r = checkLabelText({ source: "photo", text: "चीनी, नमक", ocrText: "x", ocrConfidence: 95 }, [p("milk")]);
     expect(r.verdict).toBe("caution");
     expect(r.warnings.map((w) => w.kind)).toContain("incomplete");
   });
 
   it("low confidence never downgrades Unsafe", () => {
-    expect(checkLabelText({ text: "Sugar, milk powder", ocrText: "x", ocrConfidence: 20 }, [p("milk")]).verdict).toBe(
+    expect(checkLabelText({ source: "photo", text: "Sugar, milk powder", ocrText: "x", ocrConfidence: 20 }, [p("milk")]).verdict).toBe(
       "unsafe",
     );
   });
@@ -108,11 +110,54 @@ describe("checkLabelText", () => {
   });
 });
 
-describe("parseLabelCheckInput", () => {
-  const ok = { text: "Sugar", ocrText: "Sugar", ocrConfidence: 90 };
+describe("checkLabelText: pasted text", () => {
+  it("is judged on the text alone: clean text can be Safe", () => {
+    const r = checkLabelText({ source: "paste", text: "Sugar, cocoa butter, salt" }, [p("milk")]);
+    expect(r.verdict).toBe("safe");
+    expect(r.warnings).toEqual([]);
+  });
 
-  it("accepts two strings and a number", () => {
+  it("an allergen is Unsafe, a may-contain is Caution", () => {
+    expect(checkLabelText({ source: "paste", text: "Sugar, whey" }, [p("milk")]).verdict).toBe("unsafe");
+    expect(checkLabelText({ source: "paste", text: "Sugar. May contain milk." }, [p("milk")]).verdict).toBe("caution");
+  });
+
+  it("Hindi in pasted text counts as incomplete: Caution", () => {
+    expect(checkLabelText({ source: "paste", text: "Sugar, दूध" }, [p("milk")]).verdict).toBe("caution");
+  });
+
+  it("gives the same verdict as the barcode for the same ingredients (Maggi, Amul)", () => {
+    for (const barcode of ["8901058851298", "8901262010016"]) {
+      const product = parseProduct((offProducts as Record<string, unknown>)[barcode]);
+      if (!product.found || !product.ingredientsText) throw new Error("fixture");
+      for (const profile of Object.values(PROFILES)) {
+        expect(checkLabelText({ source: "paste", text: product.ingredientsText }, profile).verdict).toBe(
+          barcodeVerdict(barcode, profile),
+        );
+      }
+    }
+  });
+});
+
+describe("parseLabelCheckInput", () => {
+  const ok = { source: "photo", text: "Sugar", ocrText: "Sugar", ocrConfidence: 90 } as const;
+
+  it("accepts a photo: two strings and a number", () => {
     expect(parseLabelCheckInput(ok)).toEqual({ ok: true, input: ok });
+  });
+
+  it("accepts pasted text: one string", () => {
+    expect(parseLabelCheckInput({ source: "paste", text: "Sugar" })).toEqual({
+      ok: true,
+      input: { source: "paste", text: "Sugar" },
+    });
+  });
+
+  it("asks for pasted text when the box is empty", () => {
+    expect(parseLabelCheckInput({ source: "paste", text: " " })).toEqual({
+      ok: false,
+      error: "There's no text to check. Paste the ingredients first.",
+    });
   });
 
   it.each([
@@ -121,6 +166,10 @@ describe("parseLabelCheckInput", () => {
     ["confidence as a string", { ...ok, ocrConfidence: "90" }],
     ["confidence above 100", { ...ok, ocrConfidence: 101 }],
     ["confidence NaN", { ...ok, ocrConfidence: Number.NaN }],
+    ["no source", { text: "Sugar", ocrText: "Sugar", ocrConfidence: 90 }],
+    ["paste with OCR fields", { ...ok, source: "paste" }],
+    ["paste with an image", { source: "paste", text: "Sugar", image: "data:image/jpeg;base64,AAAA" }],
+    ["unknown source", { source: "upload", text: "Sugar" }],
     ["not an object", "Sugar"],
     ["null", null],
   ])("rejects %s", (_name, value) => {

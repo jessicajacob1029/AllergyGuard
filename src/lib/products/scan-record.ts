@@ -7,8 +7,8 @@ export const SCAN_VERDICTS = ["safe", "caution", "unsafe"] as const satisfies re
 
 /** How a barcode was entered. */
 export type ScanInput = "camera" | "manual";
-/** Every kind of scan row: a barcode, or a label photo (Phase 5). */
-export type ScanSource = ScanInput | "photo";
+/** Every kind of scan row: a barcode, a label photo or pasted text (Phase 5). */
+export type ScanSource = ScanInput | "photo" | "paste";
 
 /** Column limit for ingredient and OCR text (same as the migration). */
 export const MAX_SCAN_TEXT = 20000;
@@ -96,6 +96,28 @@ export function toLabelScanInsert(args: {
     off_last_modified: null,
     ocr_text: ocrText,
     ocr_confidence: ocrConfidence,
+  };
+}
+
+/** Pasted ingredient text: no photo, no OCR fields, judged on the text alone. */
+export function toPasteScanInsert(args: { profileId: string; text: string; result: CheckResult }): ScanInsert {
+  const { profileId, text, result } = args;
+  return {
+    profile_id: profileId,
+    barcode: null,
+    input: "paste",
+    product_found: false,
+    product_name: null,
+    brands: null,
+    ingredients_text: text,
+    declared_allergens: [],
+    declared_traces: [],
+    data_notes: [],
+    verdict: result.verdict,
+    result,
+    off_last_modified: null,
+    ocr_text: null,
+    ocr_confidence: null,
   };
 }
 

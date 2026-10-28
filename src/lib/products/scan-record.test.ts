@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkAllergens } from "@/lib/allergen/check";
 import type { Product } from "./open-food-facts";
-import { readStoredResult, SCAN_VERDICTS, toLabelScanInsert, toScanInsert } from "./scan-record";
+import { readStoredResult, SCAN_VERDICTS, toLabelScanInsert, toPasteScanInsert, toScanInsert } from "./scan-record";
 
 const product: Product = {
   found: true,
@@ -115,6 +115,28 @@ describe("toLabelScanInsert", () => {
     expect(sql).toMatch(/input in \('camera', 'manual', 'photo'\)/);
     expect(sql).toMatch(/alter column barcode drop not null/);
     expect(sql).toMatch(/input = 'photo' and barcode is null and ocr_text is not null and ocr_confidence is not null/);
+  });
+});
+
+describe("toPasteScanInsert", () => {
+  it("stores only the pasted text and the verdict", () => {
+    const result = checkAllergens("Sugar, cocoa", [{ kind: "predefined", code: "milk" }]);
+    const row = toPasteScanInsert({ profileId: "p1", text: "Sugar, cocoa", result });
+    expect(row).toMatchObject({
+      barcode: null,
+      input: "paste",
+      product_found: false,
+      ingredients_text: "Sugar, cocoa",
+      ocr_text: null,
+      ocr_confidence: null,
+      verdict: "safe",
+    });
+  });
+
+  it("the migrations allow paste rows with no OCR fields", () => {
+    const sql = readFileSync(join(process.cwd(), "supabase", "migrations", "20261028010000_paste_scans.sql"), "utf8");
+    expect(sql).toMatch(/input in \('camera', 'manual', 'photo', 'paste'\)/);
+    expect(sql).toMatch(/input = 'paste' and barcode is null and ocr_text is null and ocr_confidence is null/);
   });
 });
 
