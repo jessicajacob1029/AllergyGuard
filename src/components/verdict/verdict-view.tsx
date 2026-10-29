@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { CheckResult, CheckWarning, Verdict } from "@/lib/allergen/check";
 import { HeaderBand } from "@/components/ui/header-band";
+import { LocalTime } from "@/components/ui/local-time";
 import { AlertIcon, CheckIcon, XIcon } from "@/components/ui/icons";
 import { Pill } from "@/components/ui/pill";
 import { SectionCard } from "@/components/ui/section-card";
@@ -71,9 +72,6 @@ function warningPill(w: CheckWarning): ReactNode {
   }
 }
 
-function formatCheckedAt(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
-}
 
 /** Declared matches the ingredient text already shows (same allergen and kind) add nothing. */
 function visibleMatches(matches: CheckResult["matches"]) {
@@ -186,7 +184,7 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
         <div className="space-y-3">{actions}</div>
 
         <div className="space-y-1 text-center text-xs font-semibold text-muted">
-          <p>Checked against your allergies on {formatCheckedAt(checkedAt)}.</p>
+          <p>Checked against your allergies on <LocalTime iso={checkedAt} format="checkedAt" />.</p>
           {attribution && <p>{attribution}</p>}
           <p>AllergyGuard is an aid, not medical advice. Always read the label.</p>
         </div>
