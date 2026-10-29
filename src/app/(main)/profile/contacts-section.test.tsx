@@ -67,7 +67,7 @@ describe("ContactsSection", () => {
     render(<ContactsSection profile={profile} initial={[]} />);
     expect(screen.getByText("No emergency contacts yet.")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "+ Add a contact" }));
+    await user.click(screen.getByRole("button", { name: "Add a contact" }));
     await user.type(screen.getByLabelText("Name"), "Ravi");
     const phone = screen.getByLabelText("Phone number") as HTMLInputElement;
     expect(phone.value).toBe("+91 "); // prefilled country code
@@ -87,7 +87,7 @@ describe("ContactsSection", () => {
     const user = userEvent.setup();
     vi.mocked(load.loadContacts).mockResolvedValue([ravi, asha]);
     render(<ContactsSection profile={profile} initial={[ravi]} />);
-    await user.click(screen.getByRole("button", { name: "+ Add a contact" }));
+    await user.click(screen.getByRole("button", { name: "Add a contact" }));
     await user.type(screen.getByLabelText("Name"), "Asha");
     await user.type(screen.getByLabelText("Phone number"), "9876543211");
     await user.click(screen.getByRole("button", { name: "Add contact" }));
@@ -97,7 +97,7 @@ describe("ContactsSection", () => {
   it("validates before adding", async () => {
     const user = userEvent.setup();
     render(<ContactsSection profile={profile} initial={[]} />);
-    await user.click(screen.getByRole("button", { name: "+ Add a contact" }));
+    await user.click(screen.getByRole("button", { name: "Add a contact" }));
     await user.click(screen.getByRole("button", { name: "Add contact" }));
     expect(save.addContact).not.toHaveBeenCalled();
     expect(screen.getByText("Enter your contact's name.")).toBeTruthy();

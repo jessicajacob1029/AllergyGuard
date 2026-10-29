@@ -24,6 +24,7 @@ import {
   type FieldErrors,
 } from "@/lib/profile/validation";
 import { createClient } from "@/lib/supabase/client";
+import { PlusIcon } from "@/components/ui/icons";
 import { Section } from "./section";
 
 type Mode =
@@ -34,7 +35,7 @@ type Mode =
 
 
 const smallButton =
-  "flex h-11 items-center rounded-button px-3 text-sm font-extrabold";
+  "flex h-11 items-center rounded-[12px] px-3 text-sm font-bold";
 
 type Props = { profile: ProfileRow; initial: ContactRow[] };
 
@@ -131,7 +132,7 @@ export function ContactsSection({ profile, initial }: Props) {
       }}
       noValidate
       aria-label={title}
-      className="space-y-4 rounded-field border border-primary-ink/30 bg-page p-3"
+      className="space-y-4 rounded-[18px] border border-primary-ink/20 bg-white/60 p-3.5"
     >
       <ContactFields
         idPrefix={mode.kind === "editing" ? `edit-${mode.id}` : "new-contact"}
@@ -165,25 +166,25 @@ export function ContactsSection({ profile, initial }: Props) {
       error={error}
     >
       {contacts.length === 0 && mode.kind !== "adding" && (
-        <p className="text-sm font-semibold text-muted">No emergency contacts yet.</p>
+        <p className="text-sm text-muted">No emergency contacts yet.</p>
       )}
 
       <ul className="space-y-3">
         {contacts.map((contact) => (
           <li
             key={contact.id}
-            className="rounded-field border border-line p-3"
+            className="border-t border-ink/10 pt-3 first:border-t-0 first:pt-0"
           >
             {mode.kind === "editing" && mode.id === contact.id ? (
               form(`Edit ${contact.name}`, "Save contact")
             ) : (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-base font-extrabold text-ink">
+                  <span className="text-base font-bold text-ink">
                     {contact.name}
                   </span>
                   {contact.is_primary && (
-                    <span className="rounded-full border border-safe-ink/30 bg-safe-band px-2 py-0.5 text-xs font-extrabold text-safe-ink">
+                    <span className="rounded-[6px] bg-band px-1.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.04em] text-primary-ink">
                       Primary
                     </span>
                   )}
@@ -280,9 +281,10 @@ export function ContactsSection({ profile, initial }: Props) {
           type="button"
           disabled={busy}
           onClick={() => start({ kind: "adding" })}
-          className="min-h-[52px] w-full rounded-full border-2 border-dashed border-primary-ink bg-card text-base font-extrabold text-primary-ink"
+          className="flex min-h-11 items-center gap-2 text-[15px] font-bold text-primary-ink"
         >
-          + Add a contact
+          <PlusIcon className="size-[18px]" />
+          Add a contact
         </button>
       )}
     </Section>

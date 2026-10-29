@@ -10,21 +10,21 @@ import { NameSection } from "./name-section";
 /** The /profile screen. Pure view: the page loads the data. */
 export function ProfileView({ bundle, contacts }: { bundle: ProfileBundle; contacts: ContactRow[] }) {
   return (
-    <main className="flex flex-1 flex-col bg-page">
+    <main className="flex flex-1 flex-col">
       <HeaderBand
-        centered
+        eyebrow="Your account"
         title="Your profile"
-        subtitle={bundle.profile.name}
-        top={
+        subtitle={`${bundle.profile.name}. Keep your safety information accurate and up to date.`}
+        aside={
           <span
             aria-hidden="true"
-            className="flex size-20 items-center justify-center rounded-full border-4 border-card bg-primary text-2xl font-black text-white shadow-button"
+            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(145deg,#9a8df2,#6654cf)] text-lg font-bold text-white shadow-[0_8px_18px_rgb(96_79_201/0.22)]"
           >
             {initials(bundle.profile.name)}
           </span>
         }
       />
-      <div className="mx-auto w-full max-w-sm space-y-6 px-4 py-6">
+      <div className="mx-auto w-full max-w-sm space-y-3.5 px-4 pb-6">
         <NameSection initial={bundle.profile} />
         <AllergensSection profile={bundle.profile} initial={bundle.allergens} />
         <ContactsSection profile={bundle.profile} initial={contacts} />

@@ -1,13 +1,13 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { formAlertClass } from "@/components/form-styles";
-import { SectionLabel } from "@/components/ui/section-card";
+import { AlertIcon, MedicineIcon, PersonIcon, PhoneIcon } from "@/components/ui/icons";
 import type { Tone } from "@/components/ui/tones";
 
 type Props = {
   id: string;
   title: string;
-  /** Section colour for the label and the card's left accent. */
-  tone: Tone;
+  /** Kept for callers; v2 sections share one look. */
+  tone?: Tone;
   description?: string;
   /** Success message, announced politely. */
   status?: string | null;
@@ -16,34 +16,37 @@ type Props = {
   children: ReactNode;
 };
 
-const ACCENT: Partial<Record<Tone, string>> = {
-  primary: "border-l-primary-ink",
-  allergy: "border-l-allergy-ink",
-  medication: "border-l-medication-ink",
-  contact: "border-l-contact-ink",
+/** Icon tile for each section (decorative). */
+const ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  name: PersonIcon,
+  allergies: AlertIcon,
+  contacts: PhoneIcon,
+  medications: MedicineIcon,
 };
 
-/** A card on the /profile page. Each section saves independently. */
-export function Section({ id, title, tone, description, status, error, children }: Props) {
+/** A glass card on the /profile page. Each section saves independently. */
+export function Section({ id, title, description, status, error, children }: Props) {
+  const Icon = ICONS[id] ?? PersonIcon;
   return (
-    <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-20 space-y-2">
-      <SectionLabel tone={tone} id={`${id}-heading`}>
-        {title}
-      </SectionLabel>
-      <div
-        className={`space-y-5 rounded-card border border-l-4 border-line bg-card p-4 shadow-card ${ACCENT[tone] ?? ""}`}
-      >
-        {description && <p className="text-sm font-semibold text-muted">{description}</p>}
-        {children}
-        <p role="status" className="text-sm font-extrabold text-safe-ink empty:hidden">
-          {status ?? ""}
-        </p>
-        {error && (
-          <p role="alert" className={formAlertClass}>
-            {error}
-          </p>
-        )}
+    <section id={id} aria-labelledby={`${id}-heading`} className="glass scroll-mt-24 space-y-5 rounded-card p-5">
+      <div className="flex items-center gap-3">
+        <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-band text-primary-ink">
+          <Icon className="size-5" />
+        </span>
+        <h2 id={`${id}-heading`} className="text-xl font-semibold tracking-[-0.03em] text-ink">
+          {title}
+        </h2>
       </div>
+      {description && <p className="-mt-2 text-sm text-muted">{description}</p>}
+      {children}
+      <p role="status" className="text-sm font-bold text-safe-ink empty:hidden">
+        {status ?? ""}
+      </p>
+      {error && (
+        <p role="alert" className={formAlertClass}>
+          {error}
+        </p>
+      )}
     </section>
   );
 }
