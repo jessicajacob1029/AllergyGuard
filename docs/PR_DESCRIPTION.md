@@ -330,9 +330,12 @@ Log allergic reactions and look back at them: what you ate, when, the symptoms, 
   (validation, saving, editing, from a scan, clearing the treatment) and the delete confirm.
 - QA on a production build against the shared project at 390px, in India time: add, errors, a future time,
   edit, from a scan, another user's ids (404), offline, links, delete confirm, light and dark mode.
-- Phone test on the preview: logged a reaction from a camera scan, times in IST, edit and delete work.
+- After merging, a read-only check on `allergy-guard-nine.vercel.app` at 390px: list, reaction page, edit,
+  validation messages, logging from a scan, another user's id (404), scan time in IST.
+- iPhone test on `allergy-guard-nine.vercel.app`: deleted both QA reactions ("Yes, delete it"), logged a reaction
+  from a camera scan (product filled in, saved, time in IST), then deleted it. The diary was empty afterwards.
 
-### Phase 6 "Done when"
+### Phase 6 "Done when" (closed 2026-10-29)
 
 - [x] A user can log, view, edit, and delete reactions
 - [ ] RLS enforced: the policies are in place, and ids that aren't yours give "Page not found" (a foreign scan id

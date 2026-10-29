@@ -25,12 +25,14 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   **Do not start Phase 5 until the user has done the phone test.**
 - [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Paused on branch `phase-5` (not merged).
 - [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
-  Closed 2026-10-29; phone-tested on the preview, merged into the fork's `main` (see "Phase 6" below).
+  Closed 2026-10-29: merged into the fork's `main`, phone-tested on production (see "Phase 6" below).
+  Open follow-up: two-user RLS test.
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 6 is closed** (2026-10-29) and merged into the fork's `main`. Phase 5 stays paused on `phase-5`.
+**Phase 6 is closed** (2026-10-29) and merged into the fork's `main`; its only open item is a two-user RLS test.
+Phase 5 stays paused on `phase-5`.
 Phase 7 starts only when the user asks (plan first, separate branch). Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
 
@@ -49,7 +51,7 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
   camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
 
 ## Phase 6: Reaction diary (2026-10-29)
-Built on branch `phase-6` (pushed to the fork only), merged into the fork's `main` after the user's phone test.
+Built on branch `phase-6` (pushed to the fork only), merged into the fork's `main` on 2026-10-29.
 - **Migration `20261029000000_reactions.sql`:** `reactions` table, `reaction_symptom` and `reaction_treatment`
   enums, severity reuses `allergen_severity`. RLS through `profiles` for select/insert/update/delete; a linked
   `scan_id` must belong to the same profile. **Applied** to the shared project as version `20261029000000`
@@ -70,8 +72,12 @@ Built on branch `phase-6` (pushed to the fork only), merged into the fork's `mai
   dark. Found and fixed: the delete confirm button's label was red on red.
 - **RLS:** policies in place; not yet tested with a second real user (a rolled-back SQL check was declined).
   To do: a two-user test like Phase 1's (2026-10-03).
-- **Phone test (user, on the preview):** deleted the two QA reactions, logged one from a camera scan (product
-  filled in, linked scan opens), times in IST, edit and delete work.
+- **Production check after the merge (read only, WebKit 390px, IST):** list, reaction page, Edit and Cancel,
+  blank-save messages, "Log a reaction to this" prefill, foreign id → 404, Home tile, scan time 08:50 IST; no
+  page errors.
+- **Phone test (user, iPhone, on `allergy-guard-nine.vercel.app`, 2026-10-29):** deleted both QA reactions with
+  "Yes, delete it" and they disappeared; logged a reaction from a camera scan (product filled in, saved, time in
+  IST), then deleted it. Afterwards the live diary showed 0 reactions (checked read only).
 
 ## Phase 4: Barcode scanning
 Built 2026-10-26 (commits `969106d`..`e355dbd`). Decisions made with the user:
