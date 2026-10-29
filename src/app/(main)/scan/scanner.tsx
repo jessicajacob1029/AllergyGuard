@@ -9,7 +9,7 @@ import {
   primaryButtonClass,
   secondaryButtonClass,
 } from "@/components/form-styles";
-import { ScanIcon } from "@/components/ui/icons";
+import { BarcodeIcon, CameraIcon } from "@/components/ui/icons";
 import { ComingSoon } from "@/components/ui/pill";
 import { SectionCard } from "@/components/ui/section-card";
 import { normalizeBarcode, validateBarcode } from "@/lib/products/barcode";
@@ -125,23 +125,23 @@ export function Scanner() {
   return (
     <div className="space-y-6">
       {!online && (
-        <p role="status" className="rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
+        <p role="status" className="rounded-[18px] border border-caution-ink/20 bg-caution-band p-3.5 text-sm font-bold text-caution-ink">
           You&apos;re offline. Checking a product needs an internet connection. Your emergency card still works.
         </p>
       )}
 
       {busy && lookingUp ? (
-        <div role="status" className="flex flex-col items-center gap-3 rounded-card bg-band p-6 text-center">
+        <div role="status" className="glass flex flex-col items-center gap-3 rounded-[28px] p-7 text-center">
           <span
             aria-hidden="true"
-            className="size-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary motion-reduce:animate-none"
+            className="size-10 animate-spin rounded-full border-4 border-primary/25 border-t-primary motion-reduce:animate-none"
           />
-          <p className="text-base font-extrabold text-primary-ink">Looking up {lookingUp}…</p>
-          <p className="text-sm font-semibold text-muted">Checking it against your allergies.</p>
+          <p className="text-base font-bold text-ink">Looking up {lookingUp}…</p>
+          <p className="text-sm text-muted">Checking it against your allergies.</p>
         </div>
       ) : (
         <>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-viewfinder">
+          <div className="relative aspect-[4/3.3] overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_50%_30%,#756b79,#342f37_65%,#211e23)]">
             <video
               ref={videoRef}
               muted
@@ -149,19 +149,17 @@ export function Scanner() {
               aria-label="Camera preview"
               className={`size-full object-cover ${camera === "on" ? "" : "hidden"}`}
             />
-            {/* Corner brackets */}
-            <span aria-hidden="true" className="pointer-events-none absolute inset-6">
-              <span className="absolute left-0 top-0 size-8 rounded-tl-lg border-l-4 border-t-4 border-white/80" />
-              <span className="absolute right-0 top-0 size-8 rounded-tr-lg border-r-4 border-t-4 border-white/80" />
-              <span className="absolute bottom-0 left-0 size-8 rounded-bl-lg border-b-4 border-l-4 border-white/80" />
-              <span className="absolute bottom-0 right-0 size-8 rounded-br-lg border-b-4 border-r-4 border-white/80" />
-            </span>
+            {/* Target frame */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 top-[44%] h-[42%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-[16px] border-2 border-white/90"
+            />
             {camera !== "on" && (
-              <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-white/70">
-                <ScanIcon className="size-16" />
+              <span aria-hidden="true" className="absolute inset-x-0 top-[44%] flex -translate-y-1/2 justify-center text-white/85">
+                <BarcodeIcon className="size-14" />
               </span>
             )}
-            <p className="absolute inset-x-0 bottom-3 text-center text-sm font-bold text-white">
+            <p className="absolute inset-x-0 bottom-4 text-center font-mono text-xs font-bold uppercase tracking-[0.12em] text-white">
               {camera === "on" ? "Hold the barcode inside the box" : camera === "starting" ? "Starting camera…" : "Camera is off"}
             </p>
           </div>
@@ -189,7 +187,7 @@ export function Scanner() {
               disabled={!online}
               className={primaryButtonClass}
             >
-              <span aria-hidden="true">📷</span>
+              <CameraIcon className="size-5" />
               Open camera
             </button>
           )}
@@ -209,7 +207,7 @@ export function Scanner() {
         </div>
       )}
 
-      <SectionCard tone="primary" label="Or type the barcode">
+      <SectionCard tone="primary" label="No camera?" title="Or type the barcode">
         <form onSubmit={handleManualSubmit} noValidate className="space-y-4">
           <div>
             <label htmlFor="barcode" className={labelClass}>
@@ -235,7 +233,7 @@ export function Scanner() {
                 {manualError}
               </p>
             ) : (
-              <p id="barcode-hint" className="mt-1 text-sm font-semibold text-muted">
+              <p id="barcode-hint" className="mt-1 text-sm text-muted">
                 The numbers under the barcode stripes.
               </p>
             )}
@@ -246,10 +244,13 @@ export function Scanner() {
         </form>
       </SectionCard>
 
-      <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-caution-band p-4">
-        <span className="flex items-center gap-2 text-base font-black text-caution-ink">
-          <span aria-hidden="true">🏷️</span>
-          Label photo
+      <div className="glass grid min-h-[76px] grid-cols-[46px_1fr_auto] items-center gap-3 rounded-[20px] px-3.5 py-3">
+        <span aria-hidden="true" className="flex size-[46px] items-center justify-center rounded-[14px] bg-band text-primary-ink">
+          <CameraIcon className="size-6" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[15px] font-bold text-ink">Label photo</span>
+          <span className="block text-sm text-muted">Photo of the ingredients</span>
         </span>
         <ComingSoon />
       </div>

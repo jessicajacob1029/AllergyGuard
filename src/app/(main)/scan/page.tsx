@@ -16,9 +16,9 @@ export default async function ScanPage() {
   if (!bundle || bundle.profile.onboarding_completed_at === null) redirect("/onboarding");
 
   return (
-    <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand title="Scan a product" subtitle="Check a product against your allergy profile." />
-      <div className="mx-auto w-full max-w-sm px-4 py-6">
+    <main className="flex flex-1 flex-col">
+      <HeaderBand eyebrow="Product scanner" title="Scan a product" subtitle="Check a product against your allergy profile." />
+      <div className="mx-auto w-full max-w-sm px-4 pb-6">
         <Scanner />
       </div>
     </main>

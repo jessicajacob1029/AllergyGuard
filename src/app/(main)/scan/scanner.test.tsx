@@ -62,6 +62,6 @@ describe("Scanner manual entry", () => {
   it("offers the camera and marks label photos as coming soon", () => {
     render(<Scanner />);
     expect(screen.getByRole("button", { name: /Open camera/ })).toBeTruthy();
-    expect(screen.getByText("Label photo").parentElement?.textContent).toContain("Coming soon");
+    expect(screen.getByText("Label photo").closest("div")?.textContent).toContain("Coming soon");
   });
 });
