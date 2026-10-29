@@ -58,12 +58,12 @@ export function SectionCard({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           {label && (
-            <SectionLabel id={label ? headingId : undefined} as={title ? "p" : labelAs}>
+            <SectionLabel id={title ? undefined : headingId} as={title ? "p" : labelAs}>
               {label}
             </SectionLabel>
           )}
           {title && (
-            <h2 id={label ? undefined : headingId} className="mt-1 text-xl font-semibold leading-tight tracking-[-0.03em] text-ink">
+            <h2 id={headingId} className="mt-1 text-xl font-semibold leading-tight tracking-[-0.03em] text-ink">
               {title}
             </h2>
           )}

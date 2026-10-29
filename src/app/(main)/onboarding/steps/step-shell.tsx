@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ComponentType, type FormEvent, type ReactNode } from "react";
 import {
+  autoWidth,
   formAlertClass,
   primaryButtonClass,
   secondaryButtonClass,
@@ -144,7 +145,7 @@ export function StepShell({
         <div className="space-y-3 pt-2">
           {onBack ? (
             <div className="grid grid-cols-[auto_1fr] gap-2.5">
-              <button type="button" disabled={busy} onClick={onBack} className={`${tertiaryButtonClass} w-auto px-5`}>
+              <button type="button" disabled={busy} onClick={onBack} className={`${autoWidth(tertiaryButtonClass)} px-5`}>
                 Back
               </button>
               {primary}

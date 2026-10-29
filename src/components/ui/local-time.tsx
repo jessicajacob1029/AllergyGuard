@@ -2,7 +2,13 @@
 
 import { useSyncExternalStore } from "react";
 import { formatDiaryDate, formatDiaryDateTime } from "@/lib/diary/reactions";
-import { formatCheckedAt } from "@/lib/time/format";
+import {
+  formatCheckedAt,
+  formatDayOfMonth,
+  formatListTime,
+  formatShortMonth,
+  formatWeekdayDate,
+} from "@/lib/time/format";
 
 const subscribeNever = () => () => {};
 
@@ -15,6 +21,10 @@ const FORMATS = {
   checkedAt: formatCheckedAt,
   date: formatDiaryDate,
   dateTime: formatDiaryDateTime,
+  listTime: formatListTime,
+  weekdayDate: formatWeekdayDate,
+  dayOfMonth: formatDayOfMonth,
+  shortMonth: formatShortMonth,
 } as const;
 
 /**

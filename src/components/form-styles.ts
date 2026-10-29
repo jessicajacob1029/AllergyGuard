@@ -39,3 +39,8 @@ export const formSuccessClass =
   "rounded-field border border-safe-ink/25 bg-safe-band p-3 text-sm font-semibold text-safe-ink";
 
 export const linkClass = "font-bold text-primary-ink underline underline-offset-2";
+
+/** A button class at its natural width instead of full width (e.g. beside another element). */
+export function autoWidth(buttonClass: string): string {
+  return buttonClass.replace("w-full", "w-auto");
+}

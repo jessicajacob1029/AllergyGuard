@@ -61,4 +61,33 @@ describe("HomeDashboard", () => {
     render(<HomeDashboard bundle={{ ...bundle, primaryContact: null }} />);
     expect(screen.getByRole("link", { name: "Add a contact" }).getAttribute("href")).toBe("/profile#contacts");
   });
+
+  it("shows the latest scans with their verdicts, and links to the full history", () => {
+    const latestScans = [
+      { id: "s1", input: "manual", barcode: "8901262010016", product_name: "Amul butter", brands: "Amul", verdict: "unsafe" as const, created_at: "2026-10-29T03:20:00Z" },
+      { id: "s2", input: "photo", barcode: null, product_name: null, brands: null, verdict: "caution" as const, created_at: "2026-10-28T10:00:00Z" },
+    ];
+    render(<HomeDashboard bundle={bundle} latestScans={latestScans} />);
+    const card = within(screen.getByRole("region", { name: "Latest scans" }));
+    expect(card.getByRole("link", { name: /View all/ }).getAttribute("href")).toBe("/scans");
+    const rows = card.getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/scans/"));
+    expect(rows.map((a) => a.getAttribute("href"))).toEqual(["/scans/s1", "/scans/s2"]);
+    // Verdicts are words (with an icon), never colour alone.
+    expect(rows[0].textContent).toContain("Unsafe");
+    expect(rows[1].textContent).toContain("Caution");
+  });
+
+  it("says so when there are no scans yet", () => {
+    render(<HomeDashboard bundle={bundle} latestScans={[]} />);
+    const card = within(screen.getByRole("region", { name: "Latest scans" }));
+    expect(card.getByText(/No scans yet/)).toBeTruthy();
+  });
+
+  it("summarises the profile: allergen count and emergency contact", () => {
+    render(<HomeDashboard bundle={bundle} />);
+    const summary = screen.getByRole("link", { name: /allergens monitored/ });
+    expect(summary.getAttribute("href")).toBe("/profile");
+    expect(summary.textContent).toContain("2 allergens monitored");
+    expect(summary.textContent).toContain("Emergency contact: Asha");
+  });
 });
