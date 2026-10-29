@@ -27,22 +27,21 @@ describe("BottomTabs", () => {
     expect(tabs.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBeNull();
   });
 
-  it("links Scan, and shows unbuilt Diary as 'coming soon', never as a link", () => {
+  it("links all four tabs, with no Soon badges left", () => {
     nav.pathname = "/scan";
     render(<BottomTabs />);
     const tabs = within(screen.getByRole("navigation", { name: "Main" }));
-    expect(tabs.getAllByRole("link")).toHaveLength(3);
+    expect(tabs.getAllByRole("link")).toHaveLength(4);
     expect(tabs.getByRole("link", { name: "Scan" }).getAttribute("aria-current")).toBe("page");
-    expect(tabs.getByText(/^Diary/).textContent).toMatch(/coming soon/);
+    expect(tabs.getByRole("link", { name: "Diary" }).getAttribute("href")).toBe("/diary");
+    expect(screen.queryByText("Soon")).toBeNull();
   });
 
-  it("keeps the Soon badge out of the Diary label, so the label never wraps or gets covered", () => {
-    nav.pathname = "/";
+  it("marks Diary as the current tab on every diary screen", () => {
+    nav.pathname = "/diary/new";
     render(<BottomTabs />);
-    const label = within(screen.getByRole("navigation", { name: "Main" })).getByText(/^Diary/);
-    expect(label.textContent).toBe("Diary, coming soon");
-    expect(label.className).toContain("whitespace-nowrap");
-    expect(screen.getByText("Soon").closest("span.relative")).not.toBeNull();
+    const tabs = within(screen.getByRole("navigation", { name: "Main" }));
+    expect(tabs.getByRole("link", { name: "Diary" }).getAttribute("aria-current")).toBe("page");
   });
 
   it.each(["/onboarding", "/login", "/signup"])("is hidden on %s", (path) => {

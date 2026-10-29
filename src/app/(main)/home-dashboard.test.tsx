@@ -38,13 +38,12 @@ describe("HomeDashboard", () => {
     expect(shortcuts.getByRole("link", { name: /Emergency/ }).getAttribute("href")).toBe("/emergency");
   });
 
-  it("shows Diary and Medication as Coming soon, never as links, and hides Restaurants and Travel", () => {
+  it("links Diary, shows Medication as Coming soon (not a link), and hides Restaurants and Travel", () => {
     render(<HomeDashboard bundle={bundle} />);
     const shortcuts = within(screen.getByRole("navigation", { name: "Shortcuts" }));
-    expect(shortcuts.getAllByRole("link")).toHaveLength(2);
-    for (const label of ["Diary", "Medication"]) {
-      expect(shortcuts.getByText(label).parentElement?.textContent).toContain("Coming soon");
-    }
+    expect(shortcuts.getAllByRole("link")).toHaveLength(3);
+    expect(shortcuts.getByRole("link", { name: /Diary/ }).getAttribute("href")).toBe("/diary");
+    expect(shortcuts.getByText("Medication").parentElement?.textContent).toContain("Coming soon");
     expect(screen.queryByText("Restaurants")).toBeNull();
     expect(screen.queryByText("Travel")).toBeNull();
   });
