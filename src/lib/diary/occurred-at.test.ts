@@ -29,8 +29,6 @@ describe("validateOccurredAt", () => {
   });
 
   it("rejects dates before 1900 with a message", () => {
-    const message = validateOccurredAt(new Date("1899-12-31T23:59:59Z"), NOW);
-    expect(typeof message).toBe("string");
-    expect(message).not.toBe("");
+    expect(validateOccurredAt(new Date("1899-12-31T23:59:59Z"), NOW)).toBe("Please enter a date from 1900 onwards.");
   });
 });

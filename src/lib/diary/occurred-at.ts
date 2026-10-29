@@ -25,7 +25,7 @@ export function validateOccurredAt(occurredAt: Date, now: Date): string | null {
   }
   // Before 1900: almost certainly a mistyped year.
   if (occurredAt.getTime() < EARLIEST_OCCURRED_AT.getTime()) {
-    return "Please enter a date after 1900.";
+    return "Please enter a date from 1900 onwards.";
   }
   return null;
 }
