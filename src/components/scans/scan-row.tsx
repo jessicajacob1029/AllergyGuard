@@ -19,11 +19,10 @@ export function ScanRow({ scan, showTime = false }: { scan: ScanListRow; showTim
       </span>
       <span className="min-w-0">
         <span className="block truncate text-[15px] font-bold">{title}</span>
-        {(subtitle || showTime) && (
-          <span className="block truncate text-sm text-muted">
-            {subtitle}
-            {subtitle && showTime && " · "}
-            {showTime && <LocalTime iso={scan.created_at} format="listTime" />}
+        {subtitle && <span className="block truncate text-sm text-muted">{subtitle}</span>}
+        {showTime && (
+          <span className="block text-sm text-muted">
+            <LocalTime iso={scan.created_at} format="listTime" />
           </span>
         )}
       </span>
