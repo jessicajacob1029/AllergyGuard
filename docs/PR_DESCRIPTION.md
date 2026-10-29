@@ -334,4 +334,6 @@ Log allergic reactions and look back at them: what you ate, when, the symptoms, 
 
 ### Phase 6 "Done when"
 
-- [x] A user can log, view, edit, and delete reactions; RLS enforced
+- [x] A user can log, view, edit, and delete reactions
+- [ ] RLS enforced: the policies are in place, and ids that aren't yours give "Page not found" (a foreign scan id
+  in `?scan=` is ignored), but a two-user test like Phase 1's hasn't been run yet

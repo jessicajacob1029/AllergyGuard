@@ -68,6 +68,8 @@ Built on branch `phase-6` (pushed to the fork only), merged into the fork's `mai
   add with errors and a future time, save, list card, edit, cancel, from a scan (prefill, link, foreign scan id
   ignored), 404 for foreign/broken ids, offline message, no broken links, delete confirm and Keep it, light and
   dark. Found and fixed: the delete confirm button's label was red on red.
+- **RLS:** policies in place; not yet tested with a second real user (a rolled-back SQL check was declined).
+  To do: a two-user test like Phase 1's (2026-10-03).
 - **Phone test (user, on the preview):** deleted the two QA reactions, logged one from a camera scan (product
   filled in, linked scan opens), times in IST, edit and delete work.
 
