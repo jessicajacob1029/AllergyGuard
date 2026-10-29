@@ -332,11 +332,17 @@ Log allergic reactions and look back at them: what you ate, when, the symptoms, 
   edit, from a scan, another user's ids (404), offline, links, delete confirm, light and dark mode.
 - After merging, a read-only check on `allergy-guard-nine.vercel.app` at 390px: list, reaction page, edit,
   validation messages, logging from a scan, another user's id (404), scan time in IST.
+- **Remote two-user RLS test (2026-10-29):** two temporary users signed in through Supabase Auth and used the
+  REST API, like the app does. User B saw only its own reaction and got 0 rows when reading user A's reaction by
+  id, by A's profile or by A's scan, or reading A's scan. B's edits and deletes of A's reactions affected 0 rows.
+  Adding a reaction to A's profile, linking B's reaction to A's scan (on insert and on update) and moving B's
+  reaction into A's profile were rejected by RLS. Signed-out requests saw nothing and changed nothing. A's
+  reaction was unchanged afterwards. 23 of 23 checks passed. The test users were deleted afterwards, and the row
+  counts matched those from before the test.
 - iPhone test on `allergy-guard-nine.vercel.app`: deleted both QA reactions ("Yes, delete it"), logged a reaction
   from a camera scan (product filled in, saved, time in IST), then deleted it. The diary was empty afterwards.
 
 ### Phase 6 "Done when" (closed 2026-10-29)
 
 - [x] A user can log, view, edit, and delete reactions
-- [ ] RLS enforced: the policies are in place, and ids that aren't yours give "Page not found" (a foreign scan id
-  in `?scan=` is ignored), but a two-user test like Phase 1's hasn't been run yet
+- [x] RLS enforced (two-user test, 23 of 23 checks passed)

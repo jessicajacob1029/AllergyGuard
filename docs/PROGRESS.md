@@ -25,13 +25,13 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   **Do not start Phase 5 until the user has done the phone test.**
 - [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Paused on branch `phase-5` (not merged).
 - [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
-  Closed 2026-10-29: merged into the fork's `main`, phone-tested on production (see "Phase 6" below).
-  Open follow-up: two-user RLS test.
+  Closed 2026-10-29: merged into the fork's `main`, phone-tested on production, two-user RLS test passed
+  (see "Phase 6" below).
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 6 is closed** (2026-10-29) and merged into the fork's `main`; its only open item is a two-user RLS test.
+**Phase 6 is closed** (2026-10-29) and merged into the fork's `main`, including the two-user RLS test.
 Phase 5 stays paused on `phase-5`.
 Phase 7 starts only when the user asks (plan first, separate branch). Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
@@ -70,8 +70,15 @@ Built on branch `phase-6` (pushed to the fork only), merged into the fork's `mai
   add with errors and a future time, save, list card, edit, cancel, from a scan (prefill, link, foreign scan id
   ignored), 404 for foreign/broken ids, offline message, no broken links, delete confirm and Keep it, light and
   dark. Found and fixed: the delete confirm button's label was red on red.
-- **RLS:** policies in place; not yet tested with a second real user (a rolled-back SQL check was declined).
-  To do: a two-user test like Phase 1's (2026-10-03).
+- **Two-user RLS test (2026-10-29), 23/23 passed:** two temporary confirmed users (`rls-a/b-367fae@example.com`)
+  signed in with the anon key and used the REST API, like the app. B saw only its own reaction; reading A's
+  reaction by id, profile or scan, and A's scan, gave 0 rows; B's edits and deletes of A's reactions (by id and
+  by profile, including moving one into B's profile or linking it to B's scan) changed 0 rows; adding a reaction
+  to A's profile, linking B's reaction to A's scan (insert and update) and moving B's reaction into A's profile
+  were rejected (403, 42501). Signed out: nothing visible, adds rejected, edits and deletes changed nothing.
+  A's reaction was unchanged afterwards; controls showed each user can use their own rows. The test users
+  were deleted by the user in the SQL Editor; a recount matched the counts from before the test (2 users,
+  1 profile, 15 scans, 0 reactions, 1 allergen, 1 contact, 1 medication), so only the user's data is left.
 - **Production check after the merge (read only, WebKit 390px, IST):** list, reaction page, Edit and Cancel,
   blank-save messages, "Log a reaction to this" prefill, foreign id → 404, Home tile, scan time 08:50 IST; no
   page errors.
