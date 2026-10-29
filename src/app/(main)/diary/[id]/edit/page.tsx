@@ -13,9 +13,9 @@ export default async function EditReactionPage({ params }: PageProps<"/diary/[id
   const reaction = await loadReactionOr404(supabase, id);
 
   return (
-    <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand title="Edit reaction" />
-      <div className="mx-auto w-full max-w-sm px-4 py-6">
+    <main className="flex flex-1 flex-col">
+      <HeaderBand eyebrow="Reaction diary" title="Edit reaction" />
+      <div className="mx-auto w-full max-w-sm px-4 pb-6">
         <ReactionForm
           reactionId={reaction.id}
           initial={toReactionInput(reaction)}

@@ -37,7 +37,11 @@ describe("ReactionCard", () => {
     const card = screen.getByRole("link");
     expect(card.getAttribute("href")).toBe(`/diary/${ID}`);
     expect(card.querySelector("time")?.getAttribute("dateTime")).toBe("2026-08-12T09:30:00Z");
-    expect(card.querySelector("time")?.textContent).toMatch(/^\d{2} AUG 2026$/);
+    // Date tile: day and month (Space Mono), plus the full date for screen readers.
+    const times = [...card.querySelectorAll("time")].map((t) => t.textContent);
+    expect(times[0]).toMatch(/^\d{2}$/);
+    expect(times[1]).toBe("AUG");
+    expect(times[2]).toMatch(/^\d{2} AUG 2026$/);
     expect(within(card).getByText("Moderate")).toBeTruthy();
     expect(within(card).getByText("Restaurant meal")).toBeTruthy();
     expect(within(card).getByText("Symptoms:")).toBeTruthy();
@@ -154,7 +158,7 @@ describe("DeleteReaction", () => {
     expect(deleteReaction).not.toHaveBeenCalled();
     // The confirm button is solid red with light text, never red on red.
     const confirm = screen.getByRole("button", { name: "Yes, delete it" });
-    expect(confirm.className).toContain("text-card");
+    expect(confirm.className).toContain("bg-emergency text-white");
     expect(confirm.className).not.toContain("text-unsafe-ink");
     await user.click(screen.getByRole("button", { name: "Keep it" }));
     expect(screen.getByRole("button", { name: "Delete reaction" })).toBeTruthy();

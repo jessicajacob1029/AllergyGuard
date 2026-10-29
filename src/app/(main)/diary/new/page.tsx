@@ -28,9 +28,9 @@ export default async function NewReactionPage({ searchParams }: PageProps<"/diar
   }
 
   return (
-    <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand title="Log a reaction" subtitle="Write down what happened while you remember." />
-      <div className="mx-auto w-full max-w-sm px-4 py-6">
+    <main className="flex flex-1 flex-col">
+      <HeaderBand eyebrow="Reaction diary" title="Log a reaction" subtitle="Write down what happened while you remember." />
+      <div className="mx-auto w-full max-w-sm px-4 pb-6">
         <ReactionForm
           reactionId={null}
           initial={linked ? { food: linked.label?.slice(0, 200) ?? "", scanId: linked.id } : {}}

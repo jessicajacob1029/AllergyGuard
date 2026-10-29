@@ -1,63 +1,66 @@
-// Shared pieces of the diary card and the reaction page.
+// Shared pieces of the diary card and the reaction page (style v2).
 import Link from "next/link";
+import { ChevronRightIcon } from "@/components/ui/icons";
+import { LocalTime } from "@/components/ui/local-time";
 import { SEVERITY_LABELS, type Severity } from "@/lib/allergen/codes";
 import { SYMPTOM_LABELS, TREATMENT_LABELS } from "@/lib/diary/codes";
 import { SEVERITY_DOTS, type ReactionRow } from "@/lib/diary/reactions";
-import { LocalTime } from "@/components/ui/local-time";
-import { Pill } from "@/components/ui/pill";
-import { TONE_ACCENT, type Tone } from "@/components/ui/tones";
+import type { Tone } from "@/components/ui/tones";
 
 export const SEVERITY_TONE: Record<Severity, Tone> = { mild: "safe", moderate: "caution", severe: "unsafe" };
 
-// Full class strings so Tailwind finds them. Ink colours swap for light text
-// in dark mode, so the date pill uses the card colour for its text.
-const SOLID: Record<Severity, string> = {
-  mild: "bg-safe-ink text-card",
-  moderate: "bg-caution-ink text-card",
-  severe: "bg-unsafe-ink text-card",
-};
+// Full class strings so Tailwind finds them.
 const DOT: Record<Severity, string> = {
   mild: "bg-safe-ink",
-  moderate: "bg-caution-ink",
+  moderate: "bg-[#c77a00]",
   severe: "bg-unsafe-ink",
-};
-const WORD: Record<Severity, string> = {
-  mild: "text-safe-ink",
-  moderate: "text-caution-ink",
-  severe: "text-unsafe-ink",
 };
 
 /** Filled dots out of 3 with the word next to them, so meaning never rests on colour. */
-export function SeverityDots({ severity }: { severity: Severity }) {
+export function SeverityDots({ severity, suffix = "" }: { severity: Severity; suffix?: string }) {
   const filled = SEVERITY_DOTS[severity];
   return (
     <span className="inline-flex items-center gap-2">
-      <span aria-hidden="true" className="flex gap-1">
+      <span aria-hidden="true" className="flex gap-[3px]">
         {[1, 2, 3].map((n) => (
-          <span key={n} className={`size-3 rounded-full ${n <= filled ? DOT[severity] : "bg-line"}`} />
+          <span key={n} className={`size-2 rounded-full ${n <= filled ? DOT[severity] : "bg-ink/15"}`} />
         ))}
       </span>
-      <span className={`text-sm font-extrabold ${WORD[severity]}`}>{SEVERITY_LABELS[severity]}</span>
+      <span className="text-sm font-semibold text-ink">
+        {SEVERITY_LABELS[severity]}
+        {suffix}
+      </span>
     </span>
   );
 }
 
-export function DatePill({ iso, severity }: { iso: string; severity: Severity }) {
+/** Lilac date tile: day and month in Space Mono. The full date is there for screen readers. */
+export function DateTile({ iso, large = false }: { iso: string; large?: boolean }) {
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-black tracking-wide ${SOLID[severity]}`}>
-      <LocalTime iso={iso} format="date" />
+    <span
+      className={`flex shrink-0 flex-col items-center justify-center rounded-[16px] bg-[#e4dfff] text-[#4c3d9e] ${
+        large ? "h-20 w-[70px]" : "h-[65px] w-[55px]"
+      }`}
+    >
+      <span aria-hidden="true" className={`font-mono font-bold leading-none ${large ? "text-[26px]" : "text-[21px]"}`}>
+        <LocalTime iso={iso} format="dayOfMonth" />
+      </span>
+      <span aria-hidden="true" className="mt-1.5 font-mono text-[11px] font-bold">
+        <LocalTime iso={iso} format="shortMonth" />
+      </span>
+      <span className="sr-only">
+        <LocalTime iso={iso} format="date" />
+      </span>
     </span>
   );
 }
 
-export function SymptomPills({ reaction }: { reaction: Pick<ReactionRow, "symptoms" | "severity"> }) {
+export function SymptomPills({ reaction }: { reaction: Pick<ReactionRow, "symptoms"> }) {
   return (
     <ul className="flex flex-wrap gap-1.5">
       {reaction.symptoms.map((s) => (
-        <li key={s}>
-          <Pill tone={SEVERITY_TONE[reaction.severity]} size="sm">
-            {SYMPTOM_LABELS[s]}
-          </Pill>
+        <li key={s} className="rounded-[8px] bg-[#ffe6d4] px-2 py-1 text-xs font-semibold text-[#5a3a24]">
+          {SYMPTOM_LABELS[s]}
         </li>
       ))}
     </ul>
@@ -69,32 +72,34 @@ export function ReactionCard({ reaction }: { reaction: ReactionRow }) {
   return (
     <Link
       href={`/diary/${reaction.id}`}
-      className={`block rounded-card border border-l-4 border-line bg-card p-4 shadow-card ${TONE_ACCENT[SEVERITY_TONE[reaction.severity]]}`}
+      className="glass grid min-h-[118px] grid-cols-[55px_1fr_auto] items-center gap-3.5 rounded-[22px] p-4 text-ink focus-visible:outline-2 focus-visible:outline-primary"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <DatePill iso={reaction.occurred_at} severity={reaction.severity} />
-        <SeverityDots severity={reaction.severity} />
-      </div>
-      <dl className="mt-3 space-y-2 text-base">
-        <div className="flex gap-2">
-          <dt className="shrink-0 font-semibold text-muted">Food:</dt>
-          <dd className="min-w-0 break-words font-black text-ink">{reaction.food}</dd>
+      <DateTile iso={reaction.occurred_at} />
+      <dl className="min-w-0 space-y-2">
+        <div>
+          <dt className="sr-only">Food:</dt>
+          <dd className="break-words text-base font-bold">{reaction.food}</dd>
         </div>
-        <div className="flex items-start gap-2">
-          <dt className="shrink-0 pt-0.5 font-semibold text-muted">
-            {reaction.symptoms.length === 1 ? "Symptom:" : "Symptoms:"}
-          </dt>
-          <dd className="min-w-0">
+        <div>
+          <dt className="sr-only">Severity:</dt>
+          <dd>
+            <SeverityDots severity={reaction.severity} />
+          </dd>
+        </div>
+        <div>
+          <dt className="sr-only">{reaction.symptoms.length === 1 ? "Symptom:" : "Symptoms:"}</dt>
+          <dd>
             <SymptomPills reaction={reaction} />
           </dd>
         </div>
         {reaction.treatment && reaction.treatment !== "none" && (
-          <div className="flex gap-2">
-            <dt className="shrink-0 font-semibold text-muted">Treatment:</dt>
-            <dd className="font-bold text-ink">{TREATMENT_LABELS[reaction.treatment]}</dd>
+          <div className="text-sm text-muted">
+            <dt className="inline">Treatment: </dt>
+            <dd className="inline font-semibold text-ink">{TREATMENT_LABELS[reaction.treatment]}</dd>
           </div>
         )}
       </dl>
+      <ChevronRightIcon className="size-[18px] text-muted" />
     </Link>
   );
 }
