@@ -4,10 +4,14 @@ import { useState, useTransition } from "react";
 import { formAlertClass, tertiaryButtonClass } from "@/components/form-styles";
 import { deleteReaction } from "./actions";
 
-const dangerButtonClass =
-  "flex min-h-[52px] w-full items-center justify-center rounded-button border-2 border-unsafe-ink bg-card px-4 " +
-  "text-base font-extrabold uppercase tracking-wide text-unsafe-ink disabled:opacity-60 " +
+// Two separate class strings: mixing bg/text classes on one element lets the
+// wrong one win (red text on the red confirm button).
+const dangerBase =
+  "flex min-h-[52px] w-full items-center justify-center rounded-button border-2 border-unsafe-ink px-4 " +
+  "text-base font-extrabold uppercase tracking-wide disabled:opacity-60 " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+const dangerButtonClass = `${dangerBase} bg-card text-unsafe-ink`;
+const dangerConfirmClass = `${dangerBase} bg-unsafe-ink text-card`;
 
 /** Delete, with a confirm step in the page (no browser pop-up). */
 export function DeleteReaction({ id }: { id: string }) {
@@ -45,7 +49,7 @@ export function DeleteReaction({ id }: { id: string }) {
             if (result?.error) setError(result.error);
           })
         }
-        className={`${dangerButtonClass} border-0 bg-unsafe-ink text-card`}
+        className={dangerConfirmClass}
       >
         {pending ? "Deleting…" : "Yes, delete it"}
       </button>

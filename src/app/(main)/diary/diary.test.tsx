@@ -152,6 +152,10 @@ describe("DeleteReaction", () => {
     await user.click(screen.getByRole("button", { name: "Delete reaction" }));
     expect(screen.getByText("Delete this reaction? This can't be undone.")).toBeTruthy();
     expect(deleteReaction).not.toHaveBeenCalled();
+    // The confirm button is solid red with light text, never red on red.
+    const confirm = screen.getByRole("button", { name: "Yes, delete it" });
+    expect(confirm.className).toContain("text-card");
+    expect(confirm.className).not.toContain("text-unsafe-ink");
     await user.click(screen.getByRole("button", { name: "Keep it" }));
     expect(screen.getByRole("button", { name: "Delete reaction" })).toBeTruthy();
   });
