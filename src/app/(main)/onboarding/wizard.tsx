@@ -135,7 +135,7 @@ function DoneStep({ hasContact }: { hasContact: boolean }) {
 
   return (
     <div>
-      <HeaderBand tone="safe" title="You're all set" emoji="🎉" headingRef={headingRef} />
+      <HeaderBand title="You're all set" headingRef={headingRef} />
       <div className="mx-auto w-full max-w-sm space-y-6 px-4 py-6">
         <p className="text-base font-semibold text-muted">
           Your allergy profile is saved.

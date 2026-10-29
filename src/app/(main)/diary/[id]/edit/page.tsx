@@ -14,7 +14,7 @@ export default async function EditReactionPage({ params }: PageProps<"/diary/[id
 
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand tone="medication" title="Edit reaction" emoji="📖" />
+      <HeaderBand title="Edit reaction" />
       <div className="mx-auto w-full max-w-sm px-4 py-6">
         <ReactionForm
           reactionId={reaction.id}

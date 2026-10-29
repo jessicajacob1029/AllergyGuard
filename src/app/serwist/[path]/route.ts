@@ -9,8 +9,8 @@ const revision = randomUUID();
 export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } = createSerwistRoute({
   swSrc: "src/app/sw.ts",
   useNativeEsbuild: true,
-  // Serwist's default globs plus woff2: without it the self-hosted Nunito file
-  // is never precached and /emergency falls back to a system font offline.
+  // Serwist's default globs plus woff2: without it the self-hosted font files (DM Sans, Space Mono)
+  // are never precached and /emergency falls back to a system font offline.
   globPatterns: [
     ".next/static/**/*.{js,css,html,ico,apng,png,avif,jpg,jpeg,jfif,pjpeg,pjp,gif,svg,webp,json,webmanifest,woff2}",
     "public/**/*",

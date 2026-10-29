@@ -8,13 +8,14 @@ import { DiaryIcon, HomeIcon, PersonIcon, ScanIcon } from "./icons";
 type Tab = {
   label: string;
   icon: ComponentType<{ className?: string }>;
-  /** Null while the feature isn't built: shown as "Soon", not a link. */
-  href: string | null;
+  href: string;
+  /** Other paths that belong to this tab (scan results and history belong to Scan). */
+  also?: readonly string[];
 };
 
 export const TABS: readonly Tab[] = [
   { label: "Home", icon: HomeIcon, href: "/" },
-  { label: "Scan", icon: ScanIcon, href: "/scan" },
+  { label: "Scan", icon: ScanIcon, href: "/scan", also: ["/scans"] },
   { label: "Diary", icon: DiaryIcon, href: "/diary" },
   { label: "Profile", icon: PersonIcon, href: "/profile" },
 ];
@@ -22,61 +23,36 @@ export const TABS: readonly Tab[] = [
 /** Screens with their own flow, where the tab bar would be a distraction. */
 const HIDDEN_ON = ["/onboarding", "/login", "/signup"];
 
+const under = (pathname: string, base: string) => pathname === base || pathname.startsWith(`${base}/`);
+
+/** Floating glass tab bar (style v2). The active tab has a tinted pill as well as colour. */
 export function BottomTabs() {
   const pathname = usePathname();
-  if (HIDDEN_ON.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
+  if (HIDDEN_ON.some((p) => under(pathname, p))) return null;
 
   return (
     <>
-      {/* Keeps the end of the page clear of the fixed bar. */}
-      <div aria-hidden="true" className="h-[calc(76px+env(safe-area-inset-bottom))]" />
+      {/* Keeps the end of the page clear of the floating bar. */}
+      <div aria-hidden="true" className="h-[calc(100px+env(safe-area-inset-bottom))]" />
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-card pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 bottom-0 z-10 px-3.5 pb-[calc(12px+env(safe-area-inset-bottom))]"
       >
-        <ul className="mx-auto grid h-[68px] max-w-sm grid-cols-4">
-          {TABS.map(({ label, icon: Icon, href }) => {
-            const active = href !== null && (href === "/" ? pathname === "/" : pathname.startsWith(href));
-            const content = (
-              <>
-                <span
-                  className={`flex h-8 w-14 items-center justify-center rounded-full ${active ? "bg-band" : ""}`}
-                >
-                  <Icon className="size-6" />
-                </span>
-                <span className="text-xs font-extrabold">{label}</span>
-              </>
-            );
+        <ul className="mx-auto grid h-[72px] max-w-[362px] grid-cols-4 rounded-[23px] border border-white/90 bg-white/85 px-1.5 shadow-[0_14px_42px_rgb(64_48_71/0.14)] backdrop-blur-xl">
+          {TABS.map(({ label, icon: Icon, href, also = [] }) => {
+            const active = href === "/" ? pathname === "/" : [href, ...also].some((p) => under(pathname, p));
             return (
               <li key={label} className="flex">
-                {href ? (
-                  <Link
-                    href={href}
-                    aria-current={active ? "page" : undefined}
-                    className={`flex flex-1 flex-col items-center justify-center gap-0.5 ${
-                      active ? "text-primary-ink" : "text-muted"
-                    }`}
-                  >
-                    {content}
-                  </Link>
-                ) : (
-                  <span className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted">
-                    {/* "Soon" sits on the icon's corner, so the label keeps its own line at any width. */}
-                    <span className="relative flex h-8 w-14 items-center justify-center">
-                      <Icon className="size-6" />
-                      <span
-                        aria-hidden="true"
-                        className="absolute -right-1.5 -top-1 rounded-full border border-line bg-page px-1 text-[10px] font-extrabold leading-tight"
-                      >
-                        Soon
-                      </span>
-                    </span>
-                    <span className="whitespace-nowrap text-xs font-extrabold">
-                      {label}
-                      <span className="sr-only">, coming soon</span>
-                    </span>
-                  </span>
-                )}
+                <Link
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`my-2 flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] focus-visible:outline-2 focus-visible:outline-primary ${
+                    active ? "bg-band text-primary-ink" : "text-[#625d68]"
+                  }`}
+                >
+                  <Icon className="size-[22px]" />
+                  <span className="font-mono text-[11px] font-bold">{label}</span>
+                </Link>
               </li>
             );
           })}

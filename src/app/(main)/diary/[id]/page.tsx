@@ -21,7 +21,6 @@ export default async function ReactionPage({ params, searchParams }: PageProps<"
   return (
     <main className="flex flex-1 flex-col bg-page">
       <HeaderBand
-        tone="medication"
         title={reaction.food}
         subtitle={<LocalTime iso={reaction.occurred_at} format="dateTime" />}
       />

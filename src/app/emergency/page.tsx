@@ -11,7 +11,6 @@ export default function EmergencyPage() {
   return (
     <main className="flex flex-1 flex-col bg-page pb-10">
       <HeaderBand
-        tone="unsafe"
         centered
         title="Emergency"
         top={

@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Offline" };
 export default function OfflinePage() {
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand centered top={<AppIconTile size="lg" />} title="You're offline" emoji="📡" />
+      <HeaderBand centered top={<AppIconTile size="lg" />} title="You're offline" />
       <div className="mx-auto mt-8 w-full max-w-sm space-y-6 px-4 text-center">
         <p className="text-base font-semibold text-muted">
           This page needs an internet connection. Your emergency card works offline.

@@ -12,7 +12,7 @@ export function EmergencyButton() {
   return (
     <a
       href="/emergency"
-      className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-full bg-emergency px-4 text-sm font-extrabold uppercase tracking-wide text-white shadow-card"
+      className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-[13px] bg-emergency px-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-[0_8px_18px_rgb(160_27_27/0.21)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
       <span aria-hidden="true">🚨</span>
       Emergency
@@ -23,9 +23,9 @@ export function EmergencyButton() {
 /** Sticky top bar on every page except /emergency itself. */
 export function AppBar({ signedIn }: { signedIn: boolean }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-card/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-sm items-center justify-between gap-2 px-4">
-        <Link href="/" className="flex min-h-11 items-center gap-2 text-base font-black text-primary-ink">
+    <header className="sticky top-0 z-20 bg-page/75 backdrop-blur-md">
+      <div className="mx-auto flex h-[68px] max-w-sm items-center justify-between gap-2 px-4">
+        <Link href="/" className="flex min-h-11 items-center gap-2.5 text-base font-bold tracking-[-0.02em] text-ink">
           <AppIconTile size="sm" />
           {/* Icon only on narrow phones so Log in and Emergency fit on one line. */}
           <span className="max-[399px]:sr-only">{APP_NAME}</span>
@@ -34,7 +34,7 @@ export function AppBar({ signedIn }: { signedIn: boolean }) {
           {signedIn ? (
             <EmergencyCardSync />
           ) : (
-            <Link href="/login" className="flex h-11 items-center whitespace-nowrap px-2 text-sm font-extrabold text-primary-ink">
+            <Link href="/login" className="flex h-11 items-center whitespace-nowrap px-2 text-sm font-bold text-primary-ink">
               Log in
             </Link>
           )}

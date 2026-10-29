@@ -9,7 +9,6 @@ import {
   tertiaryButtonClass,
 } from "@/components/form-styles";
 import { HeaderBand } from "@/components/ui/header-band";
-import type { Tone } from "@/components/ui/tones";
 import { TOTAL_STEPS } from "@/lib/profile/onboarding";
 
 type Props = {
@@ -24,8 +23,6 @@ type Props = {
   onBack?: () => void;
   /** Optional extra action between primary and Back, e.g. "Add later". */
   secondary?: { label: string; onClick: () => void };
-  /** Section colour of this step's header band. */
-  tone?: Tone;
   /** Last data step: the primary button is the green "done" style. */
   finish?: boolean;
 };
@@ -42,7 +39,6 @@ export function StepShell({
   onSubmit,
   onBack,
   secondary,
-  tone = "primary",
   finish = false,
 }: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -59,7 +55,7 @@ export function StepShell({
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <HeaderBand tone={tone} title={title} headingRef={headingRef}>
+      <HeaderBand title={title} headingRef={headingRef}>
         <p className="mt-4 text-sm font-extrabold text-muted">
           Step {step} of {TOTAL_STEPS}
         </p>

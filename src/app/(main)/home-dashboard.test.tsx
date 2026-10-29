@@ -26,7 +26,7 @@ describe("HomeDashboard", () => {
   it("greets the user and lists their allergies", () => {
     render(<HomeDashboard bundle={bundle} />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Hi, Priya");
-    const allergies = screen.getByText("Your allergies").parentElement!;
+    const allergies = screen.getByRole("region", { name: "Your allergies" });
     expect(within(allergies).getByText("Peanut")).toBeTruthy();
     expect(within(allergies).getByText("Kiwi")).toBeTruthy();
   });

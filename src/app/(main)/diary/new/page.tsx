@@ -29,7 +29,7 @@ export default async function NewReactionPage({ searchParams }: PageProps<"/diar
 
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand tone="medication" title="Log a reaction" emoji="📖" subtitle="Write down what happened while you remember." />
+      <HeaderBand title="Log a reaction" subtitle="Write down what happened while you remember." />
       <div className="mx-auto w-full max-w-sm px-4 py-6">
         <ReactionForm
           reactionId={null}

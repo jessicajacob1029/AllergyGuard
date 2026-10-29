@@ -1,76 +1,45 @@
 @import "tailwindcss";
 
 /*
- * Design tokens (Frontend redesign; visual reference in design/figma-reference/).
- * Every colour is a variable with a light and a dark value, exposed to Tailwind
- * below, so components use `bg-primary`, `text-ink` etc. and never `dark:`.
- * All text pairs are checked to WCAG AA (4.5:1); see docs/PROGRESS.md.
+ * Design tokens, style v2 (reference: design/figma-reference-v2/STYLE-v2.md).
+ * Light only: v2 has no dark mode (a later task, see docs/PROGRESS.md).
+ * Components use the Tailwind names below (`bg-card`, `text-ink`, `text-safe-ink` ...).
+ * Every text pair is checked to WCAG AA (4.5:1) on the backgrounds it sits on.
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
-  --ag-page: #faf9fe;
+  --ag-page: #f3efef;
   --ag-card: #ffffff;
-  --ag-band: #ede8fe;
-  --ag-ink: #1f1b3a;
-  --ag-muted: #5e587a;
-  --ag-placeholder: #6e6890;
-  --ag-line: #e4dff5;
-  --ag-field-line: #8a82ad;
+  --ag-band: #ece8ff;
+  --ag-ink: #201d24;
+  --ag-muted: #625d68;
+  --ag-placeholder: #6b6570;
+  --ag-line: #e4e0e6;
+  --ag-field-line: #8e8894;
 
-  --ag-primary: #6d3fe0;
-  --ag-primary-ink: #5b2fcb;
+  /* Violet: brand tile, focus rings, links, active nav. */
+  --ag-primary: #6654cf;
+  --ag-primary-ink: #5546ab;
 
-  --ag-safe: #0e7a45;
-  --ag-safe-band: #ddf7ea;
-  --ag-safe-ink: #0b6b3a;
-  --ag-caution-band: #fdf0c7;
-  --ag-caution-ink: #8a4b00;
-  --ag-unsafe-band: #fde3e5;
-  --ag-unsafe-ink: #b0101b;
+  --ag-safe: #176b43;
+  --ag-safe-band: #d7f1e4;
+  --ag-safe-ink: #115e3b;
+  --ag-caution-band: #ffe7b5;
+  --ag-caution-ink: #704600;
+  --ag-unsafe-band: #f8d4d1;
+  --ag-unsafe-ink: #8f1d1d;
+  /* The Emergency button and the call button: white text is 5.9:1. */
   --ag-emergency: #c8102e;
-  /* Camera viewfinder: dark in both themes; its hint text is white (16.6:1). */
-  --ag-viewfinder: #1c1940;
+  --ag-viewfinder: #2a262d;
 
-  /* Section colours: an ink for labels/accents/pill text, a band for fills. */
-  --ag-allergy-ink: #be123c;
-  --ag-allergy-band: #fde3e5;
-  --ag-medication-ink: #b4246a;
-  --ag-medication-band: #fce7f1;
-  --ag-contact-ink: #a64b00;
-  --ag-contact-band: #ffebd6;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ag-page: #15122b;
-    --ag-card: #1f1a3a;
-    --ag-band: #2a2350;
-    --ag-ink: #f1eeff;
-    --ag-muted: #b9b3d6;
-    --ag-placeholder: #a39cc6;
-    --ag-line: #352e5c;
-    --ag-field-line: #8079a8;
-
-    --ag-primary: #6d3fe0;
-    --ag-primary-ink: #c7b5ff;
-
-    --ag-safe: #0e7a45;
-    --ag-safe-band: #12392a;
-    --ag-safe-ink: #8ee6b7;
-    --ag-caution-band: #3d2e0a;
-    --ag-caution-ink: #ffd27a;
-    --ag-unsafe-band: #45141b;
-    --ag-unsafe-ink: #ffb3bb;
-    --ag-emergency: #c8102e;
-
-    --ag-allergy-ink: #ff9fb2;
-    --ag-allergy-band: #45141b;
-    --ag-medication-ink: #f7a8cf;
-    --ag-medication-band: #3f1530;
-    --ag-contact-ink: #ffbe85;
-    --ag-contact-band: #3d240c;
-  }
+  /* Section colours (peach, lilac, mint): an ink for text, a band for fills. */
+  --ag-allergy-ink: #8a3a1c;
+  --ag-allergy-band: #ffe3d6;
+  --ag-medication-ink: #5546ab;
+  --ag-medication-band: #ebe7ff;
+  --ag-contact-ink: #145c3a;
+  --ag-contact-band: #d9f2e6;
 }
 
 @theme inline {
@@ -100,18 +69,55 @@
   --color-contact-ink: var(--ag-contact-ink);
   --color-contact-band: var(--ag-contact-band);
 
-  --radius-card: 20px;
-  --radius-field: 12px;
-  --radius-button: 14px;
+  --radius-card: 25px;
+  --radius-field: 14px;
+  --radius-button: 16px;
 
-  --shadow-card: 0 4px 16px rgb(76 51 160 / 0.08);
-  --shadow-button: 0 6px 16px rgb(109 63 224 / 0.28);
+  --shadow-card: 0 14px 42px rgb(64 48 71 / 0.08);
+  --shadow-button: 0 11px 24px rgb(32 29 36 / 0.18);
 
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
 }
 
 body {
-  background: var(--ag-page);
+  /* Warm grey page with a yellow glow top-left and a lilac glow on the right. */
+  background:
+    radial-gradient(circle at 8% 0%, rgb(255 229 165 / 0.5), transparent 32rem),
+    radial-gradient(circle at 100% 45%, rgb(190 177 255 / 0.32), transparent 28rem),
+    radial-gradient(circle at 0% 100%, rgb(255 192 165 / 0.28), transparent 26rem),
+    var(--ag-page);
+  background-attachment: fixed;
   color: var(--ag-ink);
-  font-family: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Frosted glass card. Text on it is checked against the page behind it. */
+@utility glass {
+  background: rgb(255 255 255 / 0.62);
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow:
+    0 14px 42px rgb(64 48 71 / 0.08),
+    inset 0 1px rgb(255 255 255 / 0.8);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+
+/* Small uppercase Space Mono label ("YOUR PROFILE", field labels). 11px minimum. */
+@utility eyebrow {
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #57525d;
+}
+
+/* Gradient panels: peach → lilac (hero, product card) and peach → lilac soft (reaction hero). */
+@utility gradient-hero {
+  background: linear-gradient(145deg, rgb(255 239 193 / 0.8), rgb(255 207 194 / 0.62) 48%, rgb(208 198 255 / 0.75));
+}
+@utility gradient-soft {
+  background: linear-gradient(140deg, rgb(255 233 177 / 0.55), rgb(255 255 255 / 0.7), rgb(215 205 255 / 0.65));
 }

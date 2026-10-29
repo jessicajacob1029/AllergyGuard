@@ -17,7 +17,7 @@ export default async function ScanPage() {
 
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand title="Scan a product" emoji="📷" subtitle="Check a product against your allergy profile." />
+      <HeaderBand title="Scan a product" subtitle="Check a product against your allergy profile." />
       <div className="mx-auto w-full max-w-sm px-4 py-6">
         <Scanner />
       </div>

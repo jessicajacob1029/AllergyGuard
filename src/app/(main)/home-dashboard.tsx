@@ -15,7 +15,7 @@ import type { ProfileBundle } from "@/lib/profile/types";
 export function HomeDashboard({ bundle }: { bundle: ProfileBundle }) {
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand title={`Hi, ${bundle.profile.name}`} emoji="👋" />
+      <HeaderBand title={`Hi, ${bundle.profile.name}`} />
       <div className="mx-auto w-full max-w-sm space-y-6 px-4 py-6">
         <InstallHint />
 

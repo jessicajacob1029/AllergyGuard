@@ -1,20 +1,20 @@
-import type { ReactNode } from "react";
-import { TONE_ACCENT, TONE_INK, type Tone } from "./tones";
+import { useId, type ReactNode } from "react";
+import { TONE_ACCENT, type Tone } from "./tones";
 
-/** Small uppercase, letter-spaced section label in the section's colour. */
+/** Small uppercase Space Mono label (style v2 "eyebrow"). */
 export function SectionLabel({
-  tone,
   id,
   as: Tag = "h2",
   children,
 }: {
-  tone: Tone;
+  /** Kept for callers; v2 eyebrows are one neutral colour. */
+  tone?: Tone;
   id?: string;
   as?: "h2" | "h3" | "p";
   children: ReactNode;
 }) {
   return (
-    <Tag id={id} className={`text-xs font-black uppercase tracking-[0.12em] ${TONE_INK[tone]}`}>
+    <Tag id={id} className="eyebrow">
       {children}
     </Tag>
   );
@@ -22,11 +22,15 @@ export function SectionLabel({
 
 type Props = {
   tone: Tone;
-  /** The coloured label, rendered as a heading. Omit for an unlabeled card. */
+  /** Eyebrow label, rendered as a heading. Omit for an unlabeled card. */
   label?: ReactNode;
   labelId?: string;
   labelAs?: "h2" | "h3";
-  /** Label inside the card (accent cards) instead of above it. */
+  /** Card title under the eyebrow (style v2 h3). */
+  title?: ReactNode;
+  /** Shown at the top right, e.g. a "Manage ›" link. */
+  action?: ReactNode;
+  /** Kept for callers: the label is always inside the card in v2. */
   labelInside?: boolean;
   /** 4px coloured left border. */
   accent?: boolean;
@@ -34,33 +38,47 @@ type Props = {
   children: ReactNode;
 };
 
-/** White card with a soft shadow, owned by one section colour. */
+/** Frosted glass card with an optional eyebrow, title and action. */
 export function SectionCard({
   tone,
   label,
   labelId,
   labelAs = "h2",
-  labelInside = false,
+  title,
+  action,
   accent = false,
   className = "",
   children,
 }: Props) {
-  const labelNode = label ? (
-    <SectionLabel tone={tone} id={labelId} as={labelAs}>
-      {label}
-    </SectionLabel>
-  ) : null;
-  return (
-    <div className="space-y-2">
-      {!labelInside && labelNode}
-      <div
-        className={`rounded-card border border-line bg-card p-4 shadow-card ${
-          accent ? `border-l-4 ${TONE_ACCENT[tone]}` : ""
-        } ${className}`}
-      >
-        {labelInside && <div className="mb-2">{labelNode}</div>}
-        {children}
+  const autoId = useId();
+  const headingId = labelId ?? autoId;
+  const named = Boolean(label || title);
+  const head =
+    label || title || action ? (
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {label && (
+            <SectionLabel id={label ? headingId : undefined} as={title ? "p" : labelAs}>
+              {label}
+            </SectionLabel>
+          )}
+          {title && (
+            <h2 id={label ? undefined : headingId} className="mt-1 text-xl font-semibold leading-tight tracking-[-0.03em] text-ink">
+              {title}
+            </h2>
+          )}
+        </div>
+        {action}
       </div>
-    </div>
+    ) : null;
+  const Root = named ? "section" : "div";
+  return (
+    <Root
+      aria-labelledby={named ? headingId : undefined}
+      className={`glass rounded-card p-5 ${accent ? `border-l-4 ${TONE_ACCENT[tone]}` : ""} ${className}`}
+    >
+      {head}
+      {children}
+    </Root>
   );
 }

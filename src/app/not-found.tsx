@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: `Page not found · ${APP_NAME}` };
 export default function NotFound() {
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand centered top={<AppIconTile size="lg" />} title="Page not found" emoji="🧭" />
+      <HeaderBand centered top={<AppIconTile size="lg" />} title="Page not found" />
       <div className="mx-auto mt-8 w-full max-w-sm space-y-4 px-4 text-center">
         <p className="text-base font-semibold text-muted">
           This page doesn&apos;t exist, or it isn&apos;t yours to see. Check the link, or start again from home.

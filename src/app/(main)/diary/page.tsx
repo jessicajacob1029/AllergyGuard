@@ -24,7 +24,7 @@ export default async function DiaryPage({ searchParams }: PageProps<"/diary">) {
 
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <HeaderBand tone="medication" title="My reactions" emoji="📖" subtitle="Track your allergy reactions over time." />
+      <HeaderBand title="My reactions" subtitle="Track your allergy reactions over time." />
       <div className="mx-auto w-full max-w-sm space-y-4 px-4 py-6">
         {deleted === "1" && (
           <p role="status" className={formSuccessClass}>

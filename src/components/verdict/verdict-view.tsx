@@ -89,7 +89,6 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
   return (
     <main className="flex flex-1 flex-col bg-page">
       <HeaderBand
-        tone={v.tone}
         centered
         title={<span className="text-[34px] uppercase tracking-wide">{v.word}</span>}
         subtitle={v.subtitle}
