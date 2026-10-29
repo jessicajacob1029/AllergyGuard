@@ -21,7 +21,17 @@ export type ScanLabel = { title: string; subtitle: string | null };
  * - missing (or empty) brand → no subtitle
  */
 export function scanLabel(row: ScanLabelRow): ScanLabel {
-  // TODO(Jessica): write the rules above.
-  void row;
-  return { title: "", subtitle: null };
+  const name = row.product_name?.trim();
+  const brand = row.brands?.trim();
+
+  // A known product: its name, with the brand underneath if there is one.
+  if (name) return { title: name, subtitle: brand ? brand : null };
+
+  // Label text (Phase 5) has no product: say where the text came from.
+  if (row.input === "photo") return { title: "Label photo", subtitle: null };
+  if (row.input === "paste") return { title: "Pasted ingredients", subtitle: null };
+
+  // A barcode that wasn't found: clearly not a known product, but show which one.
+  const barcode = row.barcode?.trim();
+  return { title: "Unknown product", subtitle: barcode ? `Barcode ${barcode}` : null };
 }
