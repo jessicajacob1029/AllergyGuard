@@ -23,7 +23,7 @@ export function EmergencyButton() {
 /** Sticky top bar on every page except /emergency itself. */
 export function AppBar({ signedIn }: { signedIn: boolean }) {
   return (
-    <header className="sticky top-0 z-20 bg-page/75 backdrop-blur-md">
+    <header className="sticky top-0 z-20 border-b border-white/60 bg-white/35 backdrop-blur-xl">
       <div className="mx-auto flex h-[68px] max-w-sm items-center justify-between gap-2 px-4">
         <Link href="/" className="flex min-h-11 items-center gap-2.5 text-base font-bold tracking-[-0.02em] text-ink">
           <AppIconTile size="sm" />

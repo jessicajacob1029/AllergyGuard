@@ -67,9 +67,9 @@ export function SignupForm() {
     return (
       <section
         aria-live="polite"
-        className="mt-8 rounded-card border border-l-4 border-line border-l-safe-ink bg-card p-5 shadow-card"
+        className="glass mt-7 rounded-[26px] border-l-4 border-l-safe-ink p-5"
       >
-        <h2 className="text-lg font-black text-ink">
+        <h2 className="text-xl font-semibold tracking-[-0.03em] text-ink">
           <span aria-hidden="true">📬 </span>
           Check your email
         </h2>
@@ -82,7 +82,7 @@ export function SignupForm() {
           .
         </p>
         <p className="mt-2 text-sm font-semibold text-muted">
-          We sent it to <span className="font-extrabold text-ink">{email.trim()}</span>.
+          We sent it to <span className="font-bold text-ink">{email.trim()}</span>.
           It can take a minute; check your spam folder too.
         </p>
         <button
@@ -103,7 +103,7 @@ export function SignupForm() {
   const submitting = status === "submitting";
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="glass mt-7 space-y-5 rounded-[26px] p-5">
       <div>
         <label htmlFor="email" className={labelClass}>
           Email

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { APP_NAME } from "@/lib/constants";
 import { AppIconTile } from "./icons";
 
-/** Login and signup layout: brand band, then the page heading and form. */
+/** Log in and sign up (style v2): violet orb, app name, big heading, then the glass form. */
 export function AuthFrame({
   title,
   subtitle,
@@ -13,14 +13,14 @@ export function AuthFrame({
   children: ReactNode;
 }) {
   return (
-    <main className="flex flex-1 flex-col bg-page pb-10">
-      <div className="flex flex-col items-center gap-2 rounded-b-[32px] bg-band px-4 pb-6 pt-6">
-        <AppIconTile size="md" />
-        <p className="text-sm font-black uppercase tracking-[0.14em] text-primary-ink">{APP_NAME}</p>
-      </div>
-      <div className="mx-auto mt-8 w-full max-w-sm px-4">
-        <h1 className="text-[28px] font-black leading-tight tracking-tight text-ink">{title}</h1>
-        <p className="mt-1 text-base font-semibold text-muted">{subtitle}</p>
+    <main className="flex flex-1 flex-col pb-10">
+      <div className="mx-auto w-full max-w-sm px-5 pt-6">
+        <AppIconTile size="lg" />
+        <p className="eyebrow mt-7">{APP_NAME}</p>
+        <h1 className="mt-2 text-[46px] font-medium leading-[0.98] tracking-[-0.05em] text-ink max-[359px]:text-[40px]">
+          {title}
+        </h1>
+        <p className="mt-3 max-w-[300px] text-[15px] leading-relaxed text-muted">{subtitle}</p>
         {children}
       </div>
     </main>
@@ -31,9 +31,9 @@ export function AuthFrame({
 export function OrDivider() {
   return (
     <div className="my-6 flex items-center gap-3" aria-hidden="true">
-      <span className="h-px flex-1 bg-line" />
-      <span className="text-xs font-extrabold text-muted">OR</span>
-      <span className="h-px flex-1 bg-line" />
+      <span className="h-px flex-1 bg-ink/15" />
+      <span className="eyebrow">or</span>
+      <span className="h-px flex-1 bg-ink/15" />
     </div>
   );
 }
