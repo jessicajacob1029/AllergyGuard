@@ -27,6 +27,9 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
   Closed 2026-10-29: merged into the fork's `main`, phone-tested on production, two-user RLS test passed
   (see "Phase 6" below).
+- [ ] Redesign v2 (style from the Figma Make file, see "Redesign v2" below): built on branch `redesign-v2`,
+  pushed to the fork only, **not merged** until the user says so.
+- [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
@@ -49,6 +52,31 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
   WebKit can't test offline at all (its offline mode also blocks the service worker).
 - **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
   camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
+
+## Redesign v2 (2026-10-29, branch `redesign-v2`)
+Visual style from Figma Make file `phxBYfmCTg7ukfQ8ktS7HM` ("Flashcard-Study-App", really AllergyGuard). Reference:
+`design/figma-reference-v2/` (21 rendered screens, 4 mood images, `STYLE-v2.md`). Features, data, rules and copy
+unchanged; the Figma content was placeholder.
+- **Foundation:** DM Sans + Space Mono via `next/font` (self-hosted, precached; replaces Nunito; no new
+  dependency). v2 colour tokens under the old names, `glass` / `eyebrow` / gradient utilities, dark primary
+  buttons, 50px controls, floating glass tab bar (Scan is active on `/scans` too). **Light only.**
+- **Emergency button** unchanged in behaviour (plain `<a href="/emergency">`, top right, solid red); only font,
+  height (44px) and radius changed. The glass "SOS" version stays parked on local branch `emergency-button`.
+- **Screens:** log in / sign up, onboarding, home (summary card, scan hero with the orb in its own corner, allergies,
+  **Latest scans**), scan, result, **new `/scans` history** (All / Safe / Caution / Unsafe as links,
+  `?verdict=`, latest 100), diary (date tiles; our 9 symptoms and 4 treatments kept), profile, `/emergency`,
+  offline, 404.
+- **Scan labels:** `scanLabel()` in `src/lib/products/scan-label.ts` (written by the user) names list rows:
+  product name + brand; "Unknown product" + "Barcode …"; "Label photo"; "Pasted ingredients". Two Phase 5
+  photo rows exist in the database with no barcode; the result page shows them without a product card.
+- **Times** in lists and the home date line are drawn on the phone (`LocalTime`), like the diary.
+- **QA (dev server + production build, Chromium 390 and 320):** axe-core WCAG 2.2 AA: 0 violations on 23 screens
+  at both widths; no text under 11px (12px only for tags and "(optional)"); every tap target ≥ 44px; no sideways
+  scroll; home hero text never overlaps the orb (automated box check at 390/360/320). Offline (real network cut,
+  service worker included): `/emergency` loads from the worker with the card, `tel:` link, DM Sans and Space Mono;
+  other pages show "You're offline".
+- **Not yet checked:** the signed-in screens against real data (the QA password no longer works, so they were
+  checked with sample data in local-only preview pages that were never committed).
 
 ## Phase 6: Reaction diary (2026-10-29)
 Built on branch `phase-6` (pushed to the fork only), merged into the fork's `main` on 2026-10-29.

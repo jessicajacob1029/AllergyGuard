@@ -131,7 +131,7 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="What triggered it">
               {shownMatches.map((m, i) => (
                 <li key={`m${i}`}>
-                  <Pill tone={m.kind === "contains" ? "unsafe" : "caution"} size="sm">
+                  <Pill tone={m.kind === "contains" ? "unsafe" : "caution"}>
                     {m.allergen}: {m.kind === "contains" ? "" : "may contain "}“{m.text}”
                     {m.source === "declared" ? " (allergen list)" : ""}
                   </Pill>
@@ -139,7 +139,7 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
               ))}
               {result.warnings.map((w, i) => (
                 <li key={`w${i}`}>
-                  <Pill tone="caution" size="sm">
+                  <Pill tone="caution">
                     {warningPill(w)}
                   </Pill>
                 </li>
