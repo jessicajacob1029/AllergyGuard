@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
+import { primaryButtonClass, secondaryButtonClass, tertiaryButtonClass } from "@/components/form-styles";
 import { VerdictView } from "@/components/verdict/verdict-view";
 import { APP_NAME } from "@/lib/constants";
 import { readStoredResult } from "@/lib/products/scan-record";
@@ -53,6 +53,9 @@ export default async function ScanResultPage({ params }: PageProps<"/scans/[id]"
           </Link>
           <Link href="/" className={secondaryButtonClass}>
             Home
+          </Link>
+          <Link href={`/diary/new?scan=${id}`} className={tertiaryButtonClass}>
+            Log a reaction to this
           </Link>
         </>
       }

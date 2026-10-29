@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { formatDiaryDate, formatDiaryDateTime } from "@/lib/diary/reactions";
 import { formatCheckedAt } from "@/lib/time/format";
 
 const subscribeNever = () => () => {};
@@ -10,12 +11,16 @@ export function useHydrated(): boolean {
   return useSyncExternalStore(subscribeNever, () => true, () => false);
 }
 
-const FORMATS = { checkedAt: formatCheckedAt } as const;
+const FORMATS = {
+  checkedAt: formatCheckedAt,
+  date: formatDiaryDate,
+  dateTime: formatDiaryDateTime,
+} as const;
 
 /**
  * A time shown in the phone's own time zone. The server runs in UTC, so it
  * renders a blank space and the browser fills in the text (in India a scan at
- * 23:37 would otherwise show as 18:07).
+ * 23:37 would otherwise show as 18:07, and a reaction at 01:30 on the day before).
  */
 export function LocalTime({ iso, format }: { iso: string; format: keyof typeof FORMATS }) {
   const hydrated = useHydrated();

@@ -66,7 +66,7 @@ export function HomeDashboard({ bundle }: { bundle: ProfileBundle }) {
               <Tile tone="unsafe" emoji="🚨" label="Emergency" href="/emergency" plain />
             </li>
             <li>
-              <Tile tone="medication" emoji="📖" label="Diary" />
+              <Tile tone="medication" emoji="📖" label="Diary" href="/diary" />
             </li>
             <li>
               <Tile tone="contact" emoji="💊" label="Medication" />
