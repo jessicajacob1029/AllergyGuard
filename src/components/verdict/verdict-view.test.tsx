@@ -2,6 +2,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkAllergens } from "@/lib/allergen/check";
+import { formatCheckedAt } from "@/lib/time/format";
 import { VerdictView, type VerdictProduct } from "./verdict-view";
 
 afterEach(cleanup);
@@ -67,6 +68,10 @@ describe("VerdictView", () => {
   it("shows when it was checked and the disclaimer", () => {
     renderResult("Sugar");
     expect(screen.getByText(/Checked against your allergies on/)).toBeTruthy();
+    // Drawn on the phone in its own zone (the server is UTC).
+    const time = document.querySelector("time")!;
+    expect(time.getAttribute("dateTime")).toBe(checkedAt);
+    expect(time.textContent).toBe(formatCheckedAt(checkedAt));
     expect(screen.getByText(/aid, not medical advice/)).toBeTruthy();
   });
 });

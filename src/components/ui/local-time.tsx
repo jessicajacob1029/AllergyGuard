@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { formatDiaryDate, formatDiaryDateTime } from "@/lib/diary/reactions";
+import { formatCheckedAt } from "@/lib/time/format";
 
 const subscribeNever = () => () => {};
 
@@ -10,13 +11,18 @@ export function useHydrated(): boolean {
   return useSyncExternalStore(subscribeNever, () => true, () => false);
 }
 
+const FORMATS = {
+  checkedAt: formatCheckedAt,
+  date: formatDiaryDate,
+  dateTime: formatDiaryDateTime,
+} as const;
+
 /**
  * A time shown in the phone's own time zone. The server runs in UTC, so it
- * renders a blank space and the browser fills in the text (in India a reaction
- * at 01:30 would otherwise show as the previous day).
+ * renders a blank space and the browser fills in the text (in India a scan at
+ * 23:37 would otherwise show as 18:07, and a reaction at 01:30 on the day before).
  */
-export function LocalTime({ iso, format }: { iso: string; format: "date" | "dateTime" }) {
+export function LocalTime({ iso, format }: { iso: string; format: keyof typeof FORMATS }) {
   const hydrated = useHydrated();
-  const text = hydrated ? (format === "date" ? formatDiaryDate(iso) : formatDiaryDateTime(iso)) : "";
-  return <time dateTime={iso}>{text || " "}</time>;
+  return <time dateTime={iso}>{hydrated ? FORMATS[format](iso) : " "}</time>;
 }
