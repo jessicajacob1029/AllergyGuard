@@ -19,8 +19,13 @@ export const EARLIEST_OCCURRED_AT = new Date("1900-01-01T00:00:00Z");
  * caught before this runs). `now` is passed in so tests don't depend on the clock.
  */
 export function validateOccurredAt(occurredAt: Date, now: Date): string | null {
-  // TODO(Jessica): write the rules above (about 5 lines).
-  void occurredAt;
-  void now;
+  // More than 10 minutes ahead of "now": a typo or a wrong date, not clock drift.
+  if (occurredAt.getTime() > now.getTime() + FUTURE_GRACE_MS) {
+    return "That time is in the future.";
+  }
+  // Before 1900: almost certainly a mistyped year.
+  if (occurredAt.getTime() < EARLIEST_OCCURRED_AT.getTime()) {
+    return "Please enter a date after 1900.";
+  }
   return null;
 }
