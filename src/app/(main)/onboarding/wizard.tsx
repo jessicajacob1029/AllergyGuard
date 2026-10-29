@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { successButtonClass } from "@/components/form-styles";
 import { HeaderBand } from "@/components/ui/header-band";
+import { CheckIcon } from "@/components/ui/icons";
+import { StepTile } from "./steps/step-shell";
 import type { SavedAllergen } from "@/lib/profile/allergen-selection";
 import { fromMedicationRow } from "@/lib/profile/medications";
 import type { WizardStep } from "@/lib/profile/onboarding";
@@ -135,9 +137,18 @@ function DoneStep({ hasContact }: { hasContact: boolean }) {
 
   return (
     <div>
-      <HeaderBand title="You're all set" headingRef={headingRef} />
-      <div className="mx-auto w-full max-w-sm space-y-6 px-4 py-6">
-        <p className="text-base font-semibold text-muted">
+      <HeaderBand
+        eyebrow="Set up your profile"
+        title="You're all set"
+        headingRef={headingRef}
+        top={
+          <StepTile done>
+            <CheckIcon className="size-10" />
+          </StepTile>
+        }
+      />
+      <div className="mx-auto w-full max-w-sm space-y-6 px-4 pb-8">
+        <p className="text-[15px] leading-relaxed text-muted">
           Your allergy profile is saved.
           {!hasContact && " You can add an emergency contact any time from your profile."}
         </p>

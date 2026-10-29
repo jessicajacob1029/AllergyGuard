@@ -53,7 +53,7 @@ export function ContactFields({ idPrefix, draft, errors, onChange }: Props) {
             <label htmlFor={id} className={labelClass}>
               {field.label}
               {field.optional && (
-                <span className="font-semibold normal-case tracking-normal text-muted"> (optional)</span>
+                <span className="font-sans text-xs font-semibold normal-case tracking-normal text-muted"> (optional)</span>
               )}
             </label>
             <InputWithIcon icon={FIELD_ICON[field.key]}>

@@ -86,7 +86,7 @@ describe("MedicationsSection", () => {
     const row = { id: "m1", name: "EpiPen", dose: null, expiry_date: null };
     vi.mocked(save.saveMedications).mockResolvedValue({ ok: true, data: [row] });
     render(<MedicationsSection profile={profile} initial={[]} />);
-    await user.click(screen.getByRole("button", { name: "+ Add a medication" }));
+    await user.click(screen.getByRole("button", { name: "Add a medication" }));
     await user.type(screen.getByLabelText("Name"), "EpiPen");
     await user.click(screen.getByRole("button", { name: "Save medications" }));
     expect(save.saveMedications).toHaveBeenCalledWith({}, profile, [], [
