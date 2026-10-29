@@ -23,14 +23,15 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [x] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Closed 2026-10-28;
   camera scan verified on the user's iPhone (see "Phase 4" below).
   **Do not start Phase 5 until the user has done the phone test.**
-- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR)
-- [ ] Phase 6: Reaction diary
+- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Paused on branch `phase-5` (not merged).
+- [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
+  Closed 2026-10-29; phone-tested on the preview, merged into the fork's `main` (see "Phase 6" below).
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 4 is closed** (2026-10-28). The phone test is done, so Phase 5 can start when the user asks.
-Phase 3 is closed; Phase 2 is closed apart from Android. Next session: run `/clear`, then say
+**Phase 6 is closed** (2026-10-29) and merged into the fork's `main`. Phase 5 stays paused on `phase-5`.
+Phase 7 starts only when the user asks (plan first, separate branch). Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
 
 ## Demo prep (2026-10-28, on the fork's `main`)
@@ -46,6 +47,29 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
   WebKit can't test offline at all (its offline mode also blocks the service worker).
 - **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
   camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
+
+## Phase 6: Reaction diary (2026-10-29)
+Built on branch `phase-6` (pushed to the fork only), merged into the fork's `main` after the user's phone test.
+- **Migration `20261029000000_reactions.sql`:** `reactions` table, `reaction_symptom` and `reaction_treatment`
+  enums, severity reuses `allergen_severity`. RLS through `profiles` for select/insert/update/delete; a linked
+  `scan_id` must belong to the same profile. **Applied** to the shared project as version `20261029000000`
+  (2026-10-29); don't re-run it. Security advisor: nothing new.
+- **Rules:** time up to 10 minutes in the future (clock drift), from 1900 onwards (`validateOccurredAt`, written
+  by the user); food 1–200 chars; at least one symptom; severity required; treatment optional
+  (None / Antihistamine / EpiPen (adrenaline) / Hospital or ER); notes up to 2000 chars.
+  `validateReaction()` runs in the form and again in the server action.
+- **Screens:** `/diary` (cards as in `design/figma-reference/screens/13-reaction-diary.png`: date pill, severity
+  dots with the word, symptom pills), `/diary/new` (also `?scan=<id>` from a scan result's "Log a reaction to
+  this"), `/diary/[id]` (Edit, Delete with an in-page confirm), `/diary/[id]/edit`. Diary tab and Home tile are
+  live. Online only: nothing changes in the service worker, Dexie or `/emergency`.
+- **Times** are converted to ISO on the phone and drawn on the phone (`LocalTime`), because the server is UTC.
+  The same fix went to `main` first for the scan result's "Checked … on" time (it was 5½ hours behind in IST).
+- **QA (local production build against the shared project, Chromium 390px, Asia/Kolkata):** signed-out redirect,
+  add with errors and a future time, save, list card, edit, cancel, from a scan (prefill, link, foreign scan id
+  ignored), 404 for foreign/broken ids, offline message, no broken links, delete confirm and Keep it, light and
+  dark. Found and fixed: the delete confirm button's label was red on red.
+- **Phone test (user, on the preview):** deleted the two QA reactions, logged one from a camera scan (product
+  filled in, linked scan opens), times in IST, edit and delete work.
 
 ## Phase 4: Barcode scanning
 Built 2026-10-26 (commits `969106d`..`e355dbd`). Decisions made with the user:

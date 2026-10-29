@@ -275,3 +275,63 @@ Scan a barcode (or type it), look the product up on Open Food Facts, check it wi
 
 - [x] Scanning a real product on a phone (via the Vercel URL) shows a verdict (iPhone, 2026-10-28)
 - [x] A product not found on Open Food Facts shows Caution with a clear message, never Safe (tested in code, on the verdict screen and with live OFF data)
+
+---
+
+## Phase 6: Reaction diary
+
+Log allergic reactions and look back at them: what you ate, when, the symptoms, how bad it was and what you took.
+
+### What's included
+
+- **`/diary`:** your reactions, newest first. Each card has a date pill, severity dots with the word next to them
+  (Mild, Moderate, Severe, so not colour alone) and symptom pills. Empty state and **+ Add reaction**.
+- **`/diary/new` and `/diary/[id]/edit`:** one form with:
+  - date and time (defaults to now in the phone's time zone);
+  - food or product;
+  - symptom chips: Hives or rash, Itching, Swelling, Lips or throat swelling, Breathing trouble, Vomiting,
+    Stomach pain, Dizziness or fainting, Other;
+  - severity (Mild, Moderate, Severe);
+  - optional treatment: None, Antihistamine, EpiPen (adrenaline), Hospital or ER (can be cleared);
+  - optional notes.
+
+  Errors are shown per field and focus moves to the first one. Save is disabled offline.
+- **`/diary/[id]`:** everything about one reaction, with Edit and Delete. Delete asks in the page first
+  ("Delete this reaction? This can't be undone." / Yes, delete it / Keep it).
+- **From a scan:** the scan result has **Log a reaction to this**, which opens the form with the product name and
+  a link to the scan. The reaction page links back to the scan.
+- The Diary tab and the Home Diary tile are now live. Medication stays "Coming soon".
+- The diary is online only. The service worker, Dexie and `/emergency` are unchanged.
+
+### Rules (`src/lib/diary/`, pure functions with tests)
+
+- `validateReaction()` runs in the form for instant feedback and again in the Server Actions.
+- `validateOccurredAt()`: up to 10 minutes in the future is allowed for phone clock drift; later is
+  "That time is in the future."; before 1900 is "Please enter a date from 1900 onwards."
+- The time is converted to a full ISO timestamp on the phone, and dates are drawn on the phone, because the
+  server runs in UTC (in India a reaction at 01:30 would otherwise show on the day before).
+
+### Database (1 new migration, already applied to the shared project; don't re-run it)
+
+- `20261029000000_reactions`: `reactions` table with `reaction_symptom` and `reaction_treatment` enums; severity
+  reuses `allergen_severity`. `scan_id` is optional and set to null if the scan is deleted.
+- RLS through `profiles` for select, insert, update and delete. Insert and update also require a linked scan to
+  belong to the same profile, so another user's scan id can't be attached.
+- Checks: at least one symptom, food 1–200 characters, notes up to 2000, no date before 1900.
+
+### Also fixed
+
+- The scan result's "Checked against your allergies on …" time was formatted on the server (UTC), so it was
+  5½ hours behind in India. It is now drawn on the phone (`LocalTime`).
+
+### Testing
+
+- `npm run test`: 546 tests, including the diary rules, enums checked against the migration, the card, the form
+  (validation, saving, editing, from a scan, clearing the treatment) and the delete confirm.
+- QA on a production build against the shared project at 390px, in India time: add, errors, a future time,
+  edit, from a scan, another user's ids (404), offline, links, delete confirm, light and dark mode.
+- Phone test on the preview: logged a reaction from a camera scan, times in IST, edit and delete work.
+
+### Phase 6 "Done when"
+
+- [x] A user can log, view, edit, and delete reactions; RLS enforced
