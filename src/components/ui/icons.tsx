@@ -184,6 +184,13 @@ export const BookIcon = (p: IconProps) => (
 );
 
 /** App icon tile: white shield on a violet gradient, like the installed PWA icon. */
+export const BellIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z" />
+    <path d="M10.3 20a1.9 1.9 0 0 0 3.4 0" />
+  </Icon>
+);
+
 export function AppIconTile({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const box = size === "lg" ? "size-[88px] rounded-full" : size === "md" ? "size-14 rounded-[18px]" : "size-11 rounded-[14px]";
   const mark = size === "lg" ? "size-11" : size === "md" ? "size-8" : "size-6";

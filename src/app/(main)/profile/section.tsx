@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import { formAlertClass } from "@/components/form-styles";
-import { AlertIcon, MedicineIcon, PersonIcon, PhoneIcon } from "@/components/ui/icons";
+import { AlertIcon, BellIcon, MedicineIcon, PersonIcon, PhoneIcon } from "@/components/ui/icons";
 import type { Tone } from "@/components/ui/tones";
 
 type Props = {
@@ -22,6 +22,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   allergies: AlertIcon,
   contacts: PhoneIcon,
   medications: MedicineIcon,
+  reminders: BellIcon,
 };
 
 /** A glass card on the /profile page. Each section saves independently. */
