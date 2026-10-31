@@ -5,7 +5,11 @@ import { VerdictPill } from "@/components/verdict/verdict-pill";
 import { scanLabel } from "@/lib/products/scan-label";
 import type { ScanListRow } from "@/lib/products/scan-list";
 
-/** One saved scan in a list. The whole row opens the result. */
+/**
+ * One saved scan in a list. The whole row opens the result. Names may wrap to
+ * two lines and the brand / barcode line is never cut off. On narrow phones
+ * (under 360px) the verdict moves under the text so the name keeps its width.
+ */
 export function ScanRow({ scan, showTime = false }: { scan: ScanListRow; showTime?: boolean }) {
   const { title, subtitle } = scanLabel(scan);
   const Icon = scan.input === "photo" || scan.input === "paste" ? CameraIcon : BarcodeIcon;
@@ -18,16 +22,21 @@ export function ScanRow({ scan, showTime = false }: { scan: ScanListRow; showTim
         <Icon className="size-5" />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[15px] font-bold">{title}</span>
-        {subtitle && <span className="block truncate text-sm text-muted">{subtitle}</span>}
+        <span className="line-clamp-2 break-words text-[15px] font-bold leading-snug">{title}</span>
+        {subtitle && <span className="block break-words text-sm text-muted">{subtitle}</span>}
         {showTime && (
           <span className="block text-sm text-muted">
             <LocalTime iso={scan.created_at} format="listTime" />
           </span>
         )}
+        <span className="mt-1.5 hidden max-[359px]:flex">
+          <VerdictPill verdict={scan.verdict} />
+        </span>
       </span>
       <span className="flex items-center gap-1">
-        <VerdictPill verdict={scan.verdict} />
+        <span className="max-[359px]:hidden">
+          <VerdictPill verdict={scan.verdict} />
+        </span>
         <ChevronRightIcon className="size-4 text-muted" />
       </span>
     </Link>
