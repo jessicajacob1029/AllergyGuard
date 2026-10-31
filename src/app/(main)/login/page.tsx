@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { formSuccessClass, secondaryButtonClass } from "@/components/form-styles";
+import { formAlertClass, formSuccessClass, secondaryButtonClass } from "@/components/form-styles";
+import { GOOGLE_LOGIN_FAILED } from "@/lib/auth/oauth";
 import { AuthFrame, OrDivider } from "@/components/ui/auth-frame";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { APP_NAME } from "@/lib/constants";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; logged_out?: string; confirm?: string }>;
+  searchParams: Promise<{ next?: string; logged_out?: string; confirm?: string; error?: string }>;
 }) {
   const params = await searchParams;
   const next = safeNextPath(params.next, "/");
@@ -29,6 +30,12 @@ export default async function LoginPage({
       {params.logged_out === "1" && (
         <p role="status" className={`mt-6 ${formSuccessClass}`}>
           You&apos;ve been logged out.
+        </p>
+      )}
+
+      {params.error === "google" && (
+        <p role="alert" className={`mt-6 ${formAlertClass}`}>
+          {GOOGLE_LOGIN_FAILED}
         </p>
       )}
 

@@ -53,6 +53,19 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
 - **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
   camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
 
+## Google login (branch `google-login`, from `redesign-v2`; not merged)
+- "Continue with Google" on Log in and Sign up (official G, Google's grey outline, DM Sans), above an "or" divider;
+  email + password unchanged. `signInWithOAuth({ provider: "google", redirectTo: origin + /auth/callback?next=… })`.
+- `/auth/callback` exchanges the code for a session (PKCE), then goes to `/onboarding` if there is no finished
+  profile, else to a safe `next` (default `/`). Cancelled or failed: `/login?error=google` with a friendly message.
+- Supabase links a Google sign-in to an existing account with the same email (same user, same profile). If that email
+  account was never confirmed, Supabase drops its password login (account-takeover protection).
+- Onboarding's name step starts with the Google name. The emergency card syncs as after any login.
+- Supabase settings (done by the user): Google provider on; Redirect URLs include localhost:3000, the production
+  site and `https://*-j-deploys.vercel.app/auth/callback`.
+- **To test by the user:** a real Google sign-in on laptop, iPhone Safari and the Home Screen app. If the Home Screen
+  app doesn't keep the login, hide the button there with a note (agreed fallback).
+
 ## Redesign v2 (2026-10-29, branch `redesign-v2`)
 Visual style from Figma Make file `phxBYfmCTg7ukfQ8ktS7HM` ("Flashcard-Study-App", really AllergyGuard). Reference:
 `design/figma-reference-v2/` (21 rendered screens, 4 mood images, `STYLE-v2.md`). Features, data, rules and copy

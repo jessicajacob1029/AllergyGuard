@@ -29,9 +29,11 @@ import { NameStep } from "./steps/name-step";
 type Props = {
   initialStep: WizardStep;
   bundle: ProfileBundle | null;
+  /** Name to start step 2 with when there is no profile yet (e.g. from Google). */
+  suggestedName?: string;
 };
 
-export function OnboardingWizard({ initialStep, bundle }: Props) {
+export function OnboardingWizard({ initialStep, bundle, suggestedName = "" }: Props) {
   const [supabase] = useState(createClient);
   const [step, setStep] = useState<WizardStep>(initialStep);
   const [profile, setProfile] = useState<ProfileRow | null>(bundle?.profile ?? null);
@@ -54,7 +56,7 @@ export function OnboardingWizard({ initialStep, bundle }: Props) {
 
       {step === 2 && (
         <NameStep
-          initialName={profile?.name ?? ""}
+          initialName={profile?.name ?? suggestedName}
           onBack={() => setStep(1)}
           onSave={async (name) => {
             const result = await saveProfileName(supabase, profile, name);
