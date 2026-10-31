@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
@@ -7,6 +8,12 @@ import { loadScans } from "@/lib/products/scan-list";
 import { loadOwnProfile } from "@/lib/profile/load";
 import { createClient } from "@/lib/supabase/server";
 import { HomeDashboard } from "./home-dashboard";
+
+// The landing page's title and description (shown in search results and link previews).
+export const metadata: Metadata = {
+  title: `${APP_NAME} · Your allergies, always on guard`,
+  description: "Everything you need to manage your allergies, in one place.",
+};
 
 export default async function Home() {
   const supabase = await createClient();
@@ -19,10 +26,10 @@ export default async function Home() {
           <AppIconTile size="lg" />
           <p className="eyebrow mt-7 md:mt-10">{APP_NAME}</p>
           <h1 className="mt-2 text-[42px] font-medium leading-[1] tracking-[-0.05em] text-ink max-[359px]:text-[36px] md:mt-4 md:text-[56px]">
-            Know what&apos;s in it before it&apos;s in you.
+            Your allergies, always on guard.
           </h1>
           <p className="mt-4 max-w-[340px] text-[16px] leading-relaxed text-muted md:mt-5 md:text-lg">
-            Scan any packet and see if it&apos;s safe for you, in seconds.
+            Everything you need to manage your allergies, in one place.
           </p>
           <div className="mt-8 flex w-full flex-col gap-3 md:mt-12 md:gap-4">
             <Link href="/signup" className={primaryButtonClass}>
