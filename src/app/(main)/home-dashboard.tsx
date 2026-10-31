@@ -4,6 +4,7 @@ import { autoWidth, primaryButtonClass } from "@/components/form-styles";
 import { InstallHint } from "@/components/install-hint";
 import { ScanRow } from "@/components/scans/scan-row";
 import { allergenEmoji } from "@/components/ui/allergen-emoji";
+import { frameClass } from "@/components/ui/frame";
 import { HeaderBand } from "@/components/ui/header-band";
 import {
   BookIcon,
@@ -42,21 +43,30 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
   const allergenCount = bundle.allergens.length;
   return (
     <main className="flex flex-1 flex-col">
-      <HeaderBand
-        eyebrow={<LocalTime iso={today} format="weekdayDate" />}
-        title={
-          <>
-            Hi,{" "}
-            <span className="block text-[#5f4cc4]">{bundle.profile.name}</span>
-          </>
-        }
-      />
+      {/* Phones: one column in this order. From 900px: a grid with the greeting and
+          the summary side by side, the scan card (3/5) beside Your allergies (2/5),
+          then Latest scans and the shortcuts full width. The greeting is in the same
+          frame as the cards, so their left edges line up. */}
+      <div
+        className={`${frameClass("wide")} flex flex-col gap-3.5 pb-6 pt-4 desk:grid desk:grid-cols-[3fr_2fr] desk:gap-5 desk:pb-12 desk:pt-8`}
+      >
+        <div className="mb-1.5 desk:col-start-1 desk:row-start-1 desk:mb-0 desk:self-end">
+          <HeaderBand
+            bare
+            eyebrow={<LocalTime iso={today} format="weekdayDate" />}
+            title={
+              <>
+                Hi,{" "}
+                <span className="block text-[#5f4cc4] desk:inline">{bundle.profile.name}</span>
+              </>
+            }
+          />
+        </div>
 
-      <div className="mx-auto w-full max-w-sm space-y-3.5 px-4 pb-6">
         <InstallHint />
 
         {!bundle.primaryContact && (
-          <div role="status" className="rounded-[20px] border border-caution-ink/20 bg-caution-band p-4 text-base text-ink">
+          <div role="status" className="rounded-[20px] border border-caution-ink/20 bg-caution-band p-4 text-base text-ink desk:col-span-2">
             <p className="font-bold text-caution-ink">Add an emergency contact</p>
             <p className="mt-1 text-sm">
               Your emergency card has no one to call yet.{" "}
@@ -69,7 +79,7 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
 
         <Link
           href="/profile"
-          className="glass grid min-h-[78px] grid-cols-[48px_1fr_auto] items-center gap-3 rounded-[22px] px-3.5 py-3 text-ink focus-visible:outline-2 focus-visible:outline-primary"
+          className="glass grid min-h-[78px] grid-cols-[48px_1fr_auto] items-center gap-3 rounded-[22px] px-3.5 py-3 text-ink focus-visible:outline-2 focus-visible:outline-primary desk:col-start-2 desk:row-start-1 desk:self-end"
         >
           <span aria-hidden="true" className="flex size-12 items-center justify-center rounded-[15px] bg-band text-primary-ink">
             <ShieldIcon className="size-6" />
@@ -111,6 +121,7 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
 
         <SectionCard
           tone="primary"
+          className="desk:col-span-2"
           label="Recent activity"
           title="Latest scans"
           action={
@@ -130,8 +141,8 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
           )}
         </SectionCard>
 
-        <nav aria-label="Shortcuts">
-          <ul className="grid grid-cols-2 gap-3">
+        <nav aria-label="Shortcuts" className="desk:col-span-2">
+          <ul className="grid grid-cols-2 gap-3 desk:grid-cols-4 desk:gap-5">
             <li>
               <Tile Icon={PersonIcon} label="Profile" href="/profile" />
             </li>
@@ -158,15 +169,19 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
  */
 function ScanHero() {
   return (
-    <section aria-labelledby="scan-heading" className="glass gradient-hero relative overflow-hidden rounded-[28px] px-6 pt-6">
+    <section
+      aria-labelledby="scan-heading"
+      className="glass gradient-hero relative flex flex-col overflow-hidden rounded-[28px] px-6 pt-6 desk:px-8 desk:pt-8"
+    >
       <p id="scan-heading" className="eyebrow flex items-center gap-1.5">
         <SparkleIcon className="size-4" />
         Scan product
       </p>
-      <h2 className="mt-5 text-[40px] font-medium leading-[0.98] tracking-[-0.05em] text-ink max-[359px]:text-[34px]">
+      <h2 className="mt-5 text-[40px] font-medium leading-[0.98] tracking-[-0.05em] text-ink max-[359px]:text-[34px] desk:text-[52px]">
         Check food before you eat.
       </h2>
-      <div className="mt-4 flex items-end justify-between gap-2">
+      {/* flex-1: on desktop the card is as tall as Your allergies; the button row sits at the bottom. */}
+      <div className="mt-4 flex flex-1 items-end justify-between gap-2">
         <Link href="/scan" className={`${autoWidth(primaryButtonClass)} mb-6 shrink-0 pr-2.5`}>
           Start scanning
           <span aria-hidden="true" className="flex size-[34px] items-center justify-center rounded-[11px] bg-white/15">
@@ -182,7 +197,7 @@ function ScanHero() {
 /** Decorative glass orb with a shield (the design's hero visual). */
 function Orb() {
   return (
-    <span aria-hidden="true" data-orb className="relative -mb-7 -mr-12 block size-[150px] shrink-0 max-[359px]:size-[124px]">
+    <span aria-hidden="true" data-orb className="relative -mb-7 -mr-12 block size-[150px] shrink-0 max-[359px]:size-[124px] desk:size-[180px]">
       <span className="absolute -inset-2 rotate-[24deg] rounded-full border border-white/75 border-l-[#7b68df]" />
       <span className="absolute inset-0 flex items-center justify-center rounded-full bg-[radial-gradient(circle_at_30%_25%,rgb(255_255_255/0.9),rgb(255_208_193/0.66)_30%,rgb(135_115_225/0.72))] text-white/85 shadow-[inset_12px_12px_30px_rgb(255_255_255/0.62),0_22px_40px_rgb(104_77_157/0.16)]">
         <ShieldIcon className="size-10" />

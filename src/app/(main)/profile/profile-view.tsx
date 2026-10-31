@@ -1,5 +1,6 @@
 import { tertiaryButtonClass } from "@/components/form-styles";
 import { SignOutButton } from "@/components/sign-out-button";
+import { frameClass } from "@/components/ui/frame";
 import { HeaderBand } from "@/components/ui/header-band";
 import type { ContactRow, ProfileBundle } from "@/lib/profile/types";
 import { AllergensSection } from "./allergens-section";
@@ -12,6 +13,7 @@ export function ProfileView({ bundle, contacts }: { bundle: ProfileBundle; conta
   return (
     <main className="flex flex-1 flex-col">
       <HeaderBand
+        width="wide"
         eyebrow="Your account"
         title="Your profile"
         subtitle={`${bundle.profile.name}. Keep your safety information accurate and up to date.`}
@@ -24,14 +26,29 @@ export function ProfileView({ bundle, contacts }: { bundle: ProfileBundle; conta
           </span>
         }
       />
-      <div className="mx-auto w-full max-w-sm space-y-3.5 px-4 pb-6">
-        <NameSection initial={bundle.profile} />
-        <AllergensSection profile={bundle.profile} initial={bundle.allergens} />
-        <ContactsSection profile={bundle.profile} initial={contacts} />
-        <MedicationsSection profile={bundle.profile} initial={bundle.medications} />
+      {/* Phones: one column in this order. From 900px: name, allergies and
+          medications on the left, emergency contacts on the right (grid
+          placement, so the phone order doesn't change). */}
+      <div
+        className={`${frameClass("wide")} space-y-3.5 pb-6 desk:grid desk:grid-cols-2 desk:items-start desk:gap-5 desk:space-y-0 desk:pb-12`}
+      >
+        <div className="desk:col-start-1">
+          <NameSection initial={bundle.profile} />
+        </div>
+        <div className="desk:col-start-1">
+          <AllergensSection profile={bundle.profile} initial={bundle.allergens} />
+        </div>
+        <div className="desk:col-start-2 desk:row-span-3 desk:row-start-1">
+          <ContactsSection profile={bundle.profile} initial={contacts} />
+        </div>
+        <div className="desk:col-start-1">
+          <MedicationsSection profile={bundle.profile} initial={bundle.medications} />
+        </div>
         {/* Here, not next to Emergency in the top bar: logging out wipes the
             offline emergency card, so it shouldn't be one mis-tap away. */}
-        <SignOutButton className={tertiaryButtonClass} />
+        <div className="desk:col-span-2 desk:mx-auto desk:w-full desk:max-w-[320px]">
+          <SignOutButton className={tertiaryButtonClass} />
+        </div>
       </div>
     </main>
   );
