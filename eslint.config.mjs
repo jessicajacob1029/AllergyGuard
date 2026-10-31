@@ -17,6 +17,9 @@ const eslintConfig = defineConfig([
     // per instruction not to touch it, so it's out of scope for this config too.
     "legacy/**",
     "testcases/**",
+    // Edge Function entry files run on Deno (npm: imports, Deno globals). Their
+    // logic is in supabase/functions/_shared, which is linted and tested.
+    "supabase/functions/*/index.ts",
   ]),
 ]);
 

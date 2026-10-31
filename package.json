@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck:functions": "tsc -p supabase/functions/tsconfig.json"
   },
   "dependencies": {
     "@serwist/turbopack": "^9.5.12",
