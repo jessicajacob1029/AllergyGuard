@@ -29,6 +29,7 @@ describe("Privacy page", () => {
       "Signing in with Google",
       "Barcode scans",
       "Label photos (coming soon)",
+      "Medication reminders",
       "Your emergency card",
       "Deleting your account",
     ]);
@@ -42,6 +43,8 @@ describe("Privacy page", () => {
     expect(text).toContain("will never leave your device");
     expect(text).toContain("isn't available yet");
     expect(text).toContain("until you log out");
+    expect(text).toContain("Resend");
+    expect(text).toContain("link to turn emails off without logging in");
   });
 
   it("gives the email address for deleting an account", () => {

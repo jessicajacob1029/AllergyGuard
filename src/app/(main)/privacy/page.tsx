@@ -65,6 +65,31 @@ const SECTIONS: readonly LegalSection[] = [
     ),
   },
   {
+    title: "Medication reminders",
+    body: (
+      <>
+        <p>
+          If a medication has an expiry date, we remind you 30, 7 and 1 days before it expires, and on the day.
+          We keep a note of each reminder we&apos;ve sent so you never get the same one twice.
+        </p>
+        <ul>
+          <li>
+            <strong className="text-ink">Notifications:</strong> if you turn them on, we store a push address for
+            that device. Your browser&apos;s push service (Google, Apple or Mozilla) delivers the message.
+          </li>
+          <li>
+            <strong className="text-ink">Emails:</strong> sent through Resend, our email provider, which receives
+            your email address and the medication&apos;s name, dose and expiry date.
+          </li>
+        </ul>
+        <p>
+          You can turn either off in your profile, and every email has a link to turn emails off without logging
+          in. Logging out turns notifications off on that device.
+        </p>
+      </>
+    ),
+  },
+  {
     title: "Your emergency card",
     body: (
       <p>
