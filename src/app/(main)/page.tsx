@@ -21,7 +21,7 @@ export default async function Home() {
 
   if (!data?.claims) {
     return (
-      <main className="flex flex-1 flex-col items-center px-5 pb-10 pt-8 text-center md:justify-center md:py-16">
+      <main className="flex flex-1 flex-col items-center px-5 pb-10 pt-16 text-center md:justify-center md:py-16">
         <div className="flex w-full max-w-sm flex-col items-center md:max-w-[480px]">
           <AppIconTile size="lg" />
           <p className="eyebrow mt-7 md:mt-10">{APP_NAME}</p>
