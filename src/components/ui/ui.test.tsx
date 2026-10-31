@@ -61,13 +61,23 @@ describe("AppBar", () => {
     }
   });
 
-  it("shows Log in only when signed out, and never Log out", () => {
+  it("never shows Log in or Log out in the bar (the pages have their own Log in)", () => {
+    for (const signedIn of [false, true]) {
+      render(<AppBar signedIn={signedIn} />);
+      expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();
+      expect(screen.queryByRole("button", { name: /log out/i })).toBeNull();
+      cleanup();
+    }
+  });
+
+  it("keeps Emergency a plain, solid red, 44px link in sentence case", () => {
     render(<AppBar signedIn={false} />);
-    expect(screen.getByRole("link", { name: "Log in" })).toBeTruthy();
-    cleanup();
-    render(<AppBar signedIn />);
-    expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /log out/i })).toBeNull();
+    const link = screen.getByRole("link", { name: /Emergency/ });
+    expect(link.getAttribute("href")).toBe("/emergency");
+    expect(link.className).toContain("bg-emergency");
+    expect(link.className).toContain("h-11");
+    expect(link.className).not.toContain("uppercase");
+    expect(link.textContent).toContain("Emergency");
   });
 });
 

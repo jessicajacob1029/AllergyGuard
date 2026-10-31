@@ -14,21 +14,24 @@ export default async function Home() {
 
   if (!data?.claims) {
     return (
-      <main className="flex flex-1 flex-col">
-        <div className="mx-auto w-full max-w-sm px-5 pt-8">
+      <main className="flex flex-1 flex-col items-center px-5 pb-10 pt-8 text-center md:justify-center md:py-16">
+        <div className="flex w-full max-w-sm flex-col items-center md:max-w-[480px]">
           <AppIconTile size="lg" />
-          <p className="eyebrow mt-7">{APP_NAME}</p>
-          <h1 className="mt-2 text-[46px] font-medium leading-[0.98] tracking-[-0.05em] text-ink max-[359px]:text-[40px]">
-            Scan a product, know if it&apos;s safe for you.
+          <p className="eyebrow mt-7 md:mt-10">{APP_NAME}</p>
+          <h1 className="mt-2 text-[42px] font-medium leading-[1] tracking-[-0.05em] text-ink max-[359px]:text-[36px] md:mt-4 md:text-[56px]">
+            Know what&apos;s in it before it&apos;s in you.
           </h1>
-        </div>
-        <div className="mx-auto mt-8 flex w-full max-w-sm flex-col gap-3 px-5">
-          <Link href="/signup" className={primaryButtonClass}>
-            Create account
-          </Link>
-          <Link href="/login" className={secondaryButtonClass}>
-            Log in
-          </Link>
+          <p className="mt-4 max-w-[340px] text-[16px] leading-relaxed text-muted md:mt-5 md:text-lg">
+            Scan any packet and see if it&apos;s safe for you, in seconds.
+          </p>
+          <div className="mt-8 flex w-full flex-col gap-3 md:mt-12 md:gap-4">
+            <Link href="/signup" className={primaryButtonClass}>
+              Create account
+            </Link>
+            <Link href="/login" className={secondaryButtonClass}>
+              Log in
+            </Link>
+          </div>
         </div>
       </main>
     );
