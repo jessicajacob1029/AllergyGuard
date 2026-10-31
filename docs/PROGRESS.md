@@ -27,15 +27,18 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
   Closed 2026-10-29: merged into the fork's `main`, phone-tested on production, two-user RLS test passed
   (see "Phase 6" below).
-- [ ] Redesign v2 (style from the Figma Make file, see "Redesign v2" below): built on branch `redesign-v2`,
-  pushed to the fork only, **not merged** until the user says so.
+- [x] Redesign v2 (style from the Figma Make file, see "Redesign v2" below), Google login and the desktop layout:
+  merged into the fork's `main` on 2026-10-31 (fast-forward to `197e3b2`) and checked on production
+  (see "Merge to the fork's main" below).
 - [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
-**Phase 6 is closed** (2026-10-29) and merged into the fork's `main`, including the two-user RLS test.
-Phase 5 stays paused on `phase-5`.
+**Redesign v2, Google login and the desktop layout are on the fork's `main`** (2026-10-31), checked on
+`allergy-guard-nine.vercel.app`. Still open: the user's real Google sign-in on iPhone Safari and the Home Screen app;
+the Supabase Site URL set to `https://allergy-guard-nine.vercel.app`; changing the QA account's password.
+Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
 Phase 7 starts only when the user asks (plan first, separate branch). Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
 
@@ -53,7 +56,35 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
 - **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
   camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
 
-## Google login (branch `google-login`, from `redesign-v2`; not merged)
+## Merge to the fork's main (2026-10-31)
+`google-login` (which contains `redesign-v2` and the desktop layout) was fast-forwarded into `fork-main` and pushed
+to `fork/main` (`b1e2bba..197e3b2`). Before the merge: 591 tests, lint and build passed. Not pushed to `origin`.
+
+**Production check (`allergy-guard-nine.vercel.app`, Chromium, QA account only, IST), all passed:**
+- **Landing, signed out (1440 and 390):** new title, headline and meta description; no sideways scroll; axe 0.
+- **Continue with Google:** reaches Google's sign-in page; Supabase is asked to return to
+  `https://allergy-guard-nine.vercel.app/auth/callback` with PKCE (S256). A cancelled return and a stray `/?code=…`
+  both end on Log in with "Google sign-in didn't finish…". No Google account was signed in by the script.
+- **Email login (1440 and 390):** lands on Home ("Hi, Jessica Jacob").
+- **Home:** at 1440 the header nav is shown and the bottom bar hidden; at 390 the reverse.
+- **A scan:** typed barcode 8901262010016 (Amul butter) gave Unsafe and became the newest row in Scan history.
+  This added **one scan row to the QA account**; nothing else was changed or deleted.
+- **Diary** (1 reaction) and the reaction page; **Profile** in two columns at 1440 (contacts on the right), one at 390.
+- **Offline `/emergency` (network fully cut, service worker included), 1440 and 390:** card with the allergies and
+  `tel:+919940015631`; other pages show "You're offline".
+- axe-core WCAG 2.2 AA: 0 violations on every screen checked; no page errors.
+
+## Desktop layout (2026-10-31, from 900px)
+- Custom `desk:` breakpoint at 900px (`--breakpoint-desk: 56.25rem`), because the user's laptop window is under 1024px.
+- Header: logo left, Home · Scan · Diary · Profile in the middle (`DesktopNav`), Emergency right. The bottom bar
+  is phones only. `frameClass()` (`src/components/ui/frame.ts`) gives every page one column so headings and
+  cards line up: wide 1120px (Home, Profile), medium 760px (Scan history, Diary as 2 columns), narrow 640px
+  (Scan, result, reaction, forms, onboarding, `/emergency`).
+- Home: greeting + summary card, scan card (60%) beside Your allergies, Latest scans full width, shortcuts in a row.
+- Checked at 1440, 1280, 1024, 960, 900, 899, 768, 390 and 320: no sideways scroll, nav switches exactly at 900,
+  axe 0. Phone layout unchanged except headings now line up with the cards (moved 3px).
+
+## Google login (branch `google-login`, from `redesign-v2`; merged into the fork's `main` 2026-10-31)
 - "Continue with Google" on Log in and Sign up (official G, Google's grey outline, DM Sans), above an "or" divider;
   email + password unchanged. `signInWithOAuth({ provider: "google", redirectTo: origin + /auth/callback?next=… })`.
 - `/auth/callback` exchanges the code for a session (PKCE), then goes to `/onboarding` if there is no finished
@@ -93,8 +124,8 @@ unchanged; the Figma content was placeholder.
   scroll; home hero text never overlaps the orb (automated box check at 390/360/320). Offline (real network cut,
   service worker included): `/emergency` loads from the worker with the card, `tel:` link, DM Sans and Space Mono;
   other pages show "You're offline".
-- **Not yet checked:** the signed-in screens against real data (the QA password no longer works, so they were
-  checked with sample data in local-only preview pages that were never committed).
+- **Real data:** checked later with the QA account (3 typed scans and 1 reaction added to it), and again on
+  production after the merge (see "Merge to the fork's main").
 
 ## Phase 6: Reaction diary (2026-10-29)
 Built on branch `phase-6` (pushed to the fork only), merged into the fork's `main` on 2026-10-29.

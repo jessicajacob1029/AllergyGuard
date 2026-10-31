@@ -346,3 +346,58 @@ Log allergic reactions and look back at them: what you ate, when, the symptoms, 
 
 - [x] A user can log, view, edit, and delete reactions
 - [x] RLS enforced (two-user test, 23 of 23 checks passed)
+
+---
+
+## Redesign v2, Google login and desktop layout
+
+A new look across the app, sign-in with Google, and a proper laptop layout. Features, data and allergen rules are unchanged.
+
+### What's included
+
+- **Redesign v2:** style taken from our Figma Make file (reference in `design/figma-reference-v2/`, notes in `STYLE-v2.md`):
+  - DM Sans and Space Mono, self-hosted through `next/font` and precached for offline use;
+  - glass cards, soft peach, lilac and mint gradients, dark primary buttons, a floating bottom tab bar;
+  - light only for now (dark mode is a later task).
+
+  The Emergency button behaves exactly as before: a plain link to `/emergency`, top right, solid red.
+- **Scan history (`/scans`):** every scan, newest first, filtered by All, Safe, Caution or Unsafe. Home shows the latest three. Rows are named by `scanLabel()` (`src/lib/products/scan-label.ts`, with tests).
+- **Continue with Google** on Log in and Sign up, above the email form:
+  - `/auth/callback` exchanges the code for a session (PKCE);
+  - new users go to onboarding, and the name step starts with their Google name;
+  - a cancelled or failed sign-in returns to Log in with a short message;
+  - if a sign-in code lands on any other page, the proxy forwards it to `/auth/callback`.
+
+  A Google sign-in with the same email as an existing account joins that account and keeps its profile.
+- **Desktop layout from 900px:**
+  - the header shows Home, Scan, Diary and Profile in the middle, and the bottom bar is phones only;
+  - each page has one column width: 1120px for Home and Profile, 760px for lists (the Diary is 2 columns), 640px for forms, details and `/emergency`;
+  - Home is a grid: the scan card beside Your allergies, Latest scans below;
+  - Profile is two columns, with emergency contacts on the right.
+
+  The phone layout is unchanged.
+
+### Setup
+
+- No new dependencies and no database changes.
+- Supabase Auth (done in the dashboard): Google provider on, and redirect URLs for production, Vercel previews and `localhost:3000`. The Site URL should be the production URL.
+
+### Testing
+
+- `npm run test`: 591 tests, including Google login (callback route, redirect helpers, button, proxy forwarding), scan history and `scanLabel()`.
+- `npm run lint` and `npm run build` pass.
+- Layout checked at 1440, 1280, 1024, 960, 900, 899, 768, 390 and 320px: no sideways scrolling, and the nav switches exactly at 900px.
+- axe-core (WCAG 2.2 AA): 0 violations on every screen checked.
+- `/emergency` checked with the network fully cut (service worker included), on laptop and phone widths.
+- **Production check after the merge** (`allergy-guard-nine.vercel.app`, test account), all passed:
+  - landing page;
+  - Continue with Google up to Google's sign-in page, returning to our `/auth/callback`;
+  - email login;
+  - Home on laptop and phone;
+  - a typed barcode scan;
+  - Diary and Profile;
+  - the offline emergency card.
+
+### Still to test
+
+- [ ] A full Google sign-in on iPhone Safari and from the Home Screen app.
