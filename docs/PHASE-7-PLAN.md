@@ -128,7 +128,7 @@ reminder sent twice.
 
 **Time zone:** reminders are worked out on IST dates, because every user is in India for now. Showing the dates on the phone stays as it is (`LocalTime`). Supporting other time zones later would need a time zone saved on each profile.
 
-## 5. Database (migration `20261101000000_medication_reminders.sql`)
+## 5. Database (migration `20261031173904_medication_reminders.sql`)
 
 - **Switch on extensions:** `pg_cron` and `pg_net`.
 - **New enum `reminder_stage`:** `30d`, `7d`, `1d`, `today`.

@@ -34,7 +34,8 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   (see "Merge to the fork's main" below).
 - [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
-  Plan written on branch `phase-7`: `docs/PHASE-7-PLAN.md`, **awaiting approval** (2026-10-31). Nothing built yet.
+  Plan approved 2026-10-31 (`docs/PHASE-7-PLAN.md`); **built on branch `phase-7`** (fork only, not merged). Waiting
+  for: the user's `reminderStage()`, and the keys and secrets in `docs/PHASE-7-SETUP.md`. See "Phase 7" below.
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
@@ -42,7 +43,9 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 `allergy-guard-nine.vercel.app`. Still open: the user's real Google sign-in on iPhone Safari and the Home Screen app;
 the Supabase Site URL set to `https://allergy-guard-nine.vercel.app`; changing the QA account's password.
 Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
-Phase 7 starts only when the user asks (plan first, separate branch). Next session: run `/clear`, then say
+**Phase 7 is built on `phase-7`** and waits for two things from the user: `reminderStage()` in
+`supabase/functions/_shared/reminder-stage.ts` (its 16 tests fail until then), and the keys and secrets
+(`docs/PHASE-7-SETUP.md`). Don't merge to `main` until the user says so. Next session: run `/clear`, then say
 "continue from docs/PROGRESS.md".
 
 ## Demo prep (2026-10-28, on the fork's `main`)
@@ -58,6 +61,42 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
   WebKit can't test offline at all (its offline mode also blocks the service worker).
 - **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
   camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
+
+## Phase 7: Medication expiry reminders (2026-10-31, branch `phase-7`, not merged)
+Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`.
+- **Agreed:** email reminders on by default; Resend's test sender for now (domain later); the user writes
+  `reminderStage()`. Also required: IST calendar dates (tests around midnight IST), delete push subscriptions on
+  404/410, reject any request without the cron secret, skip medications with no expiry date, long random
+  unsubscribe tokens with a page that works without logging in.
+- **Database** (`20261031173904_medication_reminders`, **applied**; don't re-run): `pg_cron` and `pg_net` switched on;
+  `reminder_settings` (push off, email on, 64-hex unsubscribe token; users can only set the two switches),
+  `push_subscriptions` (one per browser, saved via `save_push_subscription()`, which moves a browser to whoever
+  subscribed last), `medication_reminders` (unique medication + expiry date + stage = never twice; only the job
+  writes). RLS on all three. `unsubscribe_email(token)` for anon; `due_medication_reminders(date)` for the
+  service role only. Security advisor: the two intended "security definer callable" warnings only.
+- **Edge Functions** (deployed): `medication-reminders` (verify_jwt off, its own constant-time cron secret check,
+  403 otherwise; `today`, `dryRun` and `selfCheck` options) and `send-test-push` (signed-in user, own devices only,
+  RLS). Logic in `supabase/functions/_shared/` (pure, Vitest): `ist-date`, `reminder-stage` (user's TODO),
+  `reminder-message`, `reminder-email`, `run-reminders` (claim first, then push, then email if push wasn't
+  delivered; 404/410 devices deleted). `npm run typecheck:functions` typechecks `_shared`; the Deno entry files are
+  left out of the Next.js tsconfig and ESLint.
+- **App:** Profile → Reminders card (email switch; notifications only after a tap; iPhone-in-Safari, blocked
+  and unsupported messages; test notification; turn off on this device). Desktop: under Medications in the left
+  column. Log out also turns push off on that device. Home banner (red expired, amber within 30 days, phone's date)
+  and the Medication shortcut now opens `/profile#medications`. `/unsubscribe` (confirm button, no login) and
+  `/api/unsubscribe` (one-click POST from mail apps; GET goes to the page). Privacy page has a "Medication
+  reminders" section. Service worker: `push` and `notificationclick` listeners only.
+- **Checks so far:** all tests pass except the 16 `reminderStage()` tests (waiting for the user); lint, build and the
+  functions typecheck pass. Functions: `send-test-push` boots (500 "not set up" without VAPID keys, 401 without a
+  token); `medication-reminders` returns 403 with no secret, a wrong secret, a GET, and the anon key. Local
+  production build: the worker contains both listeners; **offline `/emergency` passed at 1440 and 390** (network
+  fully cut); Profile, Home banner (QA account's epipen, 7 days) and `/unsubscribe` at 1440 and 390: no sideways
+  scroll, axe 0, no page errors.
+- **Still to do:** `reminderStage()` (user); secrets (user); redeploy `medication-reminders`; self-check and dry
+  run; the real 7-day test and the no-repeat test on the QA account; unsubscribe test; two-user RLS test for the
+  three tables; schedule the cron job; the user's laptop and iPhone tests.
+- Deploy note: the first `send-test-push` deploy (version 1) went out with a placeholder shared file by mistake and
+  was replaced by version 2 within two minutes, before any secrets existed.
 
 ## Merge to the fork's main (2026-10-31)
 `google-login` (which contains `redesign-v2` and the desktop layout) was fast-forwarded into `fork-main` and pushed
