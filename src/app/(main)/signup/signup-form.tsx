@@ -183,6 +183,17 @@ export function SignupForm() {
         >
           {submitting ? "Creating account…" : "Create account"}
         </button>
+        <p className="text-center text-[13px] leading-relaxed text-muted">
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className={linkClass}>
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className={linkClass}>
+            Privacy policy
+          </Link>
+          .
+        </p>
       </form>
     </div>
   );
