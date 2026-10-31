@@ -12,9 +12,8 @@ export function EmergencyButton() {
   return (
     <a
       href="/emergency"
-      className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-[12px] bg-emergency px-3 text-[13px] font-bold text-white shadow-[0_6px_14px_rgb(160_27_27/0.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      className="flex h-11 items-center whitespace-nowrap rounded-[12px] bg-emergency px-3.5 text-[13px] font-bold text-white shadow-[0_6px_14px_rgb(160_27_27/0.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
-      <span aria-hidden="true">🚨</span>
       Emergency
     </a>
   );
