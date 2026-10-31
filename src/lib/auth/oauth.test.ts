@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { afterOAuthPath, nameFromMetadata, oauthRedirectTo } from "./oauth";
+import { afterOAuthPath, nameFromMetadata, oauthRedirectTo, oauthReturnForward } from "./oauth";
 
 describe("oauthRedirectTo", () => {
   it("comes back to our callback, with next only when it isn't home", () => {
@@ -40,5 +40,38 @@ describe("nameFromMetadata", () => {
     expect(nameFromMetadata(undefined)).toBe("");
     expect(nameFromMetadata({ full_name: 42 })).toBe("");
     expect(nameFromMetadata({ full_name: "a".repeat(150) })).toHaveLength(100);
+  });
+});
+
+describe("oauthReturnForward", () => {
+  const at = (path: string) => oauthReturnForward(new URL(`https://allergy-guard-nine.vercel.app${path}`));
+
+  it("forwards a code that landed on the home page to /auth/callback", () => {
+    expect(at("/?code=abc-123")).toBe("/auth/callback?code=abc-123");
+  });
+
+  it("keeps the page it landed on (minus the code) as next", () => {
+    expect(at("/scans?verdict=unsafe&code=abc")).toBe("/auth/callback?code=abc&next=%2Fscans%3Fverdict%3Dunsafe");
+    expect(at("/login?code=abc")).toBe("/auth/callback?code=abc&next=%2Flogin");
+  });
+
+  it("forwards a Supabase error return, so Log in can explain it", () => {
+    expect(at("/?error=access_denied&error_code=bad_oauth_state&error_description=Cancelled")).toBe(
+      "/auth/callback?error=access_denied",
+    );
+  });
+
+  it("leaves pages alone when there is nothing to exchange", () => {
+    expect(at("/")).toBeNull();
+    expect(at("/scans?verdict=safe")).toBeNull();
+    expect(at("/code")).toBeNull();
+    // Our own messages use ?error= without a description: not a Supabase return.
+    expect(at("/login?error=google")).toBeNull();
+    expect(at("/signup?error=confirmation_failed")).toBeNull();
+  });
+
+  it("never touches the routes that exchange codes themselves", () => {
+    expect(at("/auth/callback?code=abc")).toBeNull();
+    expect(at("/auth/confirm?code=abc")).toBeNull();
   });
 });

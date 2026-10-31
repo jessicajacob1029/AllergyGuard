@@ -61,8 +61,13 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
 - Supabase links a Google sign-in to an existing account with the same email (same user, same profile). If that email
   account was never confirmed, Supabase drops its password login (account-takeover protection).
 - Onboarding's name step starts with the Google name. The emergency card syncs as after any login.
-- Supabase settings (done by the user): Google provider on; Redirect URLs include localhost:3000, the production
-  site and `https://*-j-deploys.vercel.app/auth/callback`.
+- Supabase settings (done by the user): Google provider on; Redirect URLs `https://*-j-deploys.vercel.app/**`,
+  `https://allergy-guard-nine.vercel.app/**`, `http://localhost:3000/**`. **Site URL should be
+  `https://allergy-guard-nine.vercel.app`** (the public production domain; `allergy-guard-j-deploys.vercel.app` is the
+  same Vercel project's team domain, behind Vercel login).
+- Safety net (2026-10-31): the first phone test landed on the Site URL root (`/?code=…`) because the redirect wasn't
+  allowed yet. The proxy now forwards any `?code=` (or a Supabase `error` + `error_description` return) on a page other
+  than `/auth/callback` or `/auth/confirm` to `/auth/callback`, keeping the page as `next`.
 - **To test by the user:** a real Google sign-in on laptop, iPhone Safari and the Home Screen app. If the Home Screen
   app doesn't keep the login, hide the button there with a note (agreed fallback).
 
