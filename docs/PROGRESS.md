@@ -34,6 +34,7 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   (see "Merge to the fork's main" below).
 - [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
 - [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
+  Plan written on branch `phase-7`: `docs/PHASE-7-PLAN.md`, **awaiting approval** (2026-10-31). Nothing built yet.
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
