@@ -401,3 +401,37 @@ A new look across the app, sign-in with Google, and a proper laptop layout. Feat
 ### Still to test
 
 - [ ] A full Google sign-in on iPhone Safari and from the Home Screen app.
+
+---
+
+## Privacy and Terms pages
+
+Two short public pages in plain English, styled like the rest of the app.
+
+### What's included
+
+- **`/privacy`:**
+  - what we store (name, email, allergies, emergency contacts, medications, scans, reactions);
+  - it's stored in Supabase, and no other user can see it;
+  - what Google sign-in shares and what we use (name and email only);
+  - barcodes are looked up on Open Food Facts from our server, so Open Food Facts never sees who you are;
+  - label photos, marked **coming soon** until Phase 5 is merged;
+  - the emergency card stays on your device until you log out;
+  - how to delete your account (by email for now).
+- **`/terms`:**
+  - the app is an aid, not medical advice: always read the label;
+  - product data can be wrong, and the app shows Caution when unsure;
+  - in an emergency, call 112;
+  - your account;
+  - no guarantees.
+- Both pages are linked from the landing page footer and under **Create account** on Sign up.
+- The contact email and the "Last updated" date are set in `src/lib/constants.ts`.
+
+### Testing
+
+- `legal-pages.test.tsx`: each page's sections, the email link, the medical disclaimer, and both links on the landing page and Sign up.
+- Checked at 1440, 390 and 320px on a production build and on production: no sideways scrolling, and axe found 0 accessibility problems.
+
+### When Phase 5 is merged
+
+- [ ] Update the "Label photos (coming soon)" section and the "Last updated" date.

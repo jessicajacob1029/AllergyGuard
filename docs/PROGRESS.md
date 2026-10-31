@@ -24,6 +24,8 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   camera scan verified on the user's iPhone (see "Phase 4" below).
   **Do not start Phase 5 until the user has done the phone test.**
 - [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Paused on branch `phase-5` (not merged).
+  **When merging:** update the "Label photos (coming soon)" section on `/privacy` (present tense, drop "coming soon",
+  new "Last updated" date in `src/lib/constants.ts`) and its test.
 - [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
   Closed 2026-10-29: merged into the fork's `main`, phone-tested on production, two-user RLS test passed
   (see "Phase 6" below).
@@ -73,6 +75,23 @@ to `fork/main` (`b1e2bba..197e3b2`). Before the merge: 591 tests, lint and build
 - **Offline `/emergency` (network fully cut, service worker included), 1440 and 390:** card with the allergies and
   `tel:+919940015631`; other pages show "You're offline".
 - axe-core WCAG 2.2 AA: 0 violations on every screen checked; no page errors.
+
+## Privacy and Terms pages (2026-10-31, on the fork's `main`)
+- `/privacy` and `/terms`: public pages in plain English, one glass card per section, 640px column on desktop.
+  Shared frame `src/components/legal/legal-page.tsx`; the contact email (`CONTACT_EMAIL`) and "Last updated" date
+  (`LEGAL_UPDATED`) live in `src/lib/constants.ts`. Change the date whenever either page changes.
+- **Privacy:** what we store (name, email, allergies, contacts, medications, scans, reactions); stored in Supabase,
+  no other user can see it (RLS); Google shares name, email, picture link and account ID, we only use name and
+  email; barcodes go to Open Food Facts from our server; label photos (**coming soon**, until Phase 5 is merged);
+  the emergency card stays on the device until log out; delete your account by emailing `CONTACT_EMAIL`.
+- **Terms:** an aid, not medical advice, always read the label; product data can be wrong (Caution, never Safe,
+  when unsure); in an emergency call 112; your account; no guarantees (student project).
+- Linked from the landing page footer and under Create account on Sign up ("By creating an account you agree to
+  our Terms and Privacy policy."). Footer links are 44px tall; links inside sentences are exempt.
+- Wording checked against the code first: "only you" became "no other user" (project admins can see data in the
+  dashboard), and the Google line lists everything Google shares.
+- Checks: 6 tests (`legal-pages.test.tsx`); local production build and production at 1440, 390 and 320px: 200,
+  no sideways scroll, axe 0.
 
 ## Desktop layout (2026-10-31, from 900px)
 - Custom `desk:` breakpoint at 900px (`--breakpoint-desk: 56.25rem`), because the user's laptop window is under 1024px.

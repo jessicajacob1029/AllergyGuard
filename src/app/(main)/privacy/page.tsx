@@ -54,11 +54,13 @@ const SECTIONS: readonly LegalSection[] = [
     ),
   },
   {
-    title: "Label photos",
+    // Phase 5 (label photo OCR) is not merged yet. When it is, drop "(coming soon)" and say it in the present tense.
+    title: "Label photos (coming soon)",
     body: (
       <p>
-        Label photos are read on your phone and never leave your device. Only the ingredient text read from the
-        photo is saved with the scan, so you can check it later.
+        Checking a label from a photo isn&apos;t available yet. When it is, photos will be read on your phone and
+        will never leave your device. Only the ingredient text read from the photo will be saved with the scan, so
+        you can check it later.
       </p>
     ),
   },

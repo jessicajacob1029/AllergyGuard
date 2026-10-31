@@ -28,7 +28,7 @@ describe("Privacy page", () => {
       "Where it's stored and who can see it",
       "Signing in with Google",
       "Barcode scans",
-      "Label photos",
+      "Label photos (coming soon)",
       "Your emergency card",
       "Deleting your account",
     ]);
@@ -39,7 +39,8 @@ describe("Privacy page", () => {
     const text = document.body.textContent ?? "";
     expect(text).toContain("No other user can see your data");
     expect(text).toContain("We only use your name and email");
-    expect(text).toContain("never leave your device");
+    expect(text).toContain("will never leave your device");
+    expect(text).toContain("isn't available yet");
     expect(text).toContain("until you log out");
   });
 
