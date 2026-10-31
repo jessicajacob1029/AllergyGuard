@@ -42,6 +42,11 @@
   --ag-contact-band: #d9f2e6;
 }
 
+/* Desktop layout from 900px (a normal-size laptop window is often under 1024px). */
+@theme {
+  --breakpoint-desk: 56.25rem;
+}
+
 @theme inline {
   --color-page: var(--ag-page);
   --color-card: var(--ag-card);

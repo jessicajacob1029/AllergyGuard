@@ -25,22 +25,34 @@ const HIDDEN_ON = ["/onboarding", "/login", "/signup"];
 
 const under = (pathname: string, base: string) => pathname === base || pathname.startsWith(`${base}/`);
 
+/** Whether a tab is the current section (shared by the bottom bar and the desktop header nav). */
+export function isTabActive(pathname: string, { href, also = [] }: Tab): boolean {
+  return href === "/" ? pathname === "/" : [href, ...also].some((p) => under(pathname, p));
+}
+
+/** Screens where neither the bottom bar nor the header nav belong. */
+export function hidesTabs(pathname: string): boolean {
+  return HIDDEN_ON.some((p) => under(pathname, p));
+}
+
 /** Floating glass tab bar (style v2). The active tab has a tinted pill as well as colour. */
 export function BottomTabs() {
   const pathname = usePathname();
-  if (HIDDEN_ON.some((p) => under(pathname, p))) return null;
+  if (hidesTabs(pathname)) return null;
 
   return (
     <>
       {/* Keeps the end of the page clear of the floating bar. */}
-      <div aria-hidden="true" className="h-[calc(100px+env(safe-area-inset-bottom))]" />
+      {/* Phones only: from 900px the header carries the nav (DesktopNav). */}
+      <div aria-hidden="true" className="h-[calc(100px+env(safe-area-inset-bottom))] desk:hidden" />
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-10 px-3.5 pb-[calc(12px+env(safe-area-inset-bottom))]"
+        className="fixed inset-x-0 bottom-0 z-10 px-3.5 pb-[calc(12px+env(safe-area-inset-bottom))] desk:hidden"
       >
         <ul className="mx-auto grid h-[72px] max-w-[362px] grid-cols-4 rounded-[23px] border border-white/90 bg-white/85 px-1.5 shadow-[0_14px_42px_rgb(64_48_71/0.14)] backdrop-blur-xl">
-          {TABS.map(({ label, icon: Icon, href, also = [] }) => {
-            const active = href === "/" ? pathname === "/" : [href, ...also].some((p) => under(pathname, p));
+          {TABS.map((tab) => {
+            const { label, icon: Icon, href } = tab;
+            const active = isTabActive(pathname, tab);
             return (
               <li key={label} className="flex">
                 <Link

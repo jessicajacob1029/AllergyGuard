@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EmergencyCardSync } from "@/components/emergency-card-sync";
 import { APP_NAME } from "@/lib/constants";
+import { DesktopNav } from "./desktop-nav";
 import { AppIconTile } from "./icons";
 
 /**
@@ -20,23 +21,27 @@ export function EmergencyButton() {
 }
 
 /**
- * Sticky top bar on every page except /emergency itself. Signed out, it spans
- * the full width on laptops (logo left, Emergency right); signed in, it lines
- * up with the phone-width content. No Log in link: the pages have their own.
+ * Sticky top bar on every page except /emergency itself. No Log in link: the
+ * pages have their own. Signed out, it spans the full width from 768px. Signed
+ * in, from 900px it spans the full width with the main nav in the middle
+ * (the bottom bar is phones only).
  */
 export function AppBar({ signedIn }: { signedIn: boolean }) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/60 bg-white/35 backdrop-blur-xl">
       <div
         className={`mx-auto flex h-[68px] items-center justify-between gap-2 px-4 ${
-          signedIn ? "max-w-sm" : "max-w-sm md:max-w-none md:px-8 lg:px-12"
+          signedIn
+            ? "max-w-sm desk:grid desk:max-w-none desk:grid-cols-[1fr_auto_1fr] desk:px-8"
+            : "max-w-sm md:max-w-none md:px-8 lg:px-12"
         }`}
       >
-        <Link href="/" className="flex min-h-11 items-center gap-2.5 text-base font-bold tracking-[-0.02em] text-ink">
+        <Link href="/" className="flex min-h-11 items-center gap-2.5 justify-self-start text-base font-bold tracking-[-0.02em] text-ink">
           <AppIconTile size="sm" />
           <span>{APP_NAME}</span>
         </Link>
-        <div className="flex items-center gap-1">
+        {signedIn && <DesktopNav />}
+        <div className="flex items-center gap-1 justify-self-end">
           {signedIn && <EmergencyCardSync />}
           <EmergencyButton />
         </div>
