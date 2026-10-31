@@ -10,6 +10,7 @@
 //   to /~offline, which links to /emergency.
 // - Supabase and other cross-origin requests aren't intercepted at all.
 import { CacheFirst, ExpirationPlugin, NetworkOnly, Serwist, type PrecacheEntry, type SerwistGlobalConfig } from "serwist";
+import { clickTarget, notificationFromPush } from "../lib/push/notification";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -45,3 +46,28 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Phase 7: medication expiry reminders (web push). Shows the notification the
+// server sent, and opens the app on a tap. Nothing here caches anything or
+// touches /emergency or its offline data.
+self.addEventListener("push", (event) => {
+  const { title, options } = notificationFromPush(event.data?.text() ?? null);
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(clickTarget(event.notification.data), self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const open = windows.find((client) => new URL(client.url).origin === self.location.origin);
+      if (open) {
+        await open.focus();
+        await open.navigate(target).catch(() => {});
+        return;
+      }
+      await self.clients.openWindow(target);
+    })(),
+  );
+});
