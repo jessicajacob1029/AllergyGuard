@@ -7,12 +7,13 @@ import { TREATMENT_LABELS } from "@/lib/diary/codes";
 import type { ReactionRow } from "@/lib/diary/reactions";
 import { DeleteReaction } from "../delete-reaction";
 import { DateTile, SeverityDots, SymptomPills } from "../reaction-parts";
+import { frameClass } from "@/components/ui/frame";
 
 /** One reaction: hero with date, food and severity, then details and actions. Pure view. */
 export function ReactionDetailView({ reaction, saved = false }: { reaction: ReactionRow; saved?: boolean }) {
   return (
     <main className="flex flex-1 flex-col">
-      <div className="mx-auto w-full max-w-sm space-y-3.5 px-4 pb-6 pt-4">
+      <div className={`${frameClass()} space-y-3.5 pb-6 pt-4 desk:pb-12 desk:pt-8`}>
         {saved && (
           <p role="status" className={formSuccessClass}>
             Reaction saved.

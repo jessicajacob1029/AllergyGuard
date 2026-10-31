@@ -25,6 +25,7 @@ import { ContactStep } from "./steps/contact-step";
 import { DisclaimerStep } from "./steps/disclaimer-step";
 import { MedicationsStep } from "./steps/medications-step";
 import { NameStep } from "./steps/name-step";
+import { frameClass } from "@/components/ui/frame";
 
 type Props = {
   initialStep: WizardStep;
@@ -149,7 +150,7 @@ function DoneStep({ hasContact }: { hasContact: boolean }) {
           </StepTile>
         }
       />
-      <div className="mx-auto w-full max-w-sm space-y-6 px-4 pb-8">
+      <div className={`${frameClass()} space-y-6 pb-8 desk:pb-12`}>
         <p className="text-[15px] leading-relaxed text-muted">
           Your allergy profile is saved.
           {!hasContact && " You can add an emergency contact any time from your profile."}

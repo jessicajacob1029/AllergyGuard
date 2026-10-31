@@ -4,6 +4,7 @@ import { ScanRow } from "@/components/scans/scan-row";
 import { HeaderBand } from "@/components/ui/header-band";
 import type { Verdict } from "@/lib/allergen/check";
 import { VERDICT_FILTERS, type ScanListRow } from "@/lib/products/scan-list";
+import { frameClass } from "@/components/ui/frame";
 
 /** How many rows the page shows (newest first). */
 export const SCAN_HISTORY_LIMIT = 100;
@@ -18,8 +19,8 @@ const EMPTY_FILTERED: Record<Verdict, string> = {
 export function ScanHistoryView({ scans, verdict }: { scans: readonly ScanListRow[]; verdict: Verdict | null }) {
   return (
     <main className="flex flex-1 flex-col">
-      <HeaderBand eyebrow="Your activity" title="Scan history" subtitle="Products checked against your profile." />
-      <div className="mx-auto w-full max-w-sm space-y-3.5 px-4 pb-6">
+      <HeaderBand width="medium" eyebrow="Your activity" title="Scan history" subtitle="Products checked against your profile." />
+      <div className={`${frameClass("medium")} space-y-3.5 pb-6 desk:pb-12`}>
         {/* Plain links, so a filtered view works without JavaScript and survives a reload. */}
         <nav aria-label="Filter by verdict">
           <ul className="grid grid-cols-4 gap-1.5">

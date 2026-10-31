@@ -12,6 +12,7 @@ import {
 import { HeaderBand } from "@/components/ui/header-band";
 import { AlertIcon, MedicineIcon, PersonIcon, PhoneIcon, ShieldIcon } from "@/components/ui/icons";
 import { TOTAL_STEPS } from "@/lib/profile/onboarding";
+import { frameClass } from "@/components/ui/frame";
 
 type Props = {
   step: number;
@@ -131,7 +132,7 @@ export function StepShell({
         }
       />
 
-      <div className="mx-auto w-full max-w-sm space-y-6 px-4 pb-8">
+      <div className={`${frameClass()} space-y-6 pb-8 desk:pb-12`}>
         {description && <p className="text-[15px] leading-relaxed text-muted">{description}</p>}
 
         {children}

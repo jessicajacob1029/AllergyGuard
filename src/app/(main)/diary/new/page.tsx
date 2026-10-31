@@ -4,6 +4,7 @@ import { APP_NAME } from "@/lib/constants";
 import { isUuid } from "@/lib/diary/reactions";
 import { requireDiaryProfile } from "../load";
 import { ReactionForm } from "../reaction-form";
+import { frameClass } from "@/components/ui/frame";
 
 export const metadata: Metadata = { title: `Log a reaction · ${APP_NAME}` };
 
@@ -30,7 +31,7 @@ export default async function NewReactionPage({ searchParams }: PageProps<"/diar
   return (
     <main className="flex flex-1 flex-col">
       <HeaderBand eyebrow="Reaction diary" title="Log a reaction" subtitle="Write down what happened while you remember." />
-      <div className="mx-auto w-full max-w-sm px-4 pb-6">
+      <div className={`${frameClass()} pb-6 desk:pb-12`}>
         <ReactionForm
           reactionId={null}
           initial={linked ? { food: linked.label?.slice(0, 200) ?? "", scanId: linked.id } : {}}

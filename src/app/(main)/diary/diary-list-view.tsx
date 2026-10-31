@@ -4,12 +4,14 @@ import { HeaderBand } from "@/components/ui/header-band";
 import { PlusIcon } from "@/components/ui/icons";
 import type { ReactionRow } from "@/lib/diary/reactions";
 import { ReactionCard } from "./reaction-parts";
+import { frameClass } from "@/components/ui/frame";
 
 /** /diary: reactions newest first, with an add button. Pure view. */
 export function DiaryListView({ reactions, deleted = false }: { reactions: readonly ReactionRow[]; deleted?: boolean }) {
   return (
     <main className="flex flex-1 flex-col">
       <HeaderBand
+        width="medium"
         eyebrow="Reaction tracker"
         title="My reactions"
         subtitle="Track your allergy reactions over time."
@@ -23,7 +25,7 @@ export function DiaryListView({ reactions, deleted = false }: { reactions: reado
           </Link>
         }
       />
-      <div className="mx-auto w-full max-w-sm space-y-3 px-4 pb-6">
+      <div className={`${frameClass("medium")} space-y-3 pb-6 desk:pb-12`}>
         {deleted && (
           <p role="status" className={formSuccessClass}>
             Reaction deleted.
@@ -41,7 +43,7 @@ export function DiaryListView({ reactions, deleted = false }: { reactions: reado
             </Link>
           </div>
         ) : (
-          <ul className="space-y-2.5" aria-label="Reactions, newest first">
+          <ul className="space-y-2.5 desk:grid desk:grid-cols-2 desk:gap-3 desk:space-y-0" aria-label="Reactions, newest first">
             {reactions.map((r) => (
               <li key={r.id}>
                 <ReactionCard reaction={r} />

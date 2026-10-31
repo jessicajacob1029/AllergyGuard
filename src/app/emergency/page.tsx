@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AlertIcon } from "@/components/ui/icons";
 import { EmergencyCardView } from "./emergency-card-view";
+import { frameClass } from "@/components/ui/frame";
 
 export const metadata: Metadata = { title: "Emergency" };
 
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Emergency" };
 export default function EmergencyPage() {
   return (
     <main className="flex flex-1 flex-col bg-[#fffaf8] pb-10">
-      <div className="mx-auto w-full max-w-sm px-4 pt-3">
+      <div className={`${frameClass()} pt-3 desk:pt-8`}>
         {/* Plain <a>, a full document load: /emergency has its own layout
             tree, and when offline the service worker answers with /~offline. */}
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}

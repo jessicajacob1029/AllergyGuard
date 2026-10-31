@@ -7,6 +7,7 @@ import { APP_NAME } from "@/lib/constants";
 import { loadOwnProfile } from "@/lib/profile/load";
 import { createClient } from "@/lib/supabase/server";
 import { Scanner } from "./scanner";
+import { frameClass } from "@/components/ui/frame";
 
 export const metadata: Metadata = { title: `Scan a product · ${APP_NAME}` };
 
@@ -32,7 +33,7 @@ export default async function ScanPage() {
           </Link>
         }
       />
-      <div className="mx-auto w-full max-w-sm px-4 pb-6">
+      <div className={`${frameClass()} pb-6 desk:pb-12`}>
         <Scanner />
       </div>
     </main>

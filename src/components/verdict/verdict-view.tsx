@@ -7,6 +7,7 @@ import { Pill } from "@/components/ui/pill";
 import { SectionCard } from "@/components/ui/section-card";
 import type { Tone } from "@/components/ui/tones";
 import { highlightSegments } from "./highlight";
+import { frameClass } from "@/components/ui/frame";
 
 // Shared by barcode (Phase 4) and label photo (Phase 5) results. Every verdict
 // shows its word and an icon, never colour alone (CLAUDE.md "Verdicts").
@@ -105,7 +106,7 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
         }
       />
 
-      <div className="mx-auto w-full max-w-sm space-y-3.5 px-4 pb-6">
+      <div className={`${frameClass()} space-y-3.5 pb-6 desk:pb-12`}>
         {product && (
           <div className="glass gradient-soft rounded-card p-6">
             <p className="eyebrow">Scanned product</p>
