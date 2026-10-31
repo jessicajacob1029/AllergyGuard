@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ComponentType, ReactNode } from "react";
 import { autoWidth, primaryButtonClass } from "@/components/form-styles";
 import { InstallHint } from "@/components/install-hint";
+import { MedicationBanner } from "@/components/medication-banner";
 import { ScanRow } from "@/components/scans/scan-row";
 import { allergenEmoji } from "@/components/ui/allergen-emoji";
 import { frameClass } from "@/components/ui/frame";
@@ -62,6 +63,8 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
             }
           />
         </div>
+
+        <MedicationBanner medications={bundle.medications} />
 
         <InstallHint />
 
@@ -154,7 +157,7 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
               <Tile Icon={BookIcon} label="Diary" href="/diary" />
             </li>
             <li>
-              <Tile Icon={MedicineIcon} label="Medication" />
+              <Tile Icon={MedicineIcon} label="Medication" href="/profile#medications" />
             </li>
           </ul>
         </nav>
