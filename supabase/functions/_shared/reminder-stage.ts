@@ -27,8 +27,17 @@ export type ReminderStage = (typeof REMINDER_STAGES)[number];
  *   Example: 5 days left, nothing sent yet → "7d" (the 30-day one is skipped).
  */
 export function reminderStage(daysLeft: number, alreadySent: readonly ReminderStage[]): ReminderStage | null {
-  // TODO(you): 5 to 10 lines. REMINDER_STAGES.indexOf() gives each stage's urgency (0 = earliest).
-  void daysLeft;
-  void alreadySent;
-  throw new Error("reminderStage() is not written yet");
+  // Which window are we in today?
+  const stage: ReminderStage | null =
+    daysLeft === 0 ? "today"
+    : daysLeft === 1 ? "1d"
+    : daysLeft >= 2 && daysLeft <= 7 ? "7d"
+    : daysLeft >= 8 && daysLeft <= 30 ? "30d"
+    : null; // more than 30 days left, or already expired
+  if (stage === null) return null;
+
+  // Send it only if it's more urgent than anything already sent
+  // (this also blocks repeats and going back to an earlier reminder).
+  const mostUrgentSent = Math.max(-1, ...alreadySent.map((s) => REMINDER_STAGES.indexOf(s)));
+  return REMINDER_STAGES.indexOf(stage) > mostUrgentSent ? stage : null;
 }
