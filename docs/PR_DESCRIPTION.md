@@ -516,7 +516,8 @@ They're sent every morning at 08:00 IST.
   - a second run sent nothing.
 - **End to end:**
   - **Email:** a reminder sent to Jessica's own account arrived, with correct content and working links.
-  - **Push:** the test notification arrived in Chrome on a laptop.
+  - **Push:** the test notification arrived in Chrome on a laptop, and on an iPhone in the Home Screen app
+    (production).
 - The offline emergency card still works with the network fully cut, because the service worker change only adds the push listeners.
 - **Known:** the test email landed in spam because of Resend's test sender.
 
@@ -524,11 +525,11 @@ They're sent every morning at 08:00 IST.
 
 - [ ] Verify a sending domain in Resend and change `REMINDER_FROM`. The test sender only reaches the Resend
       account's own address, and its emails go to spam.
-- [ ] iPhone push from the Home Screen app (after the merge).
+- [x] iPhone push from the Home Screen app (test notification arrived on production, 2026-11-01).
 - [ ] Two-user RLS test for the three new tables.
 
 ### Phase 7 "Done when"
 
 - [x] A medication set to expire in 7 days triggers a notification in testing (email on 2026-11-01; push test
-      notification on a laptop)
+      notification on a laptop and on an iPhone from the Home Screen app)
 - [x] Settings let the user turn notifications on or off (Profile → Reminders: email switch, push on/off per device)

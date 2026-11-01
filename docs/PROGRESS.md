@@ -34,9 +34,9 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   (see "Merge to the fork's main" below).
 - [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
 - [x] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron). Built on `phase-7`, email and push tested
-  end to end, daily job scheduled (08:00 IST), merged into the fork's `main` on 2026-11-01. Still open: iPhone
-  push from the Home Screen app, the two-user RLS test for the three new tables, and a sending domain before
-  real users (see "Phase 7" below).
+  end to end (laptop Chrome and the iPhone Home Screen app), daily job scheduled (08:00 IST), merged into the
+  fork's `main` on 2026-11-01. Still open: the two-user RLS test for the three new tables, and a sending domain
+  before real users (see "Phase 7" below).
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
@@ -45,8 +45,8 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 the Supabase Site URL set to `https://allergy-guard-nine.vercel.app`; changing the QA account's password.
 Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
 **Phase 7 is on the fork's `main`** (2026-11-01): reminders by email and push, daily at 08:00 IST. Before real
-users: a sending domain in Resend (the test sender lands in spam and only reaches the owner's address). After the
-merge: the user's iPhone push test from the Home Screen app; the two-user RLS test for the Phase 7 tables.
+users: a sending domain in Resend (the test sender lands in spam and only reaches the owner's address). iPhone push
+from the Home Screen app works (2026-11-01). Still to do: the two-user RLS test for the Phase 7 tables.
 Phase 5 stays paused on `phase-5`. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
 
 ## Demo prep (2026-10-28, on the fork's `main`)
@@ -137,8 +137,9 @@ Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`
   → Reminders (green email switch, Turn on notifications when the browser allows notifications; "blocked" message
   when it doesn't); `/unsubscribe` confirm page and the bad-link page; no sideways scroll, axe 0, no page errors.
   The live worker has the push listeners; **offline `/emergency` passed at 1440 and 390** (network fully cut).
-- **Still to do:** iPhone push from the Home Screen app (after the merge, iOS 16.4+); the two-user RLS test for
-  `reminder_settings`, `push_subscriptions` and `medication_reminders` (like Phase 6).
+- **iPhone (2026-11-01, user):** push from the Home Screen app on production works; the test notification arrived.
+- **Still to do:** the two-user RLS test for `reminder_settings`, `push_subscriptions` and `medication_reminders`
+  (like Phase 6).
 - Deploy note: the first `send-test-push` deploy (version 1) went out with a placeholder shared file by mistake and
   was replaced by version 2 within two minutes, before any secrets existed.
 
