@@ -435,3 +435,100 @@ Two short public pages in plain English, styled like the rest of the app.
 ### When Phase 5 is merged
 
 - [ ] Update the "Label photos (coming soon)" section and the "Last updated" date.
+
+---
+
+## Phase 7: Medication expiry reminders
+
+Reminders 30, 7 and 1 days before a medication expires, and on the expiry day, by push notification or email.
+They're sent every morning at 08:00 IST.
+
+### What's included
+
+- **When:** 8–30 days left → the 30-day reminder; 2–7 → 7-day; 1 → 1-day; 0 → "expires today". Days are counted
+  on India (IST) calendar dates, not UTC.
+  - A medication added late still gets one reminder.
+  - Medications without an expiry date are skipped.
+  - `reminderStage()` in `supabase/functions/_shared/reminder-stage.ts` decides which reminder is due (written by Jessica).
+- **Never twice, but retried if nothing arrived:**
+  - A reminder counts as sent only when push or email actually delivered it.
+  - If every channel failed, the error is recorded and the next day's run tries again while that reminder's window lasts.
+  - Claiming a reminder is one atomic database statement, so two runs can't both send it.
+- **Push:** Profile → Reminders → **Turn on notifications**. Permission is only asked after that tap, never on
+  page load.
+  - There's a **Send a test notification** button.
+  - Push subscriptions the push service reports as gone (404/410) are deleted.
+  - Logging out turns push off on that device.
+  - "Turn on notifications" gives up after 15 seconds with "Notifications aren't available here right now. Email reminders still work."
+  - On iPhone, push only works in the Home Screen app (iOS 16.4+); in Safari the card explains how to install it.
+- **Email (Resend):** sent when push is off or didn't reach any device.
+  - Content: the medication, its dose and expiry date, a link to update it, and the "aid, not medical advice" line.
+  - Every email has a **Turn off email reminders** link. It opens `/unsubscribe`, which needs no login and has a confirm button.
+  - Gmail's own one-click Unsubscribe button works too (`/api/unsubscribe`).
+  - Email reminders are on by default.
+- **Home:** a red banner when a medication has expired, amber when it expires within 30 days. The Medication
+  shortcut now opens the medications in Profile.
+- **Privacy page:** a new "Medication reminders" section.
+
+### Database (2 migrations, already applied to the shared project; don't re-run them)
+
+- `20261031173904_medication_reminders`: three new tables, all with RLS:
+  - `reminder_settings`: per account; email on and push off by default; a 64-character random unsubscribe token.
+  - `push_subscriptions`: one row per browser.
+  - `medication_reminders`: one row per medication, expiry date and reminder, so a reminder can't be sent twice.
+
+  Also switches on `pg_cron` and `pg_net`.
+- `20261101000000_reminder_retry`: adds delivery status (sending / delivered / failed) and attempts, and
+  `claim_medication_reminder()`. It was run in the SQL Editor, so it has no recorded version in the migration list.
+- Functions:
+  - `due_medication_reminders()` and `claim_medication_reminder()` can only be run by the service role.
+  - `unsubscribe_email(token)` is open to anonymous visitors and only switches email off.
+  - `save_push_subscription()` is for signed-in users.
+
+### Edge Functions and the daily job
+
+- `medication-reminders` rejects every request without the cron secret (403). Its logic is in
+  `supabase/functions/_shared/` and tested with Vitest. `npm run typecheck:functions` typechecks it.
+- `send-test-push` needs a signed-in user and only reaches that user's own devices.
+- pg_cron job `medication-reminders`: `30 2 * * *` (02:30 GMT = 08:00 IST). It reads the cron secret from Vault.
+- **Setup and secrets:** `docs/PHASE-7-SETUP.md` covers the VAPID keys, the Resend API key, the cron secret and the
+  Vault secret. None of them are in the repo.
+
+### New dependencies
+
+- None in the app. The Edge Functions import `npm:web-push@3.6.7` (for push encryption and signing) and
+  `npm:@supabase/supabase-js@2.117.1` through Deno. Resend is called with plain `fetch`.
+
+### Testing
+
+- `npm run test`: 693 tests. These cover:
+  - IST dates around midnight;
+  - every reminder window;
+  - the retry rules (email fails with push off → retried; push succeeds → not retried; both work → sent once);
+  - deleting devices on 404/410;
+  - the cron secret check;
+  - the email and its unsubscribe headers;
+  - the Reminders card, the Home banner and unsubscribe.
+- Deployed function:
+  - the self-check passed (push encryption and signing work on Supabase);
+  - requests without the secret got 403;
+  - a dry run and a real run worked;
+  - a second run sent nothing.
+- **End to end:**
+  - **Email:** a reminder sent to Jessica's own account arrived, with correct content and working links.
+  - **Push:** the test notification arrived in Chrome on a laptop.
+- The offline emergency card still works with the network fully cut, because the service worker change only adds the push listeners.
+- **Known:** the test email landed in spam because of Resend's test sender.
+
+### Before real users
+
+- [ ] Verify a sending domain in Resend and change `REMINDER_FROM`. The test sender only reaches the Resend
+      account's own address, and its emails go to spam.
+- [ ] iPhone push from the Home Screen app (after the merge).
+- [ ] Two-user RLS test for the three new tables.
+
+### Phase 7 "Done when"
+
+- [x] A medication set to expire in 7 days triggers a notification in testing (email on 2026-11-01; push test
+      notification on a laptop)
+- [x] Settings let the user turn notifications on or off (Profile → Reminders: email switch, push on/off per device)

@@ -33,9 +33,10 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   merged into the fork's `main` on 2026-10-31 (fast-forward to `197e3b2`) and checked on production
   (see "Merge to the fork's main" below).
 - [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
-- [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
-  Plan approved 2026-10-31 (`docs/PHASE-7-PLAN.md`); **built on branch `phase-7`** (fork only, not merged). Waiting
-  for: the user's `reminderStage()`, and the keys and secrets in `docs/PHASE-7-SETUP.md`. See "Phase 7" below.
+- [x] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron). Built on `phase-7`, email and push tested
+  end to end, daily job scheduled (08:00 IST), merged into the fork's `main` on 2026-11-01. Still open: iPhone
+  push from the Home Screen app, the two-user RLS test for the three new tables, and a sending domain before
+  real users (see "Phase 7" below).
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
@@ -43,10 +44,10 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 `allergy-guard-nine.vercel.app`. Still open: the user's real Google sign-in on iPhone Safari and the Home Screen app;
 the Supabase Site URL set to `https://allergy-guard-nine.vercel.app`; changing the QA account's password.
 Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
-**Phase 7 is built on `phase-7`** and waits for two things from the user: `reminderStage()` in
-`supabase/functions/_shared/reminder-stage.ts` (its 16 tests fail until then), and the keys and secrets
-(`docs/PHASE-7-SETUP.md`). Don't merge to `main` until the user says so. Next session: run `/clear`, then say
-"continue from docs/PROGRESS.md".
+**Phase 7 is on the fork's `main`** (2026-11-01): reminders by email and push, daily at 08:00 IST. Before real
+users: a sending domain in Resend (the test sender lands in spam and only reaches the owner's address). After the
+merge: the user's iPhone push test from the Home Screen app; the two-user RLS test for the Phase 7 tables.
+Phase 5 stays paused on `phase-5`. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
 
 ## Demo prep (2026-10-28, on the fork's `main`)
 Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on local branch `fork-main`
@@ -62,7 +63,7 @@ Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on
 - **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
   camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
 
-## Phase 7: Medication expiry reminders (2026-10-31, branch `phase-7`, not merged)
+## Phase 7: Medication expiry reminders (2026-10-31 to 2026-11-01, branch `phase-7`, merged into the fork's `main`)
 Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`.
 - **Agreed:** email reminders on by default; Resend's test sender for now (domain later); the user writes
   `reminderStage()`. Also required: IST calendar dates (tests around midnight IST), delete push subscriptions on
@@ -104,9 +105,35 @@ Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`
     row (QA account: email on, push off, 64-character token). No other account touched.
   - The functions' version numbers jumped to 20 when the secrets were saved; `send-test-push`'s code fingerprint
     is unchanged, so no code changed.
-- **Still to do:** a delivered 7-day reminder (push on a laptop, or email once Resend can reach the QA address);
-  unsubscribe test; two-user RLS test for the three tables; schedule the cron job (needs approval); the user's
-  laptop and iPhone tests.
+- **Fix (2026-11-01, user's request): a reminder only counts as sent when a channel delivered it.** Migration
+  `20261101000000_reminder_retry.sql` (run by the user in the SQL Editor after two `apply_migration` prompts were
+  declined, so it has no recorded version; checked read-only afterwards): `medication_reminders.status`
+  (sending / delivered / failed), `attempts`, `updated_at`; `claim_medication_reminder()` (one atomic insert or
+  re-claim of a FAILED record only, service role only); `due_medication_reminders(date, only_email)` counts
+  delivered stages only, and `only_email` limits a test run to one account. All channels failed → recorded with the
+  error, retried by the next run while the window lasts; then the next stage takes over. Tests: email fails with
+  push off → retried; push delivers and email would fail → not retried; both work → sent once; plus push fails /
+  email works, both fail, window passing, another run sending. The QA epipen's earlier failed record was kept
+  (the delete was declined) and is retried automatically.
+- **End-to-end tests (2026-11-01):**
+  - **Email (user's own account):** temporary "Test EpiPen" expiring in 6 days; dry run, then a real run limited to
+    that account → 7-day reminder `sent`, record `delivered` on attempt 1. The email arrived **in Gmail spam**
+    (resend.dev test sender; the user marked it not spam); content, update link and unsubscribe confirm page all
+    correct. Test EpiPen deleted by the user.
+  - **Push (user's laptop, Chrome, own account):** turned on and the test notification arrived. It hung at first on
+    the protected preview: Vercel Deployment Protection redirected the service worker to Vercel's login. With
+    protection off it worked. Fix: "Turn on notifications" now gives up after 15 s with "Notifications aren't
+    available here right now. Email reminders still work."
+  - The email switch is now green with a check mark when on (grey with a dark outline when off).
+- **Daily job:** `cron.schedule('medication-reminders', '30 2 * * *', …)`, job 1, active; `cron.timezone` is GMT,
+  so it runs at **08:00 IST**. The secret is read from Vault inside the job. First run: 2026-11-02.
+  Check: `select * from cron.job_run_details order by start_time desc limit 5;`
+  Stop: `select cron.unschedule('medication-reminders');`
+- **Before real users:** verify a sending domain in Resend and change `REMINDER_FROM`. The resend.dev test sender
+  only reaches the Resend account's own address and lands in spam. Until then the QA account's email reminders
+  fail (403) and are retried daily while their window lasts (harmless, recorded as failed).
+- **Still to do:** iPhone push from the Home Screen app (after the merge, iOS 16.4+); the two-user RLS test for
+  `reminder_settings`, `push_subscriptions` and `medication_reminders` (like Phase 6).
 - Deploy note: the first `send-test-push` deploy (version 1) went out with a placeholder shared file by mistake and
   was replaced by version 2 within two minutes, before any secrets existed.
 
