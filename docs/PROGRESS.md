@@ -132,6 +132,11 @@ Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`
 - **Before real users:** verify a sending domain in Resend and change `REMINDER_FROM`. The resend.dev test sender
   only reaches the Resend account's own address and lands in spam. Until then the QA account's email reminders
   fail (403) and are retried daily while their window lasts (harmless, recorded as failed).
+- **Merged and checked live (2026-11-01):** fork `main` fast-forwarded to `0253bf2`. On `allergy-guard-nine.vercel.app`
+  with the QA account (read only), 1440 and 390: Home banner "Your epipen expires in 6 days (7 Nov 2026)"; Profile
+  → Reminders (green email switch, Turn on notifications when the browser allows notifications; "blocked" message
+  when it doesn't); `/unsubscribe` confirm page and the bad-link page; no sideways scroll, axe 0, no page errors.
+  The live worker has the push listeners; **offline `/emergency` passed at 1440 and 390** (network fully cut).
 - **Still to do:** iPhone push from the Home Screen app (after the merge, iOS 16.4+); the two-user RLS test for
   `reminder_settings`, `push_subscriptions` and `medication_reminders` (like Phase 6).
 - Deploy note: the first `send-test-push` deploy (version 1) went out with a placeholder shared file by mistake and
