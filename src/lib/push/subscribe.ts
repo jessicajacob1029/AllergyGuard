@@ -14,13 +14,36 @@ export function urlBase64ToUint8Array(base64url: string): Uint8Array<ArrayBuffer
 
 export type SubscribeResult =
   | { ok: true; endpoint: string }
-  | { ok: false; reason: "blocked" | "dismissed" | "failed"; message: string };
+  | { ok: false; reason: "blocked" | "dismissed" | "unavailable" | "failed"; message: string };
+
+/** How long to wait for the service worker and the push service before giving up. */
+export const SUBSCRIBE_TIMEOUT_MS = 15_000;
+
+export const UNAVAILABLE_MESSAGE = "Notifications aren't available here right now. Email reminders still work.";
+
+class TimeoutError extends Error {}
+
+/** Rejects with a TimeoutError if `promise` hasn't settled within `ms`. */
+export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new TimeoutError(`Timed out after ${ms} ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
 
 /**
  * Asks for permission (must run from a tap: iOS refuses otherwise), subscribes
  * with our service worker and saves the device with save_push_subscription().
+ * Never waits forever: if the service worker or the push service doesn't answer
+ * within SUBSCRIBE_TIMEOUT_MS (e.g. no service worker on this page, or a login
+ * wall in front of it), it gives up with UNAVAILABLE_MESSAGE.
  */
-export async function subscribeThisDevice(supabase: SupabaseClient, vapidPublicKey: string): Promise<SubscribeResult> {
+export async function subscribeThisDevice(
+  supabase: SupabaseClient,
+  vapidPublicKey: string,
+  timeoutMs: number = SUBSCRIBE_TIMEOUT_MS,
+): Promise<SubscribeResult> {
   const permission = await Notification.requestPermission();
   if (permission === "denied") {
     return { ok: false, reason: "blocked", message: "Notifications are blocked for this site." };
@@ -28,14 +51,27 @@ export async function subscribeThisDevice(supabase: SupabaseClient, vapidPublicK
   if (permission !== "granted") {
     return { ok: false, reason: "dismissed", message: "Notifications weren't turned on. Tap the button to try again." };
   }
+  let subscription: PushSubscription;
   try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription =
-      (await registration.pushManager.getSubscription()) ??
-      (await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-      }));
+    subscription = await withTimeout(
+      (async () => {
+        if (!("serviceWorker" in navigator)) throw new TimeoutError("No service worker support");
+        const registration = await navigator.serviceWorker.ready;
+        return (
+          (await registration.pushManager.getSubscription()) ??
+          (await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+          }))
+        );
+      })(),
+      timeoutMs,
+    );
+  } catch (error) {
+    console.error("Notifications unavailable", error);
+    return { ok: false, reason: "unavailable", message: UNAVAILABLE_MESSAGE };
+  }
+  try {
     const json = subscription.toJSON();
     const { error } = await supabase.rpc("save_push_subscription", {
       p_endpoint: subscription.endpoint,

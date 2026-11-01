@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { autoWidth, primaryButtonClass, secondaryButtonClass, tertiaryButtonClass } from "@/components/form-styles";
+import { CheckIcon } from "@/components/ui/icons";
 import { useHydrated } from "@/components/ui/local-time";
 import { currentEndpoint, subscribeThisDevice, unsubscribeThisDevice } from "@/lib/push/subscribe";
 import { pushSupport, readPushEnv, type PushSupport } from "@/lib/push/support";
@@ -43,14 +44,19 @@ function Switch({ id, label, hint, checked, disabled, onChange }: {
         aria-describedby={`${id}-hint`}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-11 w-[60px] shrink-0 items-center rounded-full p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60 ${
-          checked ? "bg-ink" : "bg-[#d9d3de]"
+        className={`relative inline-flex h-11 w-[60px] shrink-0 items-center rounded-full border-2 p-0.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60 ${
+          // On: the app's "safe" green; off: grey with a dark outline (3:1 against the card).
+          checked ? "border-safe bg-safe" : "border-[#757077] bg-[#ece8ef]"
         }`}
       >
         <span
           aria-hidden="true"
-          className={`size-9 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-4" : "translate-x-0"}`}
-        />
+          className={`flex size-9 items-center justify-center rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-4 text-safe" : "translate-x-0"
+          }`}
+        >
+          {checked && <CheckIcon className="size-5" />}
+        </span>
       </button>
     </div>
   );

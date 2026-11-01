@@ -126,6 +126,31 @@ describe("RemindersSection", () => {
     expect(await screen.findByText("Email reminders are off.")).toBeTruthy();
   });
 
+  it("if the service worker never answers, says notifications aren't available (no endless spinner)", async () => {
+    const user = userEvent.setup();
+    vi.mocked(push.subscribeThisDevice).mockResolvedValue({
+      ok: false,
+      reason: "unavailable",
+      message: "Notifications aren't available here right now. Email reminders still work.",
+    });
+    render(<RemindersSection {...props} />);
+    await user.click(await screen.findByRole("button", { name: "Turn on notifications" }));
+    expect((await screen.findByRole("alert")).textContent).toBe("Notifications aren't available here right now. Email reminders still work.");
+    expect(screen.getByRole("button", { name: "Turn on notifications" }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("the email switch is green with a check mark when on, grey and outlined when off", async () => {
+    const user = userEvent.setup();
+    render(<RemindersSection {...props} />);
+    const toggle = screen.getByRole("switch", { name: "Email reminders" });
+    expect(toggle.className).toContain("bg-safe");
+    expect(toggle.querySelector("svg")).not.toBeNull();
+    await user.click(toggle);
+    expect(toggle.className).not.toContain("bg-safe");
+    expect(toggle.className).toContain("border-[#757077]");
+    expect(toggle.querySelector("svg")).toBeNull();
+  });
+
   it("says to add an expiry date when no medication has one", () => {
     render(<RemindersSection {...props} hasDatedMedication={false} />);
     expect(screen.getByText("Add an expiry date to a medication above to get reminders.")).toBeTruthy();

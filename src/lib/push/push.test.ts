@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { clickTarget, notificationFromPush, safeAppPath } from "./notification";
 import { urlBase64ToUint8Array } from "./subscribe";
 import { pushSupport, type PushEnv } from "./support";
@@ -79,5 +79,42 @@ describe("urlBase64ToUint8Array", () => {
   it("decodes a base64url VAPID key without padding", () => {
     expect([...urlBase64ToUint8Array("AQID-_8")]).toEqual([1, 2, 3, 251, 255]);
     expect(urlBase64ToUint8Array("A".repeat(87)).length).toBe(65); // a P-256 public key
+  });
+});
+
+describe("subscribeThisDevice: never spins forever", () => {
+  it("gives up after the timeout when the service worker never becomes ready", async () => {
+    const { subscribeThisDevice, UNAVAILABLE_MESSAGE } = await import("./subscribe");
+    const rpc = vi.fn();
+    vi.stubGlobal("Notification", { requestPermission: async () => "granted" });
+    vi.stubGlobal("navigator", { userAgent: "test", serviceWorker: { ready: new Promise(() => {}) } });
+    try {
+      const started = Date.now();
+      const result = await subscribeThisDevice({ rpc } as never, "AQID", 30);
+      expect(result).toEqual({ ok: false, reason: "unavailable", message: UNAVAILABLE_MESSAGE });
+      expect(UNAVAILABLE_MESSAGE).toBe("Notifications aren't available here right now. Email reminders still work.");
+      expect(Date.now() - started).toBeLessThan(1000);
+      expect(rpc).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("is unavailable straight away in a browser without service workers", async () => {
+    const { subscribeThisDevice } = await import("./subscribe");
+    vi.stubGlobal("Notification", { requestPermission: async () => "granted" });
+    vi.stubGlobal("navigator", { userAgent: "test" });
+    try {
+      expect((await subscribeThisDevice({ rpc: vi.fn() } as never, "AQID", 5000)).ok).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("uses a 15 second timeout by default", async () => {
+    const { SUBSCRIBE_TIMEOUT_MS, withTimeout } = await import("./subscribe");
+    expect(SUBSCRIBE_TIMEOUT_MS).toBe(15_000);
+    await expect(withTimeout(Promise.resolve(1), 10)).resolves.toBe(1);
+    await expect(withTimeout(new Promise(() => {}), 10)).rejects.toThrow("Timed out after 10 ms");
   });
 });
