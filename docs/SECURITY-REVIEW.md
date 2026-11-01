@@ -35,6 +35,7 @@ Effort: small (under an hour), medium (a few hours), large (a day or more).
 | D4 | **Low** (npm: high) | `source-map-js` DoS | Build tooling | Build time only | `npm audit fix` | Small |
 | D5 | **Low** (npm: high/moderate) | Dev-only tools: `vite` 8.3.1 (dev-server issues), `undici`, `vitest`/`@vitest/mocker` | Dev dependencies | Only on a dev machine running the test server | `npm audit fix` (no major upgrades needed) | Small |
 | H6 | **Info** | `Referrer-Policy` not set explicitly | Every page | Browsers default to `strict-origin-when-cross-origin`, which is what we'd set | Add it with the other headers | Small |
+| H7 | **Low** | The service worker's source map is public (`/serwist/sw.js.map`) | Live site | Real, low: it holds Serwist's code plus our `sw.ts` and push helpers, no secrets. The scanner doesn't flag it because it only checks scripts linked from the page. Found while fixing | Turn off Serwist's `sourcemap` (esbuild option in `createSerwistRoute`) | Small |
 | A3 | **Info** | Signed-out role keeps Supabase's default table permissions on 6 older tables | `profiles`, `profile_allergens`, `emergency_contacts`, `medications`, `scans`, `reactions` | Not exploitable: RLS on, no signed-out policies, so 0 rows (tested) | Defence in depth: `revoke all … from anon` on those tables, as the Phase 7 tables already do | Small |
 | A4 | **Info** | No app-level rate limits (scan lookups, test notification) | `checkBarcode`, `send-test-push` | Login, sign-up and reset are rate-limited by Supabase Auth. The rest only affects the caller's own account | Check the Supabase Auth rate limits in the dashboard. Optional per-user limit later | Medium |
 | D6 | **Info** | Dependencies use `^` ranges | `package.json` | `package-lock.json` is committed, so installs are reproducible | Optional: pin exact versions | Small |
@@ -43,6 +44,105 @@ Effort: small (under an hour), medium (a few hours), large (a day or more).
 | V1 | **Info (operational)** | Vercel Security Checkpoint now challenges every request from our network (`x-vercel-mitigated: challenge`, HTTP 403 "Failed to verify your browser") | Live site, since the scan | Not a vulnerability. Probably Vercel's bot protection reacting to the scan's 78 requests. Real browsers pass the JavaScript challenge | Check Vercel → Firewall. Make sure no challenge mode is left on by mistake, and that the PWA and Home Screen app still load | Small |
 
 **No critical or high findings in our own code.** The one high item is the Next.js version (D1).
+
+---
+
+## Fixes (branch `security-fixes`, 1 November 2026)
+
+Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leaked password protection).
+
+| ID | Status | What changed |
+|---|---|---|
+| D1 | **Fixed** | `next` 16.3.6 → **16.4.3**, and `eslint-config-next` 16.4.3, both pinned exactly. `sharp` 0.35.4 → **0.35.5**. Checked after the upgrade on a local production build: the service worker is built and active (push listeners included), the offline `/emergency` card works at 1440 and 390 with the network fully cut, Google sign-in reaches Google with PKCE and failed returns go to Log in, and the scanner's camera opens (Chromium fake camera, 640px video) and a typed barcode gives a verdict |
+| H2 | **Fixed** | `X-Frame-Options: DENY` and an enforced `frame-ancestors 'none'` on every response |
+| H3, H4 | **Fixed** | `X-Content-Type-Options: nosniff` and `Strict-Transport-Security: max-age=63072000; includeSubDomains` on every response, static files included (`next.config.ts` `headers()`, values in `src/lib/security/csp.ts`) |
+| H5 | **Fixed** | `poweredByHeader: false` |
+| H6 | **Fixed** | `Referrer-Policy: strict-origin-when-cross-origin` |
+| H1 | **Fixed (enforced)** | Content-Security-Policy added by `src/proxy.ts` (see "CSP" below). Run as Report-Only first; the one problem found (the 404 page) was fixed; then switched to enforcing, with no violations |
+| A1 | **Fixed in code. Database: run the SQL yourself. Edge Functions: deploy on merge** | Only real push services are accepted: `isKnownPushEndpoint()` (`supabase/functions/_shared/push-endpoint.ts`, 17 tests). Both Edge Functions delete and never contact a device whose address isn't on a known push service. Database: `is_known_push_endpoint()`, a check constraint on `push_subscriptions` and a clear error in `save_push_subscription()` (`20261101020000_push_endpoint_allowlist.sql`) |
+| A3 | **Ready: run the SQL yourself** | `20261101030000_revoke_anon_old_tables.sql` revokes the signed-out role's permissions on `profiles`, `profile_allergens`, `emergency_contacts`, `medications`, `scans` and `reactions`. Nothing in the app reads these tables signed out |
+| D2, D4, D5 | **Fixed** | `npm audit fix` (no `--force`): `sharp` 0.35.5, `source-map-js` 1.2.2, `undici` 7.30.1, `vite` 8.3.5, `vitest` 4.1.12 |
+| D3 | **Not fixable yet** | See "npm audit after the fixes" |
+| V1 | **Cleared by itself** | The Vercel checkpoint was temporary. The live site answered 200 again later on 1 November, with no challenge header |
+| H7 | New, **not fixed** | Found while checking the rules. Suggested fix above |
+
+### CSP
+
+- **Pages rendered per request:**
+  - `default-src 'self'`;
+  - `script-src 'self' 'nonce-<random per request>' 'strict-dynamic'`;
+  - `style-src 'self' 'unsafe-inline'`;
+  - `font-src 'self'`;
+  - `img-src 'self' data: blob:`;
+  - `media-src 'self' blob:`;
+  - `connect-src 'self' https://vwnwevrwoitvnsspudqe.supabase.co`;
+  - `worker-src 'self'`, `manifest-src 'self'`;
+  - `frame-src 'none'`, `object-src 'none'`;
+  - `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`.
+- Next.js reads the nonce from the request header and stamps it on every script. All 16 scripts on `/login` and
+  all 13 on the 404 page carry it.
+- **`/emergency` and `/~offline`** are prerendered and cached by the service worker for offline use, so they can't
+  have a per-request nonce. They use `script-src 'self' 'unsafe-inline'`. Neither page shows user-supplied text.
+- **The 404 page** was prerendered too, and Report-Only showed its 9 chunk scripts and 3 inline scripts would be
+  blocked. It's now rendered per request (`await connection()` in `src/app/not-found.tsx`), so it gets a nonce.
+- **Report-Only check, then enforcing.** A local production build, signed out and as the QA account, Chromium.
+  - Pages checked:
+    - signed out: `/`, `/login`, `/signup`, `/privacy`, `/terms`, `/unsubscribe` (valid and bad link),
+      `/emergency`, `/~offline`, a 404;
+    - Continue with Google, up to Google's sign-in page;
+    - signed in: Home, `/scan` with the camera open and a typed barcode, the scan result, `/scans`, `/diary`,
+      `/diary/new`, `/profile`, `/onboarding`, `/emergency`;
+    - service worker registration.
+  - After the 404 fix: **0 CSP reports**. Switched to enforcing and checked again: **0 violations**, and the
+    offline `/emergency` card still works at 1440 and 390.
+  - Not visited: the reaction detail and edit pages, because the QA account has no reactions. They are built the
+    same way as the other signed-in pages.
+  - Remaining console messages: the 404 page's own 404, ZXing seeing no barcode in the fake camera video, and the
+    scan page being left mid-request.
+- **Previews:** with the CSP enforced, Vercel's preview toolbar script (`vercel.live`) is blocked on preview
+  deployments. Production doesn't load it.
+- **Phase 5 (Tesseract.js OCR, WebAssembly) will need `'wasm-unsafe-eval'` in `script-src`**, and probably
+  `worker-src blob:`, when it's merged. This is noted in `src/lib/security/csp.ts` and `docs/SECURITY-RULES.md`.
+
+### vibe-check scanner after the fixes
+
+- **Before** (live site, `main`): 3 fail, 3 warn, 9 pass, 1 info.
+- **After** (local production build of `security-fixes`, `http://localhost:3100`): **0 fail, 0 warn, 18 pass,
+  2 info.** It now passes every CSP check (`default-src`, `script-src`, `object-src`, `base-uri`, `form-action`,
+  `frame-ancestors`, fetch directives), X-Frame-Options, nosniff, Referrer-Policy, static-file headers and "no
+  version headers".
+  - The two info items are expected for a local scan: no cookies on the landing page, and HSTS skipped.
+  - The preview couldn't be scanned because Vercel Deployment Protection is back on, which sends the scanner to
+    Vercel's login. The live site keeps the old headers until the merge.
+- **To do after the merge:** one scan of https://allergy-guard-nine.vercel.app to confirm HSTS on the live site
+  and the final counts.
+
+### npm audit after the fixes
+
+- **Production:** 9 issues (1 critical, 6 high, 2 moderate) → **5 (0 critical, 3 high, 2 moderate)**.
+- **All dependencies:** 28 → **20 (0 critical, 3 high, 17 moderate)**.
+- What's left, and why:
+  - **`@serwist/turbopack`, `@serwist/build` and `zod` < 4.6.6 (high), and `glob` and `minimatch` (moderate).**
+    These are only used at build time to build the service worker, with our own files as input. Serwist 9.5.12 pins
+    the vulnerable `zod`, so there's no fix until Serwist releases one. Check again when it updates.
+  - **ESLint chain (17 moderate: `eslint`, `eslint-config-next`, `typescript-eslint`, the plugins).** All come
+    through `minimatch` < 11.0.1, run only in the linter on our own files. npm's suggested "fix" is a **downgrade**
+    to `eslint@4` and `eslint-config-next@0.2.4`, which would break linting, so it wasn't applied. Wait for
+    upstream updates.
+
+### Still to do before merging
+
+1. **Run two migrations yourself** in Supabase → SQL Editor, in this order:
+   - `supabase/migrations/20261101020000_push_endpoint_allowlist.sql` (A1);
+   - `supabase/migrations/20261101030000_revoke_anon_old_tables.sql` (A3).
+
+   Then I'll check them read-only and record them in the migration history.
+2. **Rerun `scripts/rls-two-user.mjs`.** It needs the service role key in the git-ignored `.env.rls.local`. It
+   now also checks that:
+   - signed-out reads of the 6 older tables are refused;
+   - B can't save a device whose address isn't a push service.
+3. **On merge:** redeploy `medication-reminders` and `send-test-push` with the allowlist. Then do one live
+   vibe-check scan and a phone check (push test notification, offline card).
 
 ---
 
