@@ -470,7 +470,7 @@ They're sent every morning at 08:00 IST.
   shortcut now opens the medications in Profile.
 - **Privacy page:** a new "Medication reminders" section.
 
-### Database (2 migrations, already applied to the shared project; don't re-run them)
+### Database (3 migrations, already applied to the shared project; don't re-run them)
 
 - `20261031173904_medication_reminders`: three new tables, all with RLS:
   - `reminder_settings`: per account; email on and push off by default; a 64-character random unsubscribe token.
@@ -479,7 +479,9 @@ They're sent every morning at 08:00 IST.
 
   Also switches on `pg_cron` and `pg_net`.
 - `20261101000000_reminder_retry`: adds delivery status (sending / delivered / failed) and attempts, and
-  `claim_medication_reminder()`. It was run in the SQL Editor, so it has no recorded version in the migration list.
+  `claim_medication_reminder()`.
+- `20261101010000_push_takeover_guard`: another account can only take over a device's push subscription if it
+  also has that browser's encryption keys (found by the two-user test).
 - Functions:
   - `due_medication_reminders()` and `claim_medication_reminder()` can only be run by the service role.
   - `unsubscribe_email(token)` is open to anonymous visitors and only switches email off.
@@ -519,6 +521,16 @@ They're sent every morning at 08:00 IST.
   - **Push:** the test notification arrived in Chrome on a laptop, and on an iPhone in the Home Screen app
     (production).
 - The offline emergency card still works with the network fully cut, because the service worker change only adds the push listeners.
+- **Two-user RLS test (`scripts/rls-two-user.mjs`, 2026-11-01), 53 of 53 checks passed:**
+  - two temporary users on the live project, using the REST API with the anon key like the app;
+  - user B couldn't read, edit, delete or insert user A's rows in `reactions`, `reminder_settings`,
+    `push_subscriptions` or `medication_reminders`;
+  - nobody else could read A's unsubscribe token; a guessed token changed nothing;
+  - users can't write sent-reminder records or choose their own token;
+  - signed-out requests saw and changed nothing, and A's data was unchanged afterwards;
+  - the script deletes both test users at the end (also after a failure); confirmed gone.
+  - Run it with `node scripts/rls-two-user.mjs`. It needs `SUPABASE_SERVICE_ROLE_KEY` in the git-ignored
+    `.env.rls.local`, only to create and delete the test users.
 - **Known:** the test email landed in spam because of Resend's test sender.
 
 ### Before real users
@@ -526,7 +538,7 @@ They're sent every morning at 08:00 IST.
 - [ ] Verify a sending domain in Resend and change `REMINDER_FROM`. The test sender only reaches the Resend
       account's own address, and its emails go to spam.
 - [x] iPhone push from the Home Screen app (test notification arrived on production, 2026-11-01).
-- [ ] Two-user RLS test for the three new tables.
+- [x] Two-user RLS test for the three new tables (53 of 53 checks passed, 2026-11-01).
 
 ### Phase 7 "Done when"
 

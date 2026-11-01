@@ -35,8 +35,8 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
 - [x] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron). Built on `phase-7`, email and push tested
   end to end (laptop Chrome and the iPhone Home Screen app), daily job scheduled (08:00 IST), merged into the
-  fork's `main` on 2026-11-01. Still open: the two-user RLS test for the three new tables, and a sending domain
-  before real users (see "Phase 7" below).
+  fork's `main` on 2026-11-01; two-user RLS test passed (53/53). Still open: a sending domain before real users
+  (see "Phase 7" below).
 - [ ] Phase 8: Ingredient change alerts (weekly cron)
 
 ## Now
@@ -46,7 +46,7 @@ the Supabase Site URL set to `https://allergy-guard-nine.vercel.app`; changing t
 Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
 **Phase 7 is on the fork's `main`** (2026-11-01): reminders by email and push, daily at 08:00 IST. Before real
 users: a sending domain in Resend (the test sender lands in spam and only reaches the owner's address). iPhone push
-from the Home Screen app works (2026-11-01). Still to do: the two-user RLS test for the Phase 7 tables.
+from the Home Screen app works, and the two-user RLS test passed 53/53 (both 2026-11-01).
 Phase 5 stays paused on `phase-5`. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
 
 ## Demo prep (2026-10-28, on the fork's `main`)
@@ -107,7 +107,7 @@ Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`
     is unchanged, so no code changed.
 - **Fix (2026-11-01, user's request): a reminder only counts as sent when a channel delivered it.** Migration
   `20261101000000_reminder_retry.sql` (run by the user in the SQL Editor after two `apply_migration` prompts were
-  declined, so it has no recorded version; checked read-only afterwards): `medication_reminders.status`
+  declined; checked read-only afterwards; recorded in the migration history on 2026-11-01): `medication_reminders.status`
   (sending / delivered / failed), `attempts`, `updated_at`; `claim_medication_reminder()` (one atomic insert or
   re-claim of a FAILED record only, service role only); `due_medication_reminders(date, only_email)` counts
   delivered stages only, and `only_email` limits a test run to one account. All channels failed → recorded with the
@@ -138,8 +138,21 @@ Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`
   when it doesn't); `/unsubscribe` confirm page and the bad-link page; no sideways scroll, axe 0, no page errors.
   The live worker has the push listeners; **offline `/emergency` passed at 1440 and 390** (network fully cut).
 - **iPhone (2026-11-01, user):** push from the Home Screen app on production works; the test notification arrived.
-- **Still to do:** the two-user RLS test for `reminder_settings`, `push_subscriptions` and `medication_reminders`
-  (like Phase 6).
+- **Two-user RLS test (2026-11-01), 53/53 passed:** `scripts/rls-two-user.mjs` (now in the repo; Phase 6's version
+  only lived in a scratchpad). It creates two temporary confirmed users (`rls-test-<random>-a/b@example.com`) with
+  the service role key from the git-ignored `.env.rls.local`, then uses the REST API with the anon key like the app.
+  B could not read, edit, delete or insert A's rows in `reactions`, `reminder_settings`, `push_subscriptions` or
+  `medication_reminders`; nobody else could read A's unsubscribe token (B and signed out got 0 rows or 401/403,
+  including through `due_medication_reminders()`); users can't write `medication_reminders` or set their own token;
+  a guessed or malformed token changed nothing, and A's real token only turned A's email off. Signed-out requests
+  saw and changed nothing. A's data was unchanged afterwards. **Both test users were deleted by the script**
+  (admin delete 200, lookup afterwards 404; everything they created went with them).
+- **Fix found by that test (2026-11-01):** `save_push_subscription()` let any signed-in account take over another
+  account's device row if it knew the push address. Migration `20261101010000_push_takeover_guard.sql` (run by the
+  user in the SQL Editor; `apply_migration` is blocked by the auto-mode safety check; both SQL Editor migrations
+  were then recorded in `supabase_migrations.schema_migrations` by version and name): another account can only
+  take a device over with that browser's encryption keys too. The test checks it ("B takes over A's device with
+  A's address but other keys: rejected").
 - Deploy note: the first `send-test-push` deploy (version 1) went out with a placeholder shared file by mistake and
   was replaced by version 2 within two minutes, before any secrets existed.
 
