@@ -3,8 +3,9 @@
 // The logic lives in ../_shared/run-reminders.ts (tested with Vitest); this
 // file only connects it to the database, web push and Resend.
 //
-// Body (all optional, JSON): { "today": "YYYY-MM-DD", "dryRun": true, "selfCheck": true }
+// Body (all optional, JSON): { "today": "YYYY-MM-DD", "dryRun": true, "selfCheck": true, "onlyEmail": "…" }
 // - today: pretend it's another IST date (for testing); default: today in IST.
+// - onlyEmail: run for that one account only (for testing; the schedule never sends it).
 // - dryRun: list what would be sent; claims and sends nothing.
 // - selfCheck: encrypt and sign a push message for a throwaway subscription
 //   (proves web-push and the VAPID keys work here) and send nothing.
@@ -48,7 +49,7 @@ Deno.serve(async (req: Request) => {
   const missing = REQUIRED.filter((name) => !Deno.env.get(name));
   if (missing.length) return json({ error: "Missing secrets", missing }, 500);
 
-  let body: { today?: unknown; dryRun?: unknown; selfCheck?: unknown } = {};
+  let body: { today?: unknown; dryRun?: unknown; selfCheck?: unknown; onlyEmail?: unknown } = {};
   try {
     const text = await req.text();
     body = text ? JSON.parse(text) : {};
@@ -57,6 +58,8 @@ Deno.serve(async (req: Request) => {
   }
   const today = body.today === undefined ? istDate(new Date()) : String(body.today);
   if (!isIsoDate(today)) return json({ error: "today must be YYYY-MM-DD" }, 400);
+  const onlyEmail = typeof body.onlyEmail === "string" && body.onlyEmail.includes("@") ? body.onlyEmail : null;
+  if (body.onlyEmail !== undefined && !onlyEmail) return json({ error: "onlyEmail must be an email address" }, 400);
 
   webpush.setVapidDetails(Deno.env.get("VAPID_SUBJECT")!, Deno.env.get("VAPID_PUBLIC_KEY")!, Deno.env.get("VAPID_PRIVATE_KEY")!);
 
@@ -70,7 +73,7 @@ Deno.serve(async (req: Request) => {
     appUrl: Deno.env.get("APP_URL")!.replace(/\/+$/, ""),
 
     async loadDue(day) {
-      const { data, error } = await db.rpc("due_medication_reminders", { p_today: day });
+      const { data, error } = await db.rpc("due_medication_reminders", { p_today: day, p_only_email: onlyEmail });
       if (error) throw new Error(`due_medication_reminders: ${error.message}`);
       return (data as DueRow[]).map(
         (r): DueMedication => ({
@@ -96,19 +99,22 @@ Deno.serve(async (req: Request) => {
     },
 
     async claim({ medicationId, profileId, expiryDate, stage }) {
-      const { data, error } = await db
-        .from("medication_reminders")
-        .upsert(
-          { medication_id: medicationId, profile_id: profileId, expiry_date: expiryDate, stage },
-          { onConflict: "medication_id,expiry_date,stage", ignoreDuplicates: true },
-        )
-        .select("id");
+      // New, or a failed one being retried; null if delivered or being sent by another run.
+      const { data, error } = await db.rpc("claim_medication_reminder", {
+        p_medication_id: medicationId,
+        p_profile_id: profileId,
+        p_expiry_date: expiryDate,
+        p_stage: stage,
+      });
       if (error) throw new Error(`claim: ${error.message}`);
-      return data?.[0]?.id ?? null;
+      return (data as string | null) ?? null;
     },
 
-    async record(id, { push, email }) {
-      const { error } = await db.from("medication_reminders").update({ push_result: push, email_result: email }).eq("id", id);
+    async record(id, { push, email, delivered }) {
+      const { error } = await db
+        .from("medication_reminders")
+        .update({ push_result: push, email_result: email, status: delivered ? "delivered" : "failed" })
+        .eq("id", id);
       if (error) console.error("record", id, error.message);
     },
 
@@ -151,7 +157,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const report = await runReminders(deps, today, { dryRun: body.dryRun === true });
-    console.log(JSON.stringify({ today: report.today, dryRun: report.dryRun, checked: report.checked, sent: report.sent.length, alreadyClaimed: report.alreadyClaimed, removedDevices: report.removedDevices }));
+    console.log(JSON.stringify({ today: report.today, dryRun: report.dryRun, onlyOneAccount: onlyEmail !== null, checked: report.checked, attempted: report.sent.length, delivered: report.sent.filter((r) => r.delivered).length, alreadyClaimed: report.alreadyClaimed, removedDevices: report.removedDevices }));
     return json(report);
   } catch (err) {
     console.error(err);

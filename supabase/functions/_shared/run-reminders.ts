@@ -16,7 +16,7 @@ export type DueMedication = {
   name: string;
   dose: string | null;
   expiryDate: string | null;
-  /** Stages already sent for this medication and this expiry date. */
+  /** Stages already DELIVERED for this medication and expiry date (failed attempts don't count). */
   sentStages: ReminderStage[];
   /** Only set for a confirmed email address. */
   email: string | null;
@@ -34,9 +34,14 @@ export type EmailOutcome = { ok: true } | { ok: false; message: string };
 export type ReminderDeps = {
   loadDue(today: string): Promise<DueMedication[]>;
   loadDevices(ownerId: string): Promise<PushDevice[]>;
-  /** Inserts the "sent" row; returns its id, or null if this reminder was already claimed. */
+  /**
+   * Marks the reminder as being sent and returns its record id: a new record, or
+   * a FAILED one being retried. Null when it's already delivered or another run
+   * is sending it, so nothing is ever sent twice.
+   */
   claim(row: { medicationId: string; profileId: string; expiryDate: string; stage: ReminderStage }): Promise<string | null>;
-  record(id: string, result: { push: string; email: string }): Promise<void>;
+  /** delivered: at least one channel delivered (the reminder is done); false: all failed (retried next run). */
+  record(id: string, result: { push: string; email: string; delivered: boolean }): Promise<void>;
   sendPush(device: PushDevice, payload: PushPayload): Promise<PushOutcome>;
   deleteDevice(id: string): Promise<void>;
   sendEmail(to: string, email: ReminderEmail): Promise<EmailOutcome>;
@@ -48,7 +53,7 @@ export type ReminderReport = {
   dryRun: boolean;
   checked: number;
   skippedNoExpiry: number;
-  sent: { medicationId: string; stage: ReminderStage; daysLeft: number; push: string; email: string }[];
+  sent: { medicationId: string; stage: ReminderStage; daysLeft: number; push: string; email: string; delivered?: boolean }[];
   alreadyClaimed: number;
   removedDevices: number;
 };
@@ -110,8 +115,10 @@ export async function runReminders(
       continue;
     }
 
-    // Claim first, send second: a reminder already claimed (an earlier or
-    // parallel run) is never sent again. A send that fails stays claimed.
+    // Claim first, send second: a reminder that was delivered, or that another
+    // run is sending right now, is never sent again. One where every channel
+    // failed is claimed again on the next run, while its window lasts (after
+    // that, reminderStage() moves on to the next stage).
     const claimId = await deps.claim({ medicationId: due.medicationId, profileId: due.profileId, expiryDate: due.expiryDate, stage });
     if (!claimId) {
       report.alreadyClaimed++;
@@ -137,6 +144,7 @@ export async function runReminders(
     }
 
     let email = "off";
+    let emailDelivered = false;
     if (!due.emailEnabled) {
       email = "off";
     } else if (delivered > 0) {
@@ -148,11 +156,13 @@ export async function runReminders(
         due.email,
         reminderEmail({ med, stage, daysLeft, appUrl: deps.appUrl, unsubscribeToken: due.unsubscribeToken }),
       );
+      emailDelivered = outcome.ok;
       email = outcome.ok ? "sent" : `failed: ${outcome.message}`.slice(0, 300);
     }
 
-    await deps.record(claimId, { push, email });
-    report.sent.push({ medicationId: due.medicationId, stage, daysLeft, push, email });
+    const wasDelivered = delivered > 0 || emailDelivered;
+    await deps.record(claimId, { push, email, delivered: wasDelivered });
+    report.sent.push({ medicationId: due.medicationId, stage, daysLeft, push, email, delivered: wasDelivered });
   }
   return report;
 }
