@@ -18,7 +18,7 @@ const due = (over: Partial<DueMedication> = {}): DueMedication => ({
   unsubscribeToken: "t".repeat(64),
   ...over,
 });
-const device = (id: string): PushDevice => ({ id, endpoint: `https://push.example/${id}`, p256dh: "k", auth: "a" });
+const device = (id: string): PushDevice => ({ id, endpoint: `https://fcm.googleapis.com/fcm/send/${id}`, p256dh: "k", auth: "a" });
 
 type Status = "sending" | "delivered" | "failed";
 
@@ -108,6 +108,16 @@ describe("runReminders: sending", () => {
     const report = await runReminders(deps, TODAY);
     expect(deps.sendEmail).toHaveBeenCalledTimes(1);
     expect(report.sent[0]).toMatchObject({ push: "no devices", email: "sent", delivered: true });
+  });
+
+  it("never contacts a device whose address isn't a known push service; deletes it instead", async () => {
+    deps = fakes([due()], [{ id: "evil", endpoint: "https://169.254.169.254/latest/meta-data", p256dh: "k", auth: "a" }, device("d1")]);
+    const report = await runReminders(deps, TODAY);
+    expect(deps.sendPush).toHaveBeenCalledTimes(1);
+    expect((deps.sendPush.mock.calls[0] as unknown[])[0]).toMatchObject({ id: "d1" });
+    expect(deps.deleteDevice).toHaveBeenCalledWith("evil");
+    expect(report.removedDevices).toBe(1);
+    expect(report.sent[0]).toMatchObject({ push: "delivered 1 of 2", delivered: true });
   });
 
   it("deletes devices the push service reports as gone (404 and 410), then emails", async () => {
