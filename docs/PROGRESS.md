@@ -92,9 +92,21 @@ Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`
   production build: the worker contains both listeners; **offline `/emergency` passed at 1440 and 390** (network
   fully cut); Profile, Home banner (QA account's epipen, 7 days) and `/unsubscribe` at 1440 and 390: no sideways
   scroll, axe 0, no page errors.
-- **Still to do:** `reminderStage()` (user); secrets (user); redeploy `medication-reminders`; self-check and dry
-  run; the real 7-day test and the no-repeat test on the QA account; unsubscribe test; two-user RLS test for the
-  three tables; schedule the cron job; the user's laptop and iPhone tests.
+- **2026-11-01, after the user's `reminderStage()` (16/16 tests, 683 total) and secrets:** `medication-reminders`
+  redeployed. Called from the database with `pg_net`, the secret read from Vault inside the query (never seen):
+  - **Self-check:** 200; web-push encrypted (aes128gcm, 172 bytes) and VAPID-signed on Supabase's Deno. Nothing sent.
+  - **Dry run:** today = 2026-11-01 (IST); 1 medication checked (only the QA account had one due; checked first
+    with a read-only count): the QA epipen, 6 days left → `7d`, push off (no devices), email.
+  - **Real run:** the `7d` reminder was claimed and sent by email, but **Resend refused it (403)**: the test sender
+    only delivers to the Resend account's own address (`jessicajacob1029@gmail.com`), not the `+qa` address. The
+    result is recorded in `medication_reminders.email_result`; by design it isn't retried.
+  - **Second run:** nothing sent (no repeat). One `medication_reminders` row in total; one `reminder_settings`
+    row (QA account: email on, push off, 64-character token). No other account touched.
+  - The functions' version numbers jumped to 20 when the secrets were saved; `send-test-push`'s code fingerprint
+    is unchanged, so no code changed.
+- **Still to do:** a delivered 7-day reminder (push on a laptop, or email once Resend can reach the QA address);
+  unsubscribe test; two-user RLS test for the three tables; schedule the cron job (needs approval); the user's
+  laptop and iPhone tests.
 - Deploy note: the first `send-test-push` deploy (version 1) went out with a placeholder shared file by mistake and
   was replaced by version 2 within two minutes, before any secrets existed.
 
