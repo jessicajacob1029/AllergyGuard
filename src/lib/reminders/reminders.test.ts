@@ -56,28 +56,30 @@ function fakeSupabase(results: unknown[]) {
 }
 
 describe("reminder settings", () => {
-  it("defaults to email on, push off when there's no row", async () => {
+  it("defaults to email on, push off, product change alerts on when there's no row", async () => {
     const { client } = fakeSupabase([{ data: null, error: null }]);
     expect(await loadReminderSettings(client, "u1")).toEqual(DEFAULT_REMINDER_SETTINGS);
-    expect(DEFAULT_REMINDER_SETTINGS).toEqual({ pushEnabled: false, emailEnabled: true });
+    expect(DEFAULT_REMINDER_SETTINGS).toEqual({ pushEnabled: false, emailEnabled: true, productAlertsEnabled: true });
   });
 
   it("reads a saved row", async () => {
-    const { client } = fakeSupabase([{ data: { push_enabled: true, email_enabled: false }, error: null }]);
-    expect(await loadReminderSettings(client, "u1")).toEqual({ pushEnabled: true, emailEnabled: false });
+    const { client } = fakeSupabase([
+      { data: { push_enabled: true, email_enabled: false, product_alerts_enabled: false }, error: null },
+    ]);
+    expect(await loadReminderSettings(client, "u1")).toEqual({ pushEnabled: true, emailEnabled: false, productAlertsEnabled: false });
   });
 
   it("updates an existing row, without touching owner_id", async () => {
     const { client, calls } = fakeSupabase([{ data: [{ owner_id: "u1" }], error: null }]);
-    expect(await saveReminderSettings(client, "u1", { pushEnabled: true, emailEnabled: false })).toEqual({ ok: true });
-    expect(calls[0]).toBe('update([{"push_enabled":true,"email_enabled":false}])');
+    expect(await saveReminderSettings(client, "u1", { pushEnabled: true, emailEnabled: false, productAlertsEnabled: true })).toEqual({ ok: true });
+    expect(calls[0]).toBe('update([{"push_enabled":true,"email_enabled":false,"product_alerts_enabled":true}])');
     expect(calls.some((c) => c.startsWith("insert"))).toBe(false);
   });
 
   it("inserts the row the first time", async () => {
     const { client, calls } = fakeSupabase([{ data: [], error: null }, { error: null }]);
-    expect(await saveReminderSettings(client, "u1", { pushEnabled: false, emailEnabled: false })).toEqual({ ok: true });
-    expect(calls).toContain('insert([{"owner_id":"u1","push_enabled":false,"email_enabled":false}])');
+    expect(await saveReminderSettings(client, "u1", { pushEnabled: false, emailEnabled: false, productAlertsEnabled: false })).toEqual({ ok: true });
+    expect(calls).toContain('insert([{"owner_id":"u1","push_enabled":false,"email_enabled":false,"product_alerts_enabled":false}])');
   });
 
   it("reports a failed save", async () => {

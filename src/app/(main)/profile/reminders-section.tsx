@@ -105,7 +105,18 @@ export function RemindersSection({ ownerId, initial, email, vapidPublicKey, hasD
     setStatus(null);
     setError(null);
     setBusy(true);
-    await save({ ...settings, emailEnabled: on }, on ? "Email reminders are on." : "Email reminders are off.");
+    await save({ ...settings, emailEnabled: on }, on ? "Emails are on." : "Emails are off.");
+    setBusy(false);
+  }
+
+  async function toggleProductAlerts(on: boolean) {
+    setStatus(null);
+    setError(null);
+    setBusy(true);
+    await save(
+      { ...settings, productAlertsEnabled: on },
+      on ? "Product change alerts are on." : "Product change alerts are off.",
+    );
     setBusy(false);
   }
 
@@ -162,7 +173,7 @@ export function RemindersSection({ ownerId, initial, email, vapidPublicKey, hasD
     <Section
       id="reminders"
       title="Reminders"
-      description="We remind you 30, 7 and 1 days before a medication expires, and on the day itself, at 8 am."
+      description="We remind you 30, 7 and 1 days before a medication expires, and on the day itself, at 8 am. We also tell you when a product you scanned becomes less safe for you."
       status={status}
       error={error}
     >
@@ -175,10 +186,19 @@ export function RemindersSection({ ownerId, initial, email, vapidPublicKey, hasD
       <Switch
         id="email-reminders"
         label="Email reminders"
-        hint={email ? `Sent to ${email}` : "Sent to your account's email"}
+        hint={email ? `Reminders and alerts, sent to ${email}` : "Reminders and alerts, sent to your account's email"}
         checked={settings.emailEnabled}
         disabled={busy}
         onChange={toggleEmail}
+      />
+
+      <Switch
+        id="product-alerts"
+        label="Product change alerts"
+        hint="Every Sunday we re-check products you scanned in the last 6 months on Open Food Facts, and tell you if one becomes less safe for you."
+        checked={settings.productAlertsEnabled}
+        disabled={busy}
+        onChange={toggleProductAlerts}
       />
 
       <div className="space-y-3 border-t border-line pt-4">
@@ -202,8 +222,8 @@ export function RemindersSection({ ownerId, initial, email, vapidPublicKey, hasD
         ) : support === "can-ask" || support === "granted" ? (
           <>
             <p className="text-sm text-muted">
-              Get a notification on this device when a medication is about to expire. Your browser will ask for
-              permission after you tap the button.
+              Get a notification on this device when a medication is about to expire or a product you scanned
+              changes. Your browser will ask for permission after you tap the button.
             </p>
             <button type="button" onClick={turnOnPush} disabled={busy} className={autoWidth(primaryButtonClass)}>
               {busy ? "Turning on…" : "Turn on notifications"}
