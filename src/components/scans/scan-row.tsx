@@ -14,11 +14,14 @@ export function ScanRow({
   scan,
   showTime = false,
   changed = false,
+  outOfDate = false,
 }: {
   scan: ScanListRow;
   showTime?: boolean;
   /** Phase 8: Open Food Facts changed this product since (an unseen alert). */
   changed?: boolean;
+  /** An allergen was added to the profile after this check: the verdict may be out of date. */
+  outOfDate?: boolean;
 }) {
   const { title, subtitle } = scanLabel(scan);
   const Icon = scan.input === "photo" || scan.input === "paste" ? CameraIcon : BarcodeIcon;
@@ -33,6 +36,11 @@ export function ScanRow({
       <span className="min-w-0">
         <span className="line-clamp-2 break-words text-[15px] font-bold leading-snug">{title}</span>
         {subtitle && <span className="block break-words text-sm text-muted">{subtitle}</span>}
+        {outOfDate && (
+          <span className="mt-1 mr-1.5 inline-flex rounded-[8px] bg-caution-band px-2 py-0.5 text-xs font-bold text-caution-ink">
+            Allergies changed since: may be out of date
+          </span>
+        )}
         {changed && (
           <span className="mt-1 inline-flex rounded-[8px] bg-caution-band px-2 py-0.5 text-xs font-bold text-caution-ink">
             Changed since

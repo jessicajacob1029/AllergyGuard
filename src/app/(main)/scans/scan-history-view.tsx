@@ -5,6 +5,7 @@ import { ScanRow } from "@/components/scans/scan-row";
 import { HeaderBand } from "@/components/ui/header-band";
 import type { Verdict } from "@/lib/allergen/check";
 import type { AlertListItem } from "@/lib/products/product-alerts";
+import { isOutOfDate } from "@/lib/products/stale-result";
 import { VERDICT_FILTERS, type ScanListRow } from "@/lib/products/scan-list";
 import { frameClass } from "@/components/ui/frame";
 
@@ -22,11 +23,14 @@ export function ScanHistoryView({
   scans,
   verdict,
   alerts = [],
+  allergiesChangedAt = null,
 }: {
   scans: readonly ScanListRow[];
   verdict: Verdict | null;
   /** Unseen product change alerts (Phase 8): a banner, and a "Changed" badge on those products' rows. */
   alerts?: readonly AlertListItem[];
+  /** When the newest current allergen was added: older results may be out of date. */
+  allergiesChangedAt?: string | null;
 }) {
   const changed = new Set(alerts.map((a) => a.barcode));
   return (
@@ -60,7 +64,13 @@ export function ScanHistoryView({
         {scans.length > 0 ? (
           <section aria-label="Scans, newest first" className="glass rounded-card px-4 py-1.5">
             {scans.map((scan) => (
-              <ScanRow key={scan.id} scan={scan} showTime changed={scan.barcode !== null && changed.has(scan.barcode)} />
+              <ScanRow
+                key={scan.id}
+                scan={scan}
+                showTime
+                changed={scan.barcode !== null && changed.has(scan.barcode)}
+                outOfDate={scan.product_found !== false && isOutOfDate(scan.created_at, allergiesChangedAt)}
+              />
             ))}
           </section>
         ) : (

@@ -58,7 +58,7 @@ describe("ScanHistoryView: product change alerts (Phase 8)", () => {
     id: "a1",
     barcode: "8901030865237",
     productName: "Ketchup",
-    summary: "now lists milk (whey)",
+    summary: 'now lists milk (in "whey")',
     newVerdict: "unsafe" as const,
     createdAt: "2026-11-01T03:00:00Z",
   };
@@ -68,7 +68,7 @@ describe("ScanHistoryView: product change alerts (Phase 8)", () => {
     const banner = within(screen.getByRole("region", { name: "1 product you scanned has changed" }));
     const link = banner.getByRole("link");
     expect(link.getAttribute("href")).toBe("/scans/changes/a1");
-    expect(link.textContent).toContain("Open Food Facts now lists milk (whey).");
+    expect(link.textContent).toContain('Open Food Facts now lists milk (in "whey").');
     expect(link.textContent).toContain("Unsafe");
 
     const rows = within(screen.getByRole("region", { name: "Scans, newest first" })).getAllByRole("link");
@@ -85,5 +85,21 @@ describe("ScanHistoryView: product change alerts (Phase 8)", () => {
   it("counts several changed products", () => {
     render(<ScanHistoryView scans={scans} verdict={null} alerts={[alert, { ...alert, id: "a2", barcode: "8901262010016" }]} />);
     expect(screen.getByRole("heading", { name: "2 products you scanned have changed" })).toBeTruthy();
+  });
+});
+
+describe("ScanHistoryView: results older than the latest allergy change", () => {
+  it("marks rows checked before an allergen was added, and only those", () => {
+    // s1 was checked on 29 Oct, s2 on 28 Oct; Milk was added on 28 Oct at 18:00.
+    render(<ScanHistoryView scans={scans} verdict={null} allergiesChangedAt="2026-10-28T18:00:00Z" />);
+    const rows = within(screen.getByRole("region", { name: "Scans, newest first" })).getAllByRole("link");
+    expect(rows[0].textContent).not.toContain("Allergies changed since");
+    expect(rows[1].textContent).toContain("Allergies changed since: may be out of date");
+  });
+
+  it("doesn't mark a barcode Open Food Facts didn't have (it's Caution whatever the allergies)", () => {
+    const notFound = [{ ...scans[1], product_found: false }];
+    render(<ScanHistoryView scans={notFound} verdict={null} allergiesChangedAt="2026-11-03T00:00:00Z" />);
+    expect(screen.queryByText(/Allergies changed since/)).toBeNull();
   });
 });

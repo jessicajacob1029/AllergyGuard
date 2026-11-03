@@ -18,6 +18,22 @@ the fork only. Waiting for the migration to be run; testing steps in `docs/PHASE
    That many changes at once is more likely an Open Food Facts data problem than real recipe changes. The count
    is of products, not people: one product watched by 6 people counts once.
 
+**Added during testing (2026-11-03, asked by Jessica): out-of-date results.** A saved scan was checked against
+the allergies of that moment; her 28 October Amul Butter still said Safe after Milk was added. Now:
+- **The scan result:** when an allergen was added to the profile after the check, it shows "Your allergies have
+  changed since this check. This result may be out of date." at the top.
+  - **Re-check with my current allergies** (`?recheck=1`) runs `checkAllergens()` again on the saved ingredients
+    and allergen tags. There's no new Open Food Facts request and nothing is saved. It shows saved verdict → new
+    verdict, and links back to the saved result.
+  - Label photos and pasted text can't be re-checked this way (their OCR confidence isn't saved), so they ask you
+    to scan the label again.
+- **Scan history:** the same rows get an "Allergies changed since: may be out of date" badge.
+- **Detection** (`src/lib/products/stale-result.ts`, no migration): saving a profile inserts rows only for new
+  allergens, so `profile_allergens.created_at` is when each was added.
+  - Removed allergens and severity changes don't count. A removal can only make an old result more cautious than
+    needed; severity never changes a verdict.
+  - A product Open Food Facts didn't have is Caution whatever the allergies, so it isn't flagged.
+
 **Changed while building:**
 - A new scan always refreshes the snapshot, even for a stopped watch (`watching` stays as it is). If you turn
   watching back on later, it compares against what you last saw, not an older version.
