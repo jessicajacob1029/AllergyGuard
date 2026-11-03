@@ -186,5 +186,8 @@ select created_at, mode, checked, would_alert, alerted, held, details
 
 ## 9. Offline check before merging (CLAUDE.md)
 
-H7 changes how the service worker is built. Check the emergency card with the network off, on the laptop (I do it on
-a local production build) and on your phone's Home Screen app after the merge.
+H7 changes how the service worker is built. Check the emergency card with the network off:
+- **Laptop: passed** (2026-11-03). On a local production build of `phase-8`, signed in as the QA account, the card
+  showed at 1440 and 390 with the network fully cut, service worker included. The Call link was right, there was no
+  sideways scroll, and other pages showed "You're offline".
+- **Your phone's Home Screen app:** after the merge.
