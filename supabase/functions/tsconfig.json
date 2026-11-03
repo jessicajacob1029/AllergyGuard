@@ -1,0 +1,17 @@
+{
+  // Typechecks the Edge Functions' shared code (pure TypeScript, no Deno APIs).
+  // The Deno entry files (*/index.ts) are checked by Supabase when deployed.
+  // Run: npm run typecheck:functions
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["_shared/**/*.ts"]
+}

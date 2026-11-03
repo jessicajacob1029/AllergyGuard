@@ -1,37 +1,77 @@
 import { tertiaryButtonClass } from "@/components/form-styles";
 import { SignOutButton } from "@/components/sign-out-button";
+import { frameClass } from "@/components/ui/frame";
 import { HeaderBand } from "@/components/ui/header-band";
 import type { ContactRow, ProfileBundle } from "@/lib/profile/types";
+import type { ReminderSettings } from "@/lib/reminders/settings";
 import { AllergensSection } from "./allergens-section";
 import { ContactsSection } from "./contacts-section";
 import { MedicationsSection } from "./medications-section";
 import { NameSection } from "./name-section";
+import { RemindersSection } from "./reminders-section";
+
+type RemindersProps = {
+  ownerId: string;
+  initial: ReminderSettings;
+  email: string | null;
+  vapidPublicKey: string | null;
+};
 
 /** The /profile screen. Pure view: the page loads the data. */
-export function ProfileView({ bundle, contacts }: { bundle: ProfileBundle; contacts: ContactRow[] }) {
+export function ProfileView({
+  bundle,
+  contacts,
+  reminders,
+}: {
+  bundle: ProfileBundle;
+  contacts: ContactRow[];
+  reminders: RemindersProps;
+}) {
   return (
-    <main className="flex flex-1 flex-col bg-page">
+    <main className="flex flex-1 flex-col">
       <HeaderBand
-        centered
+        width="wide"
+        eyebrow="Your account"
         title="Your profile"
-        subtitle={bundle.profile.name}
-        top={
+        subtitle={`${bundle.profile.name}. Keep your safety information accurate and up to date.`}
+        aside={
           <span
             aria-hidden="true"
-            className="flex size-20 items-center justify-center rounded-full border-4 border-card bg-primary text-2xl font-black text-white shadow-button"
+            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(145deg,#9a8df2,#6654cf)] text-lg font-bold text-white shadow-[0_8px_18px_rgb(96_79_201/0.22)]"
           >
             {initials(bundle.profile.name)}
           </span>
         }
       />
-      <div className="mx-auto w-full max-w-sm space-y-6 px-4 py-6">
-        <NameSection initial={bundle.profile} />
-        <AllergensSection profile={bundle.profile} initial={bundle.allergens} />
-        <ContactsSection profile={bundle.profile} initial={contacts} />
-        <MedicationsSection profile={bundle.profile} initial={bundle.medications} />
+      {/* Phones: one column in this order. From 900px: name, allergies and
+          medications and reminders on the left, emergency contacts on the right
+          (grid placement, so the phone order doesn't change). */}
+      <div
+        className={`${frameClass("wide")} space-y-3.5 pb-6 desk:grid desk:grid-cols-2 desk:items-start desk:gap-5 desk:space-y-0 desk:pb-12`}
+      >
+        <div className="desk:col-start-1 desk:row-start-1">
+          <NameSection initial={bundle.profile} />
+        </div>
+        <div className="desk:col-start-1 desk:row-start-2">
+          <AllergensSection profile={bundle.profile} initial={bundle.allergens} />
+        </div>
+        <div className="desk:col-start-2 desk:row-span-4 desk:row-start-1">
+          <ContactsSection profile={bundle.profile} initial={contacts} />
+        </div>
+        <div className="desk:col-start-1 desk:row-start-3">
+          <MedicationsSection profile={bundle.profile} initial={bundle.medications} />
+        </div>
+        <div className="desk:col-start-1 desk:row-start-4">
+          <RemindersSection
+            {...reminders}
+            hasDatedMedication={bundle.medications.some((m) => Boolean(m.expiry_date))}
+          />
+        </div>
         {/* Here, not next to Emergency in the top bar: logging out wipes the
             offline emergency card, so it shouldn't be one mis-tap away. */}
-        <SignOutButton className={tertiaryButtonClass} />
+        <div className="desk:col-span-2 desk:row-start-5 desk:mx-auto desk:w-full desk:max-w-[320px]">
+          <SignOutButton className={tertiaryButtonClass} />
+        </div>
       </div>
     </main>
   );

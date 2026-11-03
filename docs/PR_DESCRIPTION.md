@@ -321,3 +321,350 @@ before this merges.
 - [x] The same ingredients give the same verdict via barcode and via photo (tests on real OCR output)
 - [x] Raw extracted text is always shown (review box, and on the result page)
 - [ ] Label photo checked on the iPhone (Vercel preview of `phase-5`)
+
+---
+
+## Phase 6: Reaction diary
+
+Log allergic reactions and look back at them: what you ate, when, the symptoms, how bad it was and what you took.
+
+### What's included
+
+- **`/diary`:** your reactions, newest first. Each card has a date pill, severity dots with the word next to them
+  (Mild, Moderate, Severe, so not colour alone) and symptom pills. Empty state and **+ Add reaction**.
+- **`/diary/new` and `/diary/[id]/edit`:** one form with:
+  - date and time (defaults to now in the phone's time zone);
+  - food or product;
+  - symptom chips: Hives or rash, Itching, Swelling, Lips or throat swelling, Breathing trouble, Vomiting,
+    Stomach pain, Dizziness or fainting, Other;
+  - severity (Mild, Moderate, Severe);
+  - optional treatment: None, Antihistamine, EpiPen (adrenaline), Hospital or ER (can be cleared);
+  - optional notes.
+
+  Errors are shown per field and focus moves to the first one. Save is disabled offline.
+- **`/diary/[id]`:** everything about one reaction, with Edit and Delete. Delete asks in the page first
+  ("Delete this reaction? This can't be undone." / Yes, delete it / Keep it).
+- **From a scan:** the scan result has **Log a reaction to this**, which opens the form with the product name and
+  a link to the scan. The reaction page links back to the scan.
+- The Diary tab and the Home Diary tile are now live. Medication stays "Coming soon".
+- The diary is online only. The service worker, Dexie and `/emergency` are unchanged.
+
+### Rules (`src/lib/diary/`, pure functions with tests)
+
+- `validateReaction()` runs in the form for instant feedback and again in the Server Actions.
+- `validateOccurredAt()`: up to 10 minutes in the future is allowed for phone clock drift; later is
+  "That time is in the future."; before 1900 is "Please enter a date from 1900 onwards."
+- The time is converted to a full ISO timestamp on the phone, and dates are drawn on the phone, because the
+  server runs in UTC (in India a reaction at 01:30 would otherwise show on the day before).
+
+### Database (1 new migration, already applied to the shared project; don't re-run it)
+
+- `20261029000000_reactions`: `reactions` table with `reaction_symptom` and `reaction_treatment` enums; severity
+  reuses `allergen_severity`. `scan_id` is optional and set to null if the scan is deleted.
+- RLS through `profiles` for select, insert, update and delete. Insert and update also require a linked scan to
+  belong to the same profile, so another user's scan id can't be attached.
+- Checks: at least one symptom, food 1–200 characters, notes up to 2000, no date before 1900.
+
+### Also fixed
+
+- The scan result's "Checked against your allergies on …" time was formatted on the server (UTC), so it was
+  5½ hours behind in India. It is now drawn on the phone (`LocalTime`).
+
+### Testing
+
+- `npm run test`: 546 tests, including the diary rules, enums checked against the migration, the card, the form
+  (validation, saving, editing, from a scan, clearing the treatment) and the delete confirm.
+- QA on a production build against the shared project at 390px, in India time: add, errors, a future time,
+  edit, from a scan, another user's ids (404), offline, links, delete confirm, light and dark mode.
+- After merging, a read-only check on `allergy-guard-nine.vercel.app` at 390px: list, reaction page, edit,
+  validation messages, logging from a scan, another user's id (404), scan time in IST.
+- **Remote two-user RLS test (2026-10-29):** two temporary users signed in through Supabase Auth and used the
+  REST API, like the app does. User B saw only its own reaction and got 0 rows when reading user A's reaction by
+  id, by A's profile or by A's scan, or reading A's scan. B's edits and deletes of A's reactions affected 0 rows.
+  Adding a reaction to A's profile, linking B's reaction to A's scan (on insert and on update) and moving B's
+  reaction into A's profile were rejected by RLS. Signed-out requests saw nothing and changed nothing. A's
+  reaction was unchanged afterwards. 23 of 23 checks passed. The test users were deleted afterwards, and the row
+  counts matched those from before the test.
+- iPhone test on `allergy-guard-nine.vercel.app`: deleted both QA reactions ("Yes, delete it"), logged a reaction
+  from a camera scan (product filled in, saved, time in IST), then deleted it. The diary was empty afterwards.
+
+### Phase 6 "Done when" (closed 2026-10-29)
+
+- [x] A user can log, view, edit, and delete reactions
+- [x] RLS enforced (two-user test, 23 of 23 checks passed)
+
+---
+
+## Redesign v2, Google login and desktop layout
+
+A new look across the app, sign-in with Google, and a proper laptop layout. Features, data and allergen rules are unchanged.
+
+### What's included
+
+- **Redesign v2:** style taken from our Figma Make file (reference in `design/figma-reference-v2/`, notes in `STYLE-v2.md`):
+  - DM Sans and Space Mono, self-hosted through `next/font` and precached for offline use;
+  - glass cards, soft peach, lilac and mint gradients, dark primary buttons, a floating bottom tab bar;
+  - light only for now (dark mode is a later task).
+
+  The Emergency button behaves exactly as before: a plain link to `/emergency`, top right, solid red.
+- **Scan history (`/scans`):** every scan, newest first, filtered by All, Safe, Caution or Unsafe. Home shows the latest three. Rows are named by `scanLabel()` (`src/lib/products/scan-label.ts`, with tests).
+- **Continue with Google** on Log in and Sign up, above the email form:
+  - `/auth/callback` exchanges the code for a session (PKCE);
+  - new users go to onboarding, and the name step starts with their Google name;
+  - a cancelled or failed sign-in returns to Log in with a short message;
+  - if a sign-in code lands on any other page, the proxy forwards it to `/auth/callback`.
+
+  A Google sign-in with the same email as an existing account joins that account and keeps its profile.
+- **Desktop layout from 900px:**
+  - the header shows Home, Scan, Diary and Profile in the middle, and the bottom bar is phones only;
+  - each page has one column width: 1120px for Home and Profile, 760px for lists (the Diary is 2 columns), 640px for forms, details and `/emergency`;
+  - Home is a grid: the scan card beside Your allergies, Latest scans below;
+  - Profile is two columns, with emergency contacts on the right.
+
+  The phone layout is unchanged.
+
+### Setup
+
+- No new dependencies and no database changes.
+- Supabase Auth (done in the dashboard): Google provider on, and redirect URLs for production, Vercel previews and `localhost:3000`. The Site URL should be the production URL.
+
+### Testing
+
+- `npm run test`: 591 tests, including Google login (callback route, redirect helpers, button, proxy forwarding), scan history and `scanLabel()`.
+- `npm run lint` and `npm run build` pass.
+- Layout checked at 1440, 1280, 1024, 960, 900, 899, 768, 390 and 320px: no sideways scrolling, and the nav switches exactly at 900px.
+- axe-core (WCAG 2.2 AA): 0 violations on every screen checked.
+- `/emergency` checked with the network fully cut (service worker included), on laptop and phone widths.
+- **Production check after the merge** (`allergy-guard-nine.vercel.app`, test account), all passed:
+  - landing page;
+  - Continue with Google up to Google's sign-in page, returning to our `/auth/callback`;
+  - email login;
+  - Home on laptop and phone;
+  - a typed barcode scan;
+  - Diary and Profile;
+  - the offline emergency card.
+
+### Still to test
+
+- [ ] A full Google sign-in on iPhone Safari and from the Home Screen app.
+
+---
+
+## Privacy and Terms pages
+
+Two short public pages in plain English, styled like the rest of the app.
+
+### What's included
+
+- **`/privacy`:**
+  - what we store (name, email, allergies, emergency contacts, medications, scans, reactions);
+  - it's stored in Supabase, and no other user can see it;
+  - what Google sign-in shares and what we use (name and email only);
+  - barcodes are looked up on Open Food Facts from our server, so Open Food Facts never sees who you are;
+  - label photos, marked **coming soon** until Phase 5 is merged;
+  - the emergency card stays on your device until you log out;
+  - how to delete your account (by email for now).
+- **`/terms`:**
+  - the app is an aid, not medical advice: always read the label;
+  - product data can be wrong, and the app shows Caution when unsure;
+  - in an emergency, call 112;
+  - your account;
+  - no guarantees.
+- Both pages are linked from the landing page footer and under **Create account** on Sign up.
+- The contact email and the "Last updated" date are set in `src/lib/constants.ts`.
+
+### Testing
+
+- `legal-pages.test.tsx`: each page's sections, the email link, the medical disclaimer, and both links on the landing page and Sign up.
+- Checked at 1440, 390 and 320px on a production build and on production: no sideways scrolling, and axe found 0 accessibility problems.
+
+### When Phase 5 is merged
+
+- [ ] Update the "Label photos (coming soon)" section and the "Last updated" date.
+
+---
+
+## Phase 7: Medication expiry reminders
+
+Reminders 30, 7 and 1 days before a medication expires, and on the expiry day, by push notification or email.
+They're sent every morning at 08:00 IST.
+
+### What's included
+
+- **When:** 8–30 days left → the 30-day reminder; 2–7 → 7-day; 1 → 1-day; 0 → "expires today". Days are counted
+  on India (IST) calendar dates, not UTC.
+  - A medication added late still gets one reminder.
+  - Medications without an expiry date are skipped.
+  - `reminderStage()` in `supabase/functions/_shared/reminder-stage.ts` decides which reminder is due (written by Jessica).
+- **Never twice, but retried if nothing arrived:**
+  - A reminder counts as sent only when push or email actually delivered it.
+  - If every channel failed, the error is recorded and the next day's run tries again while that reminder's window lasts.
+  - Claiming a reminder is one atomic database statement, so two runs can't both send it.
+- **Push:** Profile → Reminders → **Turn on notifications**. Permission is only asked after that tap, never on
+  page load.
+  - There's a **Send a test notification** button.
+  - Push subscriptions the push service reports as gone (404/410) are deleted.
+  - Logging out turns push off on that device.
+  - "Turn on notifications" gives up after 15 seconds with "Notifications aren't available here right now. Email reminders still work."
+  - On iPhone, push only works in the Home Screen app (iOS 16.4+); in Safari the card explains how to install it.
+- **Email (Resend):** sent when push is off or didn't reach any device.
+  - Content: the medication, its dose and expiry date, a link to update it, and the "aid, not medical advice" line.
+  - Every email has a **Turn off email reminders** link. It opens `/unsubscribe`, which needs no login and has a confirm button.
+  - Gmail's own one-click Unsubscribe button works too (`/api/unsubscribe`).
+  - Email reminders are on by default.
+- **Home:** a red banner when a medication has expired, amber when it expires within 30 days. The Medication
+  shortcut now opens the medications in Profile.
+- **Privacy page:** a new "Medication reminders" section.
+
+### Database (3 migrations, already applied to the shared project; don't re-run them)
+
+- `20261031173904_medication_reminders`: three new tables, all with RLS:
+  - `reminder_settings`: per account; email on and push off by default; a 64-character random unsubscribe token.
+  - `push_subscriptions`: one row per browser.
+  - `medication_reminders`: one row per medication, expiry date and reminder, so a reminder can't be sent twice.
+
+  Also switches on `pg_cron` and `pg_net`.
+- `20261101000000_reminder_retry`: adds delivery status (sending / delivered / failed) and attempts, and
+  `claim_medication_reminder()`.
+- `20261101010000_push_takeover_guard`: another account can only take over a device's push subscription if it
+  also has that browser's encryption keys (found by the two-user test).
+- Functions:
+  - `due_medication_reminders()` and `claim_medication_reminder()` can only be run by the service role.
+  - `unsubscribe_email(token)` is open to anonymous visitors and only switches email off.
+  - `save_push_subscription()` is for signed-in users.
+
+### Edge Functions and the daily job
+
+- `medication-reminders` rejects every request without the cron secret (403). Its logic is in
+  `supabase/functions/_shared/` and tested with Vitest. `npm run typecheck:functions` typechecks it.
+- `send-test-push` needs a signed-in user and only reaches that user's own devices.
+- pg_cron job `medication-reminders`: `30 2 * * *` (02:30 GMT = 08:00 IST). It reads the cron secret from Vault.
+- **Setup and secrets:** `docs/PHASE-7-SETUP.md` covers the VAPID keys, the Resend API key, the cron secret and the
+  Vault secret. None of them are in the repo.
+
+### New dependencies
+
+- None in the app. The Edge Functions import `npm:web-push@3.6.7` (for push encryption and signing) and
+  `npm:@supabase/supabase-js@2.117.1` through Deno. Resend is called with plain `fetch`.
+
+### Testing
+
+- `npm run test`: 693 tests. These cover:
+  - IST dates around midnight;
+  - every reminder window;
+  - the retry rules (email fails with push off → retried; push succeeds → not retried; both work → sent once);
+  - deleting devices on 404/410;
+  - the cron secret check;
+  - the email and its unsubscribe headers;
+  - the Reminders card, the Home banner and unsubscribe.
+- Deployed function:
+  - the self-check passed (push encryption and signing work on Supabase);
+  - requests without the secret got 403;
+  - a dry run and a real run worked;
+  - a second run sent nothing.
+- **End to end:**
+  - **Email:** a reminder sent to Jessica's own account arrived, with correct content and working links.
+  - **Push:** the test notification arrived in Chrome on a laptop, and on an iPhone in the Home Screen app
+    (production).
+- The offline emergency card still works with the network fully cut, because the service worker change only adds the push listeners.
+- **Two-user RLS test (`scripts/rls-two-user.mjs`, 2026-11-01), 53 of 53 checks passed:**
+  - two temporary users on the live project, using the REST API with the anon key like the app;
+  - user B couldn't read, edit, delete or insert user A's rows in `reactions`, `reminder_settings`,
+    `push_subscriptions` or `medication_reminders`;
+  - nobody else could read A's unsubscribe token; a guessed token changed nothing;
+  - users can't write sent-reminder records or choose their own token;
+  - signed-out requests saw and changed nothing, and A's data was unchanged afterwards;
+  - the script deletes both test users at the end (also after a failure); confirmed gone.
+  - Run it with `node scripts/rls-two-user.mjs`. It needs `SUPABASE_SERVICE_ROLE_KEY` in the git-ignored
+    `.env.rls.local`, only to create and delete the test users.
+- **Known:** the test email landed in spam because of Resend's test sender.
+
+### Before real users
+
+- [ ] Verify a sending domain in Resend and change `REMINDER_FROM`. The test sender only reaches the Resend
+      account's own address, and its emails go to spam.
+- [x] iPhone push from the Home Screen app (test notification arrived on production, 2026-11-01).
+- [x] Two-user RLS test for the three new tables (53 of 53 checks passed, 2026-11-01).
+
+### Phase 7 "Done when"
+
+- [x] A medication set to expire in 7 days triggers a notification in testing (email on 2026-11-01; push test
+      notification on a laptop and on an iPhone from the Home Screen app)
+- [x] Settings let the user turn notifications on or off (Profile → Reminders: email switch, push on/off per device)
+
+## Phase 8: Ingredient change alerts
+
+Every Sunday at 08:30 IST, products you scanned in the last 6 months are checked again on Open Food Facts. If one
+has become less safe for you, you get a push notification or an email, and a banner in Scan history.
+
+### What's included
+
+- **Watched products:** one per product per profile, created by a database trigger when a barcode scan finds the
+  product. The snapshot is what you saw last.
+  - **Stop watching / Watch for changes** on the scan result.
+  - Deleting your last scan of a product removes its watch.
+- **The check:** both the snapshot and the new data go through the one `checkAllergens()`, with your **current**
+  allergens. Changing your own profile never shows up as a product change.
+  - **Alert** when the verdict gets worse (Safe → Caution/Unsafe, Caution → Unsafe), or when a new allergen of
+    yours appears.
+  - **No alert** for:
+    - formatting-only changes;
+    - improvements, which update the snapshot quietly;
+    - missing or incomplete data, which only adds a note on the result.
+  - Each change alerts once (`unique (watch, change_key)`).
+- **Open Food Facts:**
+  - a User-Agent with the app, version, site and contact;
+  - one request per product per run, 1.5 s apart;
+  - at most 60 products per call;
+  - stops on 429, or after 3 failures in a row;
+  - failed requests never change anything.
+- **Safety brake:** if more than 20% of products (and at least 5) would alert in one run, nothing is sent, the run
+  is logged and the owner gets an email.
+- **Channels:** Phase 7's push and email, with the same delivered/failed logic.
+  - Failed alerts are retried daily for 7 days.
+  - In Scan history: a banner, a "Changed since" badge and a change page (`/scans/changes/[id]`). Opening the page
+    marks the alert seen with a POST.
+- **Settings:** a "Product change alerts" switch in Profile → Reminders, on by default. The email's unsubscribe link
+  turns off product alerts only.
+- **Privacy page:** a new "Product change alerts" section.
+- **Results checked before an allergen was added:** Scan history, Home and the result page show the **current**
+  verdict. It is worked out by running `checkAllergens()` again on the saved ingredients, with no new lookup and
+  nothing saved. The saved one appears underneath as "At the time of scanning" ("Was Safe when scanned" in lists).
+  Label photos and pasted text can't be checked again, so they show "Re-check needed", listed under Caution.
+  Filters use the current verdict.
+- **Security (H7):** the service worker no longer has a public source map.
+- **Allergen imports** in `src/lib/allergen/` now end in `.ts` (`allowImportingTsExtensions`), so the Edge Function
+  uses the same `checkAllergens()`. No logic change.
+
+### Database
+
+- `20261103000000_product_alerts`: `watched_products`, `product_alerts`, `product_check_runs` (owner only),
+  `reminder_settings.product_alerts_enabled`, scan triggers, the job's functions (service role only) and
+  `unsubscribe_product_alerts(token)`. RLS on every table; users can only change `watching` and `seen_at`.
+  **Already applied to the shared project; don't re-run it.**
+
+### Schedules (already set up; don't re-run)
+
+- `product-alerts`: `*/15 3 * * 0`, Sunday 08:30 to 09:15 IST, up to 60 products per call.
+- `product-alerts-retry`: `5 3 * * *`, daily at 08:35 IST, retries failed alerts only.
+- To stop either: `select cron.unschedule('product-alerts');` / `select cron.unschedule('product-alerts-retry');`.
+
+### Testing
+
+- 797 tests, lint and the production build pass. They cover:
+  - the change rule, with real `checkAllergens()`;
+  - the run with fakes: polite spacing, 429, failures, never twice, the brake, retries, dry run;
+  - the wording, the UI and the unsubscribe kinds;
+  - current verdicts for results checked before an allergen was added.
+- The migration was tested on a local Postgres first. Two-user RLS test: **103/103**.
+- **Live tests passed** (steps in `docs/PHASE-8-SETUP.md`):
+  - push on the iPhone Home Screen app and laptop Chrome;
+  - email with push off;
+  - a second run sent nothing ("never twice");
+  - an improvement sent nothing.
+- **After the merge, on the live site:**
+  - the function self-check passed, and it returns 403 without the cron secret;
+  - QA account at 390 and 1440 px: the watch box, the settings switch and the privacy section are there, with no page errors;
+  - offline `/emergency` with the network fully cut: the card and the `tel:` link work.
+- **Before real users:** a Resend sending domain (same as Phase 7).
+

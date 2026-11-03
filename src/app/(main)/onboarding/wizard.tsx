@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { successButtonClass } from "@/components/form-styles";
 import { HeaderBand } from "@/components/ui/header-band";
+import { CheckIcon } from "@/components/ui/icons";
+import { StepTile } from "./steps/step-shell";
 import type { SavedAllergen } from "@/lib/profile/allergen-selection";
 import { fromMedicationRow } from "@/lib/profile/medications";
 import type { WizardStep } from "@/lib/profile/onboarding";
@@ -23,13 +25,16 @@ import { ContactStep } from "./steps/contact-step";
 import { DisclaimerStep } from "./steps/disclaimer-step";
 import { MedicationsStep } from "./steps/medications-step";
 import { NameStep } from "./steps/name-step";
+import { frameClass } from "@/components/ui/frame";
 
 type Props = {
   initialStep: WizardStep;
   bundle: ProfileBundle | null;
+  /** Name to start step 2 with when there is no profile yet (e.g. from Google). */
+  suggestedName?: string;
 };
 
-export function OnboardingWizard({ initialStep, bundle }: Props) {
+export function OnboardingWizard({ initialStep, bundle, suggestedName = "" }: Props) {
   const [supabase] = useState(createClient);
   const [step, setStep] = useState<WizardStep>(initialStep);
   const [profile, setProfile] = useState<ProfileRow | null>(bundle?.profile ?? null);
@@ -52,7 +57,7 @@ export function OnboardingWizard({ initialStep, bundle }: Props) {
 
       {step === 2 && (
         <NameStep
-          initialName={profile?.name ?? ""}
+          initialName={profile?.name ?? suggestedName}
           onBack={() => setStep(1)}
           onSave={async (name) => {
             const result = await saveProfileName(supabase, profile, name);
@@ -135,9 +140,18 @@ function DoneStep({ hasContact }: { hasContact: boolean }) {
 
   return (
     <div>
-      <HeaderBand tone="safe" title="You're all set" emoji="🎉" headingRef={headingRef} />
-      <div className="mx-auto w-full max-w-sm space-y-6 px-4 py-6">
-        <p className="text-base font-semibold text-muted">
+      <HeaderBand
+        eyebrow="Set up your profile"
+        title="You're all set"
+        headingRef={headingRef}
+        top={
+          <StepTile done>
+            <CheckIcon className="size-10" />
+          </StepTile>
+        }
+      />
+      <div className={`${frameClass()} space-y-6 pb-8 desk:pb-12`}>
+        <p className="text-[15px] leading-relaxed text-muted">
           Your allergy profile is saved.
           {!hasContact && " You can add an emergency contact any time from your profile."}
         </p>

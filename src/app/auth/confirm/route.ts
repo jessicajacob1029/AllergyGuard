@@ -27,6 +27,10 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) redirect(next);
+    // Supabase's /verify step has already confirmed the email by now; the code
+    // only fails to sign in here (usually a different browser or device from
+    // the one that signed up). Signing up again would go nowhere: log in instead.
+    redirect(`/login?confirm=other_browser&next=${encodeURIComponent(next)}`);
   }
 
   redirect("/signup?error=confirmation_failed");

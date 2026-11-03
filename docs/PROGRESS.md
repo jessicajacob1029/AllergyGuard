@@ -22,17 +22,310 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [ ] Frontend redesign (before Phase 4): see the "Frontend redesign" section below
 - [x] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Closed 2026-10-28;
   camera scan verified on the user's iPhone (see "Phase 4" below).
-- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Built 2026-10-28 on branch `phase-5`; waiting for the
-  migration and the iPhone test (see "Phase 5" below). `main` stays the live demo until it passes.
-- [ ] Phase 6: Reaction diary
-- [ ] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron)
-- [ ] Phase 8: Ingredient change alerts (weekly cron)
+  **Do not start Phase 5 until the user has done the phone test.**
+- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Paused on branch `phase-5` (not merged).
+  **When merging:** update the "Label photos (coming soon)" section on `/privacy` (present tense, drop "coming soon",
+  new "Last updated" date in `src/lib/constants.ts`) and its test.
+- [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
+  Closed 2026-10-29: merged into the fork's `main`, phone-tested on production, two-user RLS test passed
+  (see "Phase 6" below).
+- [x] Redesign v2 (style from the Figma Make file, see "Redesign v2" below), Google login and the desktop layout:
+  merged into the fork's `main` on 2026-10-31 (fast-forward to `197e3b2`) and checked on production
+  (see "Merge to the fork's main" below).
+- [ ] Later: dark mode for v2 (dropped from v2 on 2026-10-29; v2 is light only, including `/emergency`).
+- [x] Phase 7: Medication expiry reminders (Web Push + Resend, pg_cron). Built on `phase-7`, email and push tested
+  end to end (laptop Chrome and the iPhone Home Screen app), daily job scheduled (08:00 IST), merged into the
+  fork's `main` on 2026-11-01; two-user RLS test passed (53/53). Still open: a sending domain before real users
+  (see "Phase 7" below).
+- [x] Phase 8: Ingredient change alerts (weekly cron). Built on `phase-8`, live-tested (push, email, never twice,
+  improvement), merged into the fork's `main` on 2026-11-03 (`86838f3`); weekly job scheduled (Sunday 08:30 IST)
+  plus a daily retry; two-user RLS test passed (103/103). H7 (service worker source map) fixed on the same branch.
 
 ## Now
-**Phase 5: second round on `phase-5`** (2026-10-28): crop step, image clean-up, `|` tidying, Paste text, and a
-preview-only debug panel, after the first iPhone test read mostly junk. Pushed to the fork's `phase-5` (not `main`).
-Waiting for the user's retest. The debug panel must be removed before merging to `main`. Next session: run `/clear`, then say
-"continue from docs/PROGRESS.md".
+**Redesign v2, Google login and the desktop layout are on the fork's `main`** (2026-10-31), checked on
+`allergy-guard-nine.vercel.app`. Still open: the user's real Google sign-in on iPhone Safari and the Home Screen app;
+the Supabase Site URL set to `https://allergy-guard-nine.vercel.app`; changing the QA account's password.
+Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
+**Phase 7 is on the fork's `main`** (2026-11-01): reminders by email and push, daily at 08:00 IST. Before real
+users: a sending domain in Resend (the test sender lands in spam and only reaches the owner's address). iPhone push
+from the Home Screen app works, and the two-user RLS test passed 53/53 (both 2026-11-01).
+**Phase 8 is on the fork's `main`** (2026-11-03): product change alerts, weekly on Sundays at 08:30 IST. The same
+sending-domain note as Phase 7 applies to its emails.
+Phase 5 stays paused on `phase-5`. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
+
+## Phase 8: Ingredient change alerts (2026-11-03, branch `phase-8`, merged into the fork's `main`)
+- **Status (2026-11-03):**
+  - **Merged** into the fork's `main` (`86838f3`) after tests (797), lint and build passed. Not pushed to the team repo.
+  - **Migration** `20261103000000_product_alerts` run by the user and recorded. Two-user RLS test: **103/103**.
+  - **Function** `product-alerts` redeployed from `main`; self-check passed (`checkAllergens` → unsafe, polite
+    User-Agent); 403 without the cron secret.
+  - **Schedules** (`cron.job`): `product-alerts` `*/15 3 * * 0` (Sunday 08:30–09:15 IST, up to 60 products per
+    call) and `product-alerts-retry` `5 3 * * *` (daily 08:35 IST, retries only).
+- **Live tests passed** (owner's account, steps in `docs/PHASE-8-SETUP.md`):
+  - **Push:** Amul Butter with an older snapshot → "Amul … has changed: now Unsafe for you", delivered on the
+    iPhone Home Screen app and laptop Chrome. Wording changed after this test to `It now lists milk (in "butter").
+    Product data can be wrong: always check the packet.`
+  - **Never twice:** the next run checked 5, all unchanged, nothing sent.
+  - **Email** (push off): Maggi → "now lists wheat / gluten (in "wheat")", email arrived with the new wording and
+    a product-alerts-only unsubscribe link.
+  - **Improvement:** ketchup with a snapshot that declared milk → `improved`, snapshot reset, nothing sent.
+  - **Clean-up:** Milk, Wheat / gluten and Egg removed, Kiwi back to mild (checked in the database). The two test
+    alerts stay in Scan history.
+- **Live site after the merge:** QA account, 390 and 1440 px. Scan result shows the watch box; Profile has the
+  "Product change alerts" switch; Privacy has the new section; signed-out `/scans/changes/<id>` redirects to
+  login; CSP, HSTS and `X-Frame-Options: DENY` present; no page errors. **Offline `/emergency`** with the network
+  fully cut: card, `tel:` link and no sideways scroll at both widths.
+- **Stale results (added during testing):** a scan checked before an allergen was added shows the **current**
+  verdict (checkAllergens() on the saved ingredients, no lookup, nothing saved), with "Was Safe when scanned" and
+  "At the time of scanning" underneath. Label photos and pasted text show "Re-check needed" (listed under Caution).
+  Uses `profile_allergens.created_at`; no migration.
+- **Still open:** a Resend sending domain before real users (same as Phase 7).
+- Plan and decisions: `docs/PHASE-8-PLAN.md`. Setup, SQL and test steps: `docs/PHASE-8-SETUP.md`.
+- **Built:**
+  - the migration `20261103000000_product_alerts.sql` (run by the user on 2026-11-03). It was first tested on a throwaway local
+    Postgres 14 with stand-in Supabase tables: backfill, triggers, RLS, column grants, claims and the unsubscribe;
+  - the Edge Function `product-alerts`, deployed with the Supabase CLI (scheduled after the merge). Its self-check passed
+    on Supabase: the app's own `checkAllergens()` runs there. Without the cron secret it returns 403;
+  - in the app: Scan history banner and badge, Watch / Stop watching on scan results, `/scans/changes/[id]`, the
+    Profile → Reminders switch, kind-aware unsubscribe, and a privacy section.
+- **Decisions:** contact email in the User-Agent; no alert for missing data; stopped watches stay stopped; a daily
+  retry; Sunday 08:30 IST; unsubscribe turns off product alerts only; **safety brake** (more than 20% and at least 5
+  products in one run → hold everything and email the owner).
+- **Allergen imports:** `src/lib/allergen/` imports now end in `.ts` (`allowImportingTsExtensions`), so Deno can
+  import the same `checkAllergens()`. No logic change. Build, 763 tests and lint passed before the deploy.
+- **Live test needs** Milk and Wheat / gluten added to the owner's profile for the duration (her only allergen is
+  kiwi), then removed. The steps are in the setup doc.
+
+## Demo prep (2026-10-28, on the fork's `main`)
+Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on local branch `fork-main`
+(tracks `fork/main`; push with `git push fork fork-main:main`; never push to `origin`, the team repo).
+- QA on production at 390px: signed out fully; signed in on the user's personal account **without changing it**
+  (views, forms opened and cancelled, offline card, typed scans, log out). 7 scan rows were added to that account
+  by the QA (23:37–23:40 IST), nothing deleted. Results and script: `docs/DEMO.md`.
+- Fixed: styled 404 page; confirm link opened in another browser → Log in ("Your email is confirmed"); Log out is
+  `scope: "local"` (it ended every session); "Milk-⏎free" fix cherry-picked from `phase-5`.
+- Offline testing note: Playwright's `setOffline` and `route` don't cover service-worker fetches in Chromium; use
+  `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1` with `context.route("**/*", r => r.abort())` for a real cut-off.
+  WebKit can't test offline at all (its offline mode also blocks the service worker).
+- **Still to run:** onboarding and profile saves on a fresh confirmed account (the demo account setup covers it);
+  camera scan on the phone. Phase 6 waits until these are clean (plan first, separate branch).
+
+## Phase 7: Medication expiry reminders (2026-10-31 to 2026-11-01, branch `phase-7`, merged into the fork's `main`)
+Plan: `docs/PHASE-7-PLAN.md`. Setup steps for the owner: `docs/PHASE-7-SETUP.md`.
+- **Agreed:** email reminders on by default; Resend's test sender for now (domain later); the user writes
+  `reminderStage()`. Also required: IST calendar dates (tests around midnight IST), delete push subscriptions on
+  404/410, reject any request without the cron secret, skip medications with no expiry date, long random
+  unsubscribe tokens with a page that works without logging in.
+- **Database** (`20261031173904_medication_reminders`, **applied**; don't re-run): `pg_cron` and `pg_net` switched on;
+  `reminder_settings` (push off, email on, 64-hex unsubscribe token; users can only set the two switches),
+  `push_subscriptions` (one per browser, saved via `save_push_subscription()`, which moves a browser to whoever
+  subscribed last), `medication_reminders` (unique medication + expiry date + stage = never twice; only the job
+  writes). RLS on all three. `unsubscribe_email(token)` for anon; `due_medication_reminders(date)` for the
+  service role only. Security advisor: the two intended "security definer callable" warnings only.
+- **Edge Functions** (deployed): `medication-reminders` (verify_jwt off, its own constant-time cron secret check,
+  403 otherwise; `today`, `dryRun` and `selfCheck` options) and `send-test-push` (signed-in user, own devices only,
+  RLS). Logic in `supabase/functions/_shared/` (pure, Vitest): `ist-date`, `reminder-stage` (user's TODO),
+  `reminder-message`, `reminder-email`, `run-reminders` (claim first, then push, then email if push wasn't
+  delivered; 404/410 devices deleted). `npm run typecheck:functions` typechecks `_shared`; the Deno entry files are
+  left out of the Next.js tsconfig and ESLint.
+- **App:** Profile → Reminders card (email switch; notifications only after a tap; iPhone-in-Safari, blocked
+  and unsupported messages; test notification; turn off on this device). Desktop: under Medications in the left
+  column. Log out also turns push off on that device. Home banner (red expired, amber within 30 days, phone's date)
+  and the Medication shortcut now opens `/profile#medications`. `/unsubscribe` (confirm button, no login) and
+  `/api/unsubscribe` (one-click POST from mail apps; GET goes to the page). Privacy page has a "Medication
+  reminders" section. Service worker: `push` and `notificationclick` listeners only.
+- **Checks so far:** all tests pass except the 16 `reminderStage()` tests (waiting for the user); lint, build and the
+  functions typecheck pass. Functions: `send-test-push` boots (500 "not set up" without VAPID keys, 401 without a
+  token); `medication-reminders` returns 403 with no secret, a wrong secret, a GET, and the anon key. Local
+  production build: the worker contains both listeners; **offline `/emergency` passed at 1440 and 390** (network
+  fully cut); Profile, Home banner (QA account's epipen, 7 days) and `/unsubscribe` at 1440 and 390: no sideways
+  scroll, axe 0, no page errors.
+- **2026-11-01, after the user's `reminderStage()` (16/16 tests, 683 total) and secrets:** `medication-reminders`
+  redeployed. Called from the database with `pg_net`, the secret read from Vault inside the query (never seen):
+  - **Self-check:** 200; web-push encrypted (aes128gcm, 172 bytes) and VAPID-signed on Supabase's Deno. Nothing sent.
+  - **Dry run:** today = 2026-11-01 (IST); 1 medication checked (only the QA account had one due; checked first
+    with a read-only count): the QA epipen, 6 days left → `7d`, push off (no devices), email.
+  - **Real run:** the `7d` reminder was claimed and sent by email, but **Resend refused it (403)**: the test sender
+    only delivers to the Resend account's own address (`jessicajacob1029@gmail.com`), not the `+qa` address. The
+    result is recorded in `medication_reminders.email_result`; by design it isn't retried.
+  - **Second run:** nothing sent (no repeat). One `medication_reminders` row in total; one `reminder_settings`
+    row (QA account: email on, push off, 64-character token). No other account touched.
+  - The functions' version numbers jumped to 20 when the secrets were saved; `send-test-push`'s code fingerprint
+    is unchanged, so no code changed.
+- **Fix (2026-11-01, user's request): a reminder only counts as sent when a channel delivered it.** Migration
+  `20261101000000_reminder_retry.sql` (run by the user in the SQL Editor after two `apply_migration` prompts were
+  declined; checked read-only afterwards; recorded in the migration history on 2026-11-01): `medication_reminders.status`
+  (sending / delivered / failed), `attempts`, `updated_at`; `claim_medication_reminder()` (one atomic insert or
+  re-claim of a FAILED record only, service role only); `due_medication_reminders(date, only_email)` counts
+  delivered stages only, and `only_email` limits a test run to one account. All channels failed → recorded with the
+  error, retried by the next run while the window lasts; then the next stage takes over. Tests: email fails with
+  push off → retried; push delivers and email would fail → not retried; both work → sent once; plus push fails /
+  email works, both fail, window passing, another run sending. The QA epipen's earlier failed record was kept
+  (the delete was declined) and is retried automatically.
+- **End-to-end tests (2026-11-01):**
+  - **Email (user's own account):** temporary "Test EpiPen" expiring in 6 days; dry run, then a real run limited to
+    that account → 7-day reminder `sent`, record `delivered` on attempt 1. The email arrived **in Gmail spam**
+    (resend.dev test sender; the user marked it not spam); content, update link and unsubscribe confirm page all
+    correct. Test EpiPen deleted by the user.
+  - **Push (user's laptop, Chrome, own account):** turned on and the test notification arrived. It hung at first on
+    the protected preview: Vercel Deployment Protection redirected the service worker to Vercel's login. With
+    protection off it worked. Fix: "Turn on notifications" now gives up after 15 s with "Notifications aren't
+    available here right now. Email reminders still work."
+  - The email switch is now green with a check mark when on (grey with a dark outline when off).
+- **Daily job:** `cron.schedule('medication-reminders', '30 2 * * *', …)`, job 1, active; `cron.timezone` is GMT,
+  so it runs at **08:00 IST**. The secret is read from Vault inside the job. First run: 2026-11-02.
+  Check: `select * from cron.job_run_details order by start_time desc limit 5;`
+  Stop: `select cron.unschedule('medication-reminders');`
+- **Before real users:** verify a sending domain in Resend and change `REMINDER_FROM`. The resend.dev test sender
+  only reaches the Resend account's own address and lands in spam. Until then the QA account's email reminders
+  fail (403) and are retried daily while their window lasts (harmless, recorded as failed).
+- **Merged and checked live (2026-11-01):** fork `main` fast-forwarded to `0253bf2`. On `allergy-guard-nine.vercel.app`
+  with the QA account (read only), 1440 and 390: Home banner "Your epipen expires in 6 days (7 Nov 2026)"; Profile
+  → Reminders (green email switch, Turn on notifications when the browser allows notifications; "blocked" message
+  when it doesn't); `/unsubscribe` confirm page and the bad-link page; no sideways scroll, axe 0, no page errors.
+  The live worker has the push listeners; **offline `/emergency` passed at 1440 and 390** (network fully cut).
+- **iPhone (2026-11-01, user):** push from the Home Screen app on production works; the test notification arrived.
+- **Two-user RLS test (2026-11-01), 53/53 passed:** `scripts/rls-two-user.mjs` (now in the repo; Phase 6's version
+  only lived in a scratchpad). It creates two temporary confirmed users (`rls-test-<random>-a/b@example.com`) with
+  the service role key from the git-ignored `.env.rls.local`, then uses the REST API with the anon key like the app.
+  B could not read, edit, delete or insert A's rows in `reactions`, `reminder_settings`, `push_subscriptions` or
+  `medication_reminders`; nobody else could read A's unsubscribe token (B and signed out got 0 rows or 401/403,
+  including through `due_medication_reminders()`); users can't write `medication_reminders` or set their own token;
+  a guessed or malformed token changed nothing, and A's real token only turned A's email off. Signed-out requests
+  saw and changed nothing. A's data was unchanged afterwards. **Both test users were deleted by the script**
+  (admin delete 200, lookup afterwards 404; everything they created went with them).
+- **Fix found by that test (2026-11-01):** `save_push_subscription()` let any signed-in account take over another
+  account's device row if it knew the push address. Migration `20261101010000_push_takeover_guard.sql` (run by the
+  user in the SQL Editor; `apply_migration` is blocked by the auto-mode safety check; both SQL Editor migrations
+  were then recorded in `supabase_migrations.schema_migrations` by version and name): another account can only
+  take a device over with that browser's encryption keys too. The test checks it ("B takes over A's device with
+  A's address but other keys: rejected").
+- Deploy note: the first `send-test-push` deploy (version 1) went out with a placeholder shared file by mistake and
+  was replaced by version 2 within two minutes, before any secrets existed.
+
+## Merge to the fork's main (2026-10-31)
+`google-login` (which contains `redesign-v2` and the desktop layout) was fast-forwarded into `fork-main` and pushed
+to `fork/main` (`b1e2bba..197e3b2`). Before the merge: 591 tests, lint and build passed. Not pushed to `origin`.
+
+**Production check (`allergy-guard-nine.vercel.app`, Chromium, QA account only, IST), all passed:**
+- **Landing, signed out (1440 and 390):** new title, headline and meta description; no sideways scroll; axe 0.
+- **Continue with Google:** reaches Google's sign-in page; Supabase is asked to return to
+  `https://allergy-guard-nine.vercel.app/auth/callback` with PKCE (S256). A cancelled return and a stray `/?code=…`
+  both end on Log in with "Google sign-in didn't finish…". No Google account was signed in by the script.
+- **Email login (1440 and 390):** lands on Home ("Hi, Jessica Jacob").
+- **Home:** at 1440 the header nav is shown and the bottom bar hidden; at 390 the reverse.
+- **A scan:** typed barcode 8901262010016 (Amul butter) gave Unsafe and became the newest row in Scan history.
+  This added **one scan row to the QA account**; nothing else was changed or deleted.
+- **Diary** (1 reaction) and the reaction page; **Profile** in two columns at 1440 (contacts on the right), one at 390.
+- **Offline `/emergency` (network fully cut, service worker included), 1440 and 390:** card with the allergies and
+  `tel:+919940015631`; other pages show "You're offline".
+- axe-core WCAG 2.2 AA: 0 violations on every screen checked; no page errors.
+
+## Privacy and Terms pages (2026-10-31, on the fork's `main`)
+- `/privacy` and `/terms`: public pages in plain English, one glass card per section, 640px column on desktop.
+  Shared frame `src/components/legal/legal-page.tsx`; the contact email (`CONTACT_EMAIL`) and "Last updated" date
+  (`LEGAL_UPDATED`) live in `src/lib/constants.ts`. Change the date whenever either page changes.
+- **Privacy:** what we store (name, email, allergies, contacts, medications, scans, reactions); stored in Supabase,
+  no other user can see it (RLS); Google shares name, email, picture link and account ID, we only use name and
+  email; barcodes go to Open Food Facts from our server; label photos (**coming soon**, until Phase 5 is merged);
+  the emergency card stays on the device until log out; delete your account by emailing `CONTACT_EMAIL`.
+- **Terms:** an aid, not medical advice, always read the label; product data can be wrong (Caution, never Safe,
+  when unsure); in an emergency call 112; your account; no guarantees (student project).
+- Linked from the landing page footer and under Create account on Sign up ("By creating an account you agree to
+  our Terms and Privacy policy."). Footer links are 44px tall; links inside sentences are exempt.
+- Wording checked against the code first: "only you" became "no other user" (project admins can see data in the
+  dashboard), and the Google line lists everything Google shares.
+- Checks: 6 tests (`legal-pages.test.tsx`); local production build and production at 1440, 390 and 320px: 200,
+  no sideways scroll, axe 0.
+
+## Desktop layout (2026-10-31, from 900px)
+- Custom `desk:` breakpoint at 900px (`--breakpoint-desk: 56.25rem`), because the user's laptop window is under 1024px.
+- Header: logo left, Home · Scan · Diary · Profile in the middle (`DesktopNav`), Emergency right. The bottom bar
+  is phones only. `frameClass()` (`src/components/ui/frame.ts`) gives every page one column so headings and
+  cards line up: wide 1120px (Home, Profile), medium 760px (Scan history, Diary as 2 columns), narrow 640px
+  (Scan, result, reaction, forms, onboarding, `/emergency`).
+- Home: greeting + summary card, scan card (60%) beside Your allergies, Latest scans full width, shortcuts in a row.
+- Checked at 1440, 1280, 1024, 960, 900, 899, 768, 390 and 320: no sideways scroll, nav switches exactly at 900,
+  axe 0. Phone layout unchanged except headings now line up with the cards (moved 3px).
+
+## Google login (branch `google-login`, from `redesign-v2`; merged into the fork's `main` 2026-10-31)
+- "Continue with Google" on Log in and Sign up (official G, Google's grey outline, DM Sans), above an "or" divider;
+  email + password unchanged. `signInWithOAuth({ provider: "google", redirectTo: origin + /auth/callback?next=… })`.
+- `/auth/callback` exchanges the code for a session (PKCE), then goes to `/onboarding` if there is no finished
+  profile, else to a safe `next` (default `/`). Cancelled or failed: `/login?error=google` with a friendly message.
+- Supabase links a Google sign-in to an existing account with the same email (same user, same profile). If that email
+  account was never confirmed, Supabase drops its password login (account-takeover protection).
+- Onboarding's name step starts with the Google name. The emergency card syncs as after any login.
+- Supabase settings (done by the user): Google provider on; Redirect URLs `https://*-j-deploys.vercel.app/**`,
+  `https://allergy-guard-nine.vercel.app/**`, `http://localhost:3000/**`. **Site URL should be
+  `https://allergy-guard-nine.vercel.app`** (the public production domain; `allergy-guard-j-deploys.vercel.app` is the
+  same Vercel project's team domain, behind Vercel login).
+- Safety net (2026-10-31): the first phone test landed on the Site URL root (`/?code=…`) because the redirect wasn't
+  allowed yet. The proxy now forwards any `?code=` (or a Supabase `error` + `error_description` return) on a page other
+  than `/auth/callback` or `/auth/confirm` to `/auth/callback`, keeping the page as `next`.
+- **To test by the user:** a real Google sign-in on laptop, iPhone Safari and the Home Screen app. If the Home Screen
+  app doesn't keep the login, hide the button there with a note (agreed fallback).
+
+## Redesign v2 (2026-10-29, branch `redesign-v2`)
+Visual style from Figma Make file `phxBYfmCTg7ukfQ8ktS7HM` ("Flashcard-Study-App", really AllergyGuard). Reference:
+`design/figma-reference-v2/` (21 rendered screens, 4 mood images, `STYLE-v2.md`). Features, data, rules and copy
+unchanged; the Figma content was placeholder.
+- **Foundation:** DM Sans + Space Mono via `next/font` (self-hosted, precached; replaces Nunito; no new
+  dependency). v2 colour tokens under the old names, `glass` / `eyebrow` / gradient utilities, dark primary
+  buttons, 50px controls, floating glass tab bar (Scan is active on `/scans` too). **Light only.**
+- **Emergency button** unchanged in behaviour (plain `<a href="/emergency">`, top right, solid red); only font,
+  height (44px) and radius changed. The glass "SOS" version stays parked on local branch `emergency-button`.
+- **Screens:** log in / sign up, onboarding, home (summary card, scan hero with the orb in its own corner, allergies,
+  **Latest scans**), scan, result, **new `/scans` history** (All / Safe / Caution / Unsafe as links,
+  `?verdict=`, latest 100), diary (date tiles; our 9 symptoms and 4 treatments kept), profile, `/emergency`,
+  offline, 404.
+- **Scan labels:** `scanLabel()` in `src/lib/products/scan-label.ts` (written by the user) names list rows:
+  product name + brand; "Unknown product" + "Barcode …"; "Label photo"; "Pasted ingredients". Two Phase 5
+  photo rows exist in the database with no barcode; the result page shows them without a product card.
+- **Times** in lists and the home date line are drawn on the phone (`LocalTime`), like the diary.
+- **QA (dev server + production build, Chromium 390 and 320):** axe-core WCAG 2.2 AA: 0 violations on 23 screens
+  at both widths; no text under 11px (12px only for tags and "(optional)"); every tap target ≥ 44px; no sideways
+  scroll; home hero text never overlaps the orb (automated box check at 390/360/320). Offline (real network cut,
+  service worker included): `/emergency` loads from the worker with the card, `tel:` link, DM Sans and Space Mono;
+  other pages show "You're offline".
+- **Real data:** checked later with the QA account (3 typed scans and 1 reaction added to it), and again on
+  production after the merge (see "Merge to the fork's main").
+
+## Phase 6: Reaction diary (2026-10-29)
+Built on branch `phase-6` (pushed to the fork only), merged into the fork's `main` on 2026-10-29.
+- **Migration `20261029000000_reactions.sql`:** `reactions` table, `reaction_symptom` and `reaction_treatment`
+  enums, severity reuses `allergen_severity`. RLS through `profiles` for select/insert/update/delete; a linked
+  `scan_id` must belong to the same profile. **Applied** to the shared project as version `20261029000000`
+  (2026-10-29); don't re-run it. Security advisor: nothing new.
+- **Rules:** time up to 10 minutes in the future (clock drift), from 1900 onwards (`validateOccurredAt`, written
+  by the user); food 1–200 chars; at least one symptom; severity required; treatment optional
+  (None / Antihistamine / EpiPen (adrenaline) / Hospital or ER); notes up to 2000 chars.
+  `validateReaction()` runs in the form and again in the server action.
+- **Screens:** `/diary` (cards as in `design/figma-reference/screens/13-reaction-diary.png`: date pill, severity
+  dots with the word, symptom pills), `/diary/new` (also `?scan=<id>` from a scan result's "Log a reaction to
+  this"), `/diary/[id]` (Edit, Delete with an in-page confirm), `/diary/[id]/edit`. Diary tab and Home tile are
+  live. Online only: nothing changes in the service worker, Dexie or `/emergency`.
+- **Times** are converted to ISO on the phone and drawn on the phone (`LocalTime`), because the server is UTC.
+  The same fix went to `main` first for the scan result's "Checked … on" time (it was 5½ hours behind in IST).
+- **QA (local production build against the shared project, Chromium 390px, Asia/Kolkata):** signed-out redirect,
+  add with errors and a future time, save, list card, edit, cancel, from a scan (prefill, link, foreign scan id
+  ignored), 404 for foreign/broken ids, offline message, no broken links, delete confirm and Keep it, light and
+  dark. Found and fixed: the delete confirm button's label was red on red.
+- **Two-user RLS test (2026-10-29), 23/23 passed:** two temporary confirmed users (`rls-a/b-367fae@example.com`)
+  signed in with the anon key and used the REST API, like the app. B saw only its own reaction; reading A's
+  reaction by id, profile or scan, and A's scan, gave 0 rows; B's edits and deletes of A's reactions (by id and
+  by profile, including moving one into B's profile or linking it to B's scan) changed 0 rows; adding a reaction
+  to A's profile, linking B's reaction to A's scan (insert and update) and moving B's reaction into A's profile
+  were rejected (403, 42501). Signed out: nothing visible, adds rejected, edits and deletes changed nothing.
+  A's reaction was unchanged afterwards; controls showed each user can use their own rows. The test users
+  were deleted by the user in the SQL Editor; a recount matched the counts from before the test (2 users,
+  1 profile, 15 scans, 0 reactions, 1 allergen, 1 contact, 1 medication), so only the user's data is left.
+- **Production check after the merge (read only, WebKit 390px, IST):** list, reaction page, Edit and Cancel,
+  blank-save messages, "Log a reaction to this" prefill, foreign id → 404, Home tile, scan time 08:50 IST; no
+  page errors.
+- **Phone test (user, iPhone, on `allergy-guard-nine.vercel.app`, 2026-10-29):** deleted both QA reactions with
+  "Yes, delete it" and they disappeared; logged a reaction from a camera scan (product filled in, saved, time in
+  IST), then deleted it. Afterwards the live diary showed 0 reactions (checked read only).
 
 ## Phase 5: Ingredient label photo
 Built 2026-10-28 on branch `phase-5` (from `feature/full-build`). Plan approved with these decisions:

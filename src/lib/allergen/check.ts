@@ -9,7 +9,7 @@
 //   text, incomplete data, low OCR confidence, no allergens in the profile).
 // - Safe: text was obtained, nothing above applies.
 
-import { ALLERGEN_LABELS, type AllergenCode } from "./codes";
+import { ALLERGEN_LABELS, type AllergenCode } from "./codes.ts";
 import {
   ALLERGEN_EXCLUSIONS,
   ALLERGEN_TERMS,
@@ -17,8 +17,8 @@ import {
   findSynonymTarget,
   termRegex,
   termSource,
-} from "./synonyms";
-import { hasReadableText, normalizeIngredientText, originalSlice, type NormalizedText } from "./text";
+} from "./synonyms.ts";
+import { hasReadableText, normalizeIngredientText, originalSlice, type NormalizedText } from "./text.ts";
 
 /** Structurally compatible with AllergenSelection; severity is deliberately not read. */
 export type CheckAllergen =

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { fieldErrorClass } from "@/components/form-styles";
+import { AlertIcon } from "@/components/ui/icons";
 import { APP_NAME } from "@/lib/constants";
 import { StepShell } from "./step-shell";
 
@@ -29,12 +30,15 @@ export function DisclaimerStep({ accepted, onAcceptedChange, onContinue }: Props
         onContinue();
       }}
     >
-      <div className="rounded-card border border-l-4 border-line border-l-caution-ink bg-caution-band p-4 text-base text-ink">
-        <p className="font-semibold">{APP_NAME} is an aid, not medical advice.</p>
-        <p className="mt-2">
+      <div className="flex items-start gap-3 rounded-[18px] border border-caution-ink/15 bg-[#ffecc4] p-4 text-[15px] leading-relaxed text-[#4a3410]">
+        <AlertIcon className="mt-0.5 size-5 shrink-0 text-caution-ink" />
+        <div>
+        <p className="font-bold text-[#3d2b0f]">{APP_NAME} is an aid, not medical advice.</p>
+        <p className="mt-1">
           Product data can be wrong or out of date. Always read the label, and follow your
           doctor&apos;s advice.
         </p>
+        </div>
       </div>
       <div>
         <label className="flex min-h-12 items-start gap-3 text-base text-ink">

@@ -26,7 +26,7 @@ describe("HomeDashboard", () => {
   it("greets the user and lists their allergies", () => {
     render(<HomeDashboard bundle={bundle} />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Hi, Priya");
-    const allergies = screen.getByText("Your allergies").parentElement!;
+    const allergies = screen.getByRole("region", { name: "Your allergies" });
     expect(within(allergies).getByText("Peanut")).toBeTruthy();
     expect(within(allergies).getByText("Kiwi")).toBeTruthy();
   });
@@ -38,13 +38,13 @@ describe("HomeDashboard", () => {
     expect(shortcuts.getByRole("link", { name: /Emergency/ }).getAttribute("href")).toBe("/emergency");
   });
 
-  it("shows Diary and Medication as Coming soon, never as links, and hides Restaurants and Travel", () => {
+  it("links Diary and Medication (to the medications in Profile), and hides Restaurants and Travel", () => {
     render(<HomeDashboard bundle={bundle} />);
     const shortcuts = within(screen.getByRole("navigation", { name: "Shortcuts" }));
-    expect(shortcuts.getAllByRole("link")).toHaveLength(2);
-    for (const label of ["Diary", "Medication"]) {
-      expect(shortcuts.getByText(label).parentElement?.textContent).toContain("Coming soon");
-    }
+    expect(shortcuts.getAllByRole("link")).toHaveLength(4);
+    expect(shortcuts.getByRole("link", { name: /Diary/ }).getAttribute("href")).toBe("/diary");
+    expect(shortcuts.getByRole("link", { name: /Medication/ }).getAttribute("href")).toBe("/profile#medications");
+    expect(screen.queryByText("Coming soon")).toBeNull();
     expect(screen.queryByText("Restaurants")).toBeNull();
     expect(screen.queryByText("Travel")).toBeNull();
   });
@@ -61,5 +61,34 @@ describe("HomeDashboard", () => {
     cleanup();
     render(<HomeDashboard bundle={{ ...bundle, primaryContact: null }} />);
     expect(screen.getByRole("link", { name: "Add a contact" }).getAttribute("href")).toBe("/profile#contacts");
+  });
+
+  it("shows the latest scans with their verdicts, and links to the full history", () => {
+    const latestScans = [
+      { id: "s1", input: "manual", barcode: "8901262010016", product_name: "Amul butter", brands: "Amul", verdict: "unsafe" as const, created_at: "2026-10-29T03:20:00Z" },
+      { id: "s2", input: "photo", barcode: null, product_name: null, brands: null, verdict: "caution" as const, created_at: "2026-10-28T10:00:00Z" },
+    ];
+    render(<HomeDashboard bundle={bundle} latestScans={latestScans} />);
+    const card = within(screen.getByRole("region", { name: "Latest scans" }));
+    expect(card.getByRole("link", { name: /View all/ }).getAttribute("href")).toBe("/scans");
+    const rows = card.getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/scans/"));
+    expect(rows.map((a) => a.getAttribute("href"))).toEqual(["/scans/s1", "/scans/s2"]);
+    // Verdicts are words (with an icon), never colour alone.
+    expect(rows[0].textContent).toContain("Unsafe");
+    expect(rows[1].textContent).toContain("Caution");
+  });
+
+  it("says so when there are no scans yet", () => {
+    render(<HomeDashboard bundle={bundle} latestScans={[]} />);
+    const card = within(screen.getByRole("region", { name: "Latest scans" }));
+    expect(card.getByText(/No scans yet/)).toBeTruthy();
+  });
+
+  it("summarises the profile: allergen count and emergency contact", () => {
+    render(<HomeDashboard bundle={bundle} />);
+    const summary = screen.getByRole("link", { name: /allergens monitored/ });
+    expect(summary.getAttribute("href")).toBe("/profile");
+    expect(summary.textContent).toContain("2 allergens monitored");
+    expect(summary.textContent).toContain("Emergency contact: Asha");
   });
 });

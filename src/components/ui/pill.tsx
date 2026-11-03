@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { TONE_BAND, TONE_INK, TONE_OUTLINE, type Tone } from "./tones";
+import { TONE_BAND, TONE_INK, type Tone } from "./tones";
 
 type Props = {
   tone?: Tone;
@@ -10,13 +10,12 @@ type Props = {
   children: ReactNode;
 };
 
-/** Fully rounded label. Always carries text, so meaning never rests on colour. */
+/** Soft-coloured label chip (style v2). Always carries text, so meaning never rests on colour. */
 export function Pill({ tone = "primary", icon, size = "md", className = "", children }: Props) {
-  const sizing = size === "sm" ? "px-2.5 py-0.5 text-xs" : "px-3 py-1 text-sm";
+  const sizing =
+    size === "sm" ? "rounded-[8px] px-2 py-1 text-xs font-semibold" : "min-h-[34px] rounded-[12px] px-3 py-1 text-sm font-semibold";
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border font-extrabold ${sizing} ${TONE_BAND[tone]} ${TONE_INK[tone]} ${TONE_OUTLINE[tone]} ${className}`}
-    >
+    <span className={`inline-flex items-center gap-1.5 ${sizing} ${TONE_BAND[tone]} ${TONE_INK[tone]} ${className}`}>
       {typeof icon === "string" ? <span aria-hidden="true">{icon}</span> : icon}
       {children}
     </span>
@@ -26,8 +25,6 @@ export function Pill({ tone = "primary", icon, size = "md", className = "", chil
 /** "Coming soon" marker for features that aren't built yet. */
 export function ComingSoon() {
   return (
-    <Pill tone="neutral" size="sm">
-      Coming soon
-    </Pill>
+    <span className="eyebrow inline-flex items-center rounded-full bg-white/70 px-2.5 py-1">Coming soon</span>
   );
 }

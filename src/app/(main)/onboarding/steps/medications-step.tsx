@@ -33,7 +33,6 @@ export function MedicationsStep({ initial, onSave, onBack }: Props) {
 
   return (
     <StepShell
-      tone="medication"
       finish
       step={5}
       title="Medications"

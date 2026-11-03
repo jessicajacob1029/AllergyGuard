@@ -62,6 +62,8 @@ describe("Scanner manual entry", () => {
   it("offers the camera and a link to check a label photo", () => {
     render(<Scanner />);
     expect(screen.getByRole("button", { name: /Open camera/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Photo of the ingredients/ }).getAttribute("href")).toBe("/scan/label");
+    const link = screen.getByRole("link", { name: /Label photo/ });
+    expect(link.getAttribute("href")).toBe("/scan/label");
+    expect(link.textContent).not.toContain("Coming soon");
   });
 });

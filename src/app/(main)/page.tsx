@@ -1,39 +1,63 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
+import { linkClass, primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
 import { AppIconTile } from "@/components/ui/icons";
 import { APP_NAME } from "@/lib/constants";
+import { loadScansWithCurrentVerdict } from "@/lib/products/scan-history";
 import { loadOwnProfile } from "@/lib/profile/load";
 import { createClient } from "@/lib/supabase/server";
 import { HomeDashboard } from "./home-dashboard";
+
+// The landing page's title and description (shown in search results and link previews).
+export const metadata: Metadata = {
+  title: `${APP_NAME} · Your allergies, always on guard`,
+  description: "Everything you need to manage your allergies, in one place.",
+};
+
 export default async function Home() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
 
   if (!data?.claims) {
     return (
-      <main className="flex flex-1 flex-col bg-page">
-        <div className="flex flex-col items-center gap-3 rounded-b-[32px] bg-band px-4 pb-10 pt-10 text-center">
-          <AppIconTile size="lg" />
-          <h1 className="text-[28px] font-black uppercase tracking-[0.08em] text-primary-ink">{APP_NAME}</h1>
-          <p className="max-w-xs text-base font-semibold text-muted">
-            Scan a product, know if it&apos;s safe for you.
-          </p>
-        </div>
-        <div className="mx-auto mt-8 flex w-full max-w-sm flex-col gap-3 px-4">
-          <Link href="/signup" className={primaryButtonClass}>
-            Create account
+      <>
+        <main className="flex flex-1 flex-col items-center px-5 pb-10 pt-16 text-center md:justify-center md:py-16">
+          <div className="flex w-full max-w-sm flex-col items-center md:max-w-[480px]">
+            <AppIconTile size="lg" />
+            <p className="eyebrow mt-7 md:mt-10">{APP_NAME}</p>
+            <h1 className="mt-2 text-[42px] font-medium leading-[1] tracking-[-0.05em] text-ink max-[359px]:text-[36px] md:mt-4 md:text-[56px]">
+              Your allergies, always on guard.
+            </h1>
+            <p className="mt-4 max-w-[340px] text-[16px] leading-relaxed text-muted md:mt-5 md:text-lg">
+              Everything you need to manage your allergies, in one place.
+            </p>
+            <div className="mt-8 flex w-full flex-col gap-3 md:mt-12 md:gap-4">
+              <Link href="/signup" className={primaryButtonClass}>
+                Create account
+              </Link>
+              <Link href="/login" className={secondaryButtonClass}>
+                Log in
+              </Link>
+            </div>
+          </div>
+        </main>
+        <footer className="pb-[calc(24px+env(safe-area-inset-bottom))] text-center text-[15px] text-muted">
+          <Link href="/privacy" className={`${linkClass} inline-flex min-h-11 items-center px-2`}>
+            Privacy
           </Link>
-          <Link href="/login" className={secondaryButtonClass}>
-            Log in
+          <span aria-hidden="true">·</span>
+          <Link href="/terms" className={`${linkClass} inline-flex min-h-11 items-center px-2`}>
+            Terms
           </Link>
-        </div>
-      </main>
+        </footer>
+      </>
     );
   }
 
   const bundle = await loadOwnProfile(supabase);
   if (!bundle || bundle.profile.onboarding_completed_at === null) redirect("/onboarding");
+  const latestScans = await loadScansWithCurrentVerdict(supabase, bundle.profile.id, { limit: 3 });
 
-  return <HomeDashboard bundle={bundle} />;
+  return <HomeDashboard bundle={bundle} latestScans={latestScans} today={new Date().toISOString()} />;
 }

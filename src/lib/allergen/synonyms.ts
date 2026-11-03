@@ -3,7 +3,7 @@
 // against text from normalizeIngredientText(), so they are lowercase and
 // accent-free.
 
-import { findPredefinedByName, type AllergenCode } from "./codes";
+import { findPredefinedByName, type AllergenCode } from "./codes.ts";
 
 /**
  * A match on any of these is Unsafe for that allergen. When in doubt a term

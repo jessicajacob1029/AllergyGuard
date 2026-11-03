@@ -116,4 +116,11 @@ describe("OnboardingWizard", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("No connection.");
     expect(screen.getByText("Step 2 of 5")).toBeTruthy();
   });
+
+  it("starts the name step with the Google account's name, which stays editable", () => {
+    render(<OnboardingWizard initialStep={2} bundle={null} suggestedName="Priya Sharma" />);
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    expect(input.value).toBe("Priya Sharma");
+    expect(input.disabled).toBe(false);
+  });
 });

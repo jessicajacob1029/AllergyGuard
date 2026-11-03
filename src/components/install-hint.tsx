@@ -46,7 +46,7 @@ export function InstallHint() {
   return (
     <div
       role="note"
-      className="flex items-start gap-3 rounded-card border border-primary-ink/20 bg-band p-3 text-sm text-ink"
+      className="flex items-start gap-3 rounded-card border border-primary-ink/20 bg-band p-3 text-sm text-ink desk:col-span-2"
     >
       <p className="flex-1">
         <span className="font-extrabold text-primary-ink">Add to Home Screen for offline access.</span> In Safari, tap

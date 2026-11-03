@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchProduct, parseProduct, productUrl } from "./open-food-facts";
+import { CONTACT_EMAIL, fetchProduct, parseProduct, productUrl, USER_AGENT } from "./open-food-facts";
 
 // Shaped like the live API (v2) response for Nutella on 2026-10-26.
 const nutella = {
@@ -111,6 +111,15 @@ describe("fetchProduct", () => {
     expect(url).toBe(productUrl("3017620422003"));
     expect(url).toContain("fields=");
     expect(new Headers(init.headers).get("User-Agent")).toMatch(/^AllergyGuard\//);
+  });
+
+  it("names the app, its version, the site and a contact in the User-Agent", () => {
+    expect(USER_AGENT).toBe(`AllergyGuard/1.0 (https://allergy-guard-nine.vercel.app; ${CONTACT_EMAIL})`);
+  });
+
+  it("reports 'too many requests' separately, so callers can stop", async () => {
+    const r = await fetchProduct("3017620422003", { fetchImpl: () => ok({ error: "slow down" }, 429) });
+    expect(r).toEqual({ ok: false, reason: "rate_limited" });
   });
 
   it("treats a 404 as 'not found', not as an error", async () => {

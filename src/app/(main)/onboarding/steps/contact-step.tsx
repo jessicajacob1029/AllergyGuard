@@ -35,7 +35,6 @@ export function ContactStep({ initial, onSave, onSkip, onBack }: Props) {
 
   return (
     <StepShell
-      tone="contact"
       step={4}
       title="Emergency contact"
       description="Who should be called in an emergency? They'll get a one-tap call button on your emergency card."

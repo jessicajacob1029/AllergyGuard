@@ -1,34 +1,42 @@
 import type { ReactNode } from "react";
 import type { CheckResult, CheckWarning, Verdict } from "@/lib/allergen/check";
 import { HeaderBand } from "@/components/ui/header-band";
+import { LocalTime } from "@/components/ui/local-time";
 import { AlertIcon, CheckIcon, XIcon } from "@/components/ui/icons";
 import { Pill } from "@/components/ui/pill";
 import { SectionCard } from "@/components/ui/section-card";
 import type { Tone } from "@/components/ui/tones";
 import { highlightSegments } from "./highlight";
+import { frameClass } from "@/components/ui/frame";
 
 // Shared by barcode (Phase 4) and label photo (Phase 5) results. Every verdict
 // shows its word and an icon, never colour alone (CLAUDE.md "Verdicts").
 
-const VERDICT: Record<Verdict, { word: string; tone: Tone; icon: ReactNode; subtitle: string; why: string }> = {
+const VERDICT: Record<
+  Verdict,
+  { word: string; tone: Tone; icon: ReactNode; subtitle: string; why: string; circle: string }
+> = {
   unsafe: {
     word: "Unsafe",
     tone: "unsafe",
-    icon: <XIcon className="size-10" />,
+    icon: <XIcon className="size-11" />,
+    circle: "bg-[linear-gradient(145deg,#fee4e0,#ed9b95)] text-[#8a1b1b]",
     subtitle: "One of your allergens was found.",
     why: "Why is it unsafe?",
   },
   caution: {
     word: "Caution",
     tone: "caution",
-    icon: <AlertIcon className="size-10" />,
+    icon: <AlertIcon className="size-11" />,
+    circle: "bg-[linear-gradient(145deg,#fff3ca,#ffc76d)] text-[#694400]",
     subtitle: "We can't be sure this is safe for you.",
     why: "Why caution?",
   },
   safe: {
     word: "Safe",
     tone: "safe",
-    icon: <CheckIcon className="size-10" />,
+    icon: <CheckIcon className="size-11" />,
+    circle: "bg-[linear-gradient(145deg,#dcf5e8,#9edaba)] text-[#125c3b]",
     subtitle: "None of your allergens were found.",
     why: "Why is it safe?",
   },
@@ -55,6 +63,16 @@ type Props = {
   textLabel?: string;
   /** Label photos: the text as first read, shown when the user changed it. */
   originalText?: string | null;
+  /** Shown above the product card (the product change page's "what changed"). */
+  intro?: ReactNode;
+  /** Shown above the actions (the scan result's "Watching for changes"). */
+  aside?: ReactNode;
+  /**
+   * The saved result is out of date and can't be re-checked (a label photo
+   * after an allergen was added): the header says "Re-check needed" instead of
+   * the saved verdict, and the cards below are labelled as the saved check.
+   */
+  recheckNeeded?: boolean;
   actions: ReactNode;
 };
 
@@ -75,9 +93,6 @@ function warningPill(w: CheckWarning): ReactNode {
   }
 }
 
-function formatCheckedAt(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
-}
 
 /** Declared matches the ingredient text already shows (same allergen and kind) add nothing. */
 function visibleMatches(matches: CheckResult["matches"]) {
@@ -93,53 +108,68 @@ export function VerdictView({
   attribution,
   textLabel = "Ingredients as received",
   originalText = null,
+  intro,
+  aside,
+  recheckNeeded = false,
   actions,
 }: Props) {
-  const v = VERDICT[result.verdict];
+  const v = recheckNeeded
+    ? {
+        ...VERDICT[result.verdict],
+        word: "Re-check needed",
+        tone: "neutral" as Tone,
+        icon: <AlertIcon className="size-11" />,
+        circle: "bg-[#ece8ef] text-[#4f4a55]",
+        subtitle: "Your allergies have changed since this check.",
+        why: "At the time of scanning",
+      }
+    : VERDICT[result.verdict];
   const shownMatches = visibleMatches(result.matches);
   const segments = highlightSegments(result.rawText, result.matches);
   const hasMay = segments.some((s) => s.kind === "may_contain");
   const hasContains = segments.some((s) => s.kind === "contains");
 
   return (
-    <main className="flex flex-1 flex-col bg-page">
+    <main className="flex flex-1 flex-col">
       <HeaderBand
-        tone={v.tone}
         centered
-        title={<span className="text-[34px] uppercase tracking-wide">{v.word}</span>}
+        title={<span className={`${recheckNeeded ? "text-[36px]" : "text-[44px]"} tracking-[-0.05em]`}>{v.word}</span>}
         subtitle={v.subtitle}
         top={
-          <span className="flex size-16 items-center justify-center rounded-full bg-card shadow-card" aria-hidden="true">
-            <span className={v.tone === "safe" ? "text-safe-ink" : v.tone === "caution" ? "text-caution-ink" : "text-unsafe-ink"}>
-              {v.icon}
-            </span>
+          <span className={`flex size-[92px] items-center justify-center rounded-full ${v.circle}`} aria-hidden="true">
+            {v.icon}
           </span>
         }
       />
 
-      <div className="mx-auto w-full max-w-sm space-y-6 px-4 py-6">
+      <div className={`${frameClass()} space-y-3.5 pb-6 desk:pb-12`}>
+        {intro}
         {product && (
-          <SectionCard tone={v.tone} accent>
-            <p className="text-lg font-black text-ink">
+          <div className="glass gradient-soft rounded-card p-6">
+            <p className="eyebrow">Scanned product</p>
+            <p className="mt-2 text-[28px] font-medium leading-tight tracking-[-0.045em] text-ink">
               {product.name ?? (product.found ? "Unnamed product" : "Product not found")}
             </p>
-            {product.brands && <p className="text-sm font-semibold text-muted">{product.brands}</p>}
-            <p className="mt-1 text-sm font-semibold text-muted">Barcode {product.barcode}</p>
+            {product.brands && <p className="mt-1 text-[15px] text-muted">{product.brands}</p>}
+            <p className="mt-3 font-mono text-xs font-bold tracking-[0.15em] text-ink">
+              <span className="sr-only">Barcode </span>
+              {product.barcode}
+            </p>
             {!product.found && (
-              <p className="mt-3 rounded-field bg-caution-band p-3 text-sm font-bold text-caution-ink">
+              <p className="mt-4 rounded-[14px] bg-caution-band p-3 text-sm font-bold text-caution-ink">
                 This product isn&apos;t on Open Food Facts, so we have no ingredients to check.
               </p>
             )}
-          </SectionCard>
+          </div>
         )}
 
         <SectionCard tone={v.tone} label={v.why}>
-          <p className="text-base font-semibold text-ink">{result.explanation}</p>
+          <p className="text-[19px] font-semibold leading-snug tracking-[-0.02em] text-ink">{result.explanation}</p>
           {(shownMatches.length > 0 || result.warnings.length > 0) && (
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="What triggered it">
               {shownMatches.map((m, i) => (
                 <li key={`m${i}`}>
-                  <Pill tone={m.kind === "contains" ? "unsafe" : "caution"} size="sm">
+                  <Pill tone={m.kind === "contains" ? "unsafe" : "caution"}>
                     {m.allergen}: {m.kind === "contains" ? "" : "may contain "}“{m.text}”
                     {m.source === "declared" ? " (allergen list)" : ""}
                   </Pill>
@@ -147,7 +177,7 @@ export function VerdictView({
               ))}
               {result.warnings.map((w, i) => (
                 <li key={`w${i}`}>
-                  <Pill tone="caution" size="sm">
+                  <Pill tone="caution">
                     {warningPill(w)}
                   </Pill>
                 </li>
@@ -155,7 +185,7 @@ export function VerdictView({
             </ul>
           )}
           {notes.length > 0 && (
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm font-semibold text-muted">
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
               {notes.map((n) => (
                 <li key={n}>{n}</li>
               ))}
@@ -165,10 +195,10 @@ export function VerdictView({
 
         <SectionCard tone="neutral" label={textLabel}>
           {result.rawText.trim() === "" ? (
-            <p className="text-base font-semibold text-muted">No ingredient text was available.</p>
+            <p className="text-[15px] text-muted">No ingredient text was available.</p>
           ) : (
             <>
-              <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-ink">
+              <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.7] text-[#3f3a44]">
                 {segments.map((s, i) =>
                   s.kind === null ? (
                     <span key={i}>{s.text}</span>
@@ -177,8 +207,8 @@ export function VerdictView({
                       key={i}
                       className={
                         s.kind === "contains"
-                          ? "rounded bg-unsafe-band px-0.5 font-black text-unsafe-ink underline decoration-2"
-                          : "rounded bg-caution-band px-0.5 font-extrabold text-caution-ink underline decoration-dotted decoration-2"
+                          ? "rounded-[4px] bg-unsafe-band px-1 font-bold text-unsafe-ink underline decoration-2"
+                          : "rounded-[4px] bg-caution-band px-1 font-bold text-caution-ink underline decoration-dotted decoration-2"
                       }
                     >
                       {s.text}
@@ -187,7 +217,7 @@ export function VerdictView({
                 )}
               </p>
               {(hasContains || hasMay) && (
-                <p className="mt-3 text-xs font-semibold text-muted">
+                <p className="mt-3 text-sm text-muted">
                   {hasContains && "Solid underline: your allergen. "}
                   {hasMay && "Dotted underline: may contain."}
                 </p>
@@ -204,10 +234,12 @@ export function VerdictView({
           )}
         </SectionCard>
 
+        {aside}
+
         <div className="space-y-3">{actions}</div>
 
-        <div className="space-y-1 text-center text-xs font-semibold text-muted">
-          <p>Checked against your allergies on {formatCheckedAt(checkedAt)}.</p>
+        <div className="space-y-1 px-2 text-center text-sm text-muted">
+          <p>Checked against your allergies on <LocalTime iso={checkedAt} format="checkedAt" />.</p>
           {attribution && <p>{attribution}</p>}
           <p>AllergyGuard is an aid, not medical advice. Always read the label.</p>
         </div>

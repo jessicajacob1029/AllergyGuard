@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { PlusIcon } from "@/components/ui/icons";
 import { fieldErrorClass, inputClass, labelClass } from "@/components/form-styles";
 import type { MedicationDraft } from "@/lib/profile/medications";
 import {
@@ -82,7 +83,7 @@ export function MedicationListEditor({ drafts, errors, update, remove, add }: Ed
           return (
             <li
               key={draft.key}
-              className="space-y-4 rounded-card border border-line bg-card p-4 shadow-card"
+              className="glass space-y-4 rounded-[20px] p-4"
             >
               <div>
                 <label htmlFor={id("name")} className={labelClass}>
@@ -106,7 +107,7 @@ export function MedicationListEditor({ drafts, errors, update, remove, add }: Ed
               </div>
               <div>
                 <label htmlFor={id("dose")} className={labelClass}>
-                  Dose <span className="font-semibold normal-case tracking-normal text-muted">(optional)</span>
+                  Dose <span className="font-sans text-xs font-semibold normal-case tracking-normal text-muted">(optional)</span>
                 </label>
                 <input
                   id={id("dose")}
@@ -127,7 +128,7 @@ export function MedicationListEditor({ drafts, errors, update, remove, add }: Ed
               <div>
                 <label htmlFor={id("expiry")} className={labelClass}>
                   Expiry date{" "}
-                  <span className="font-semibold normal-case tracking-normal text-muted">(optional)</span>
+                  <span className="font-sans text-xs font-semibold normal-case tracking-normal text-muted">(optional)</span>
                 </label>
                 <input
                   id={id("expiry")}
@@ -159,7 +160,7 @@ export function MedicationListEditor({ drafts, errors, update, remove, add }: Ed
                 type="button"
                 onClick={() => remove(draft.key)}
                 aria-label={`Remove ${label}`}
-                className="flex h-11 items-center text-sm font-medium text-unsafe-ink"
+                className="flex h-11 items-center text-sm font-bold text-unsafe-ink"
               >
                 Remove
               </button>
@@ -170,9 +171,10 @@ export function MedicationListEditor({ drafts, errors, update, remove, add }: Ed
       <button
         type="button"
         onClick={add}
-        className="min-h-[52px] w-full rounded-full border-2 border-dashed border-primary-ink bg-card text-base font-extrabold text-primary-ink"
+        className="flex min-h-11 items-center gap-2 text-[15px] font-bold text-primary-ink"
       >
-        + Add a medication
+        <PlusIcon className="size-[18px]" />
+        Add a medication
       </button>
     </>
   );

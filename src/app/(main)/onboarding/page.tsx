@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { nameFromMetadata } from "@/lib/auth/oauth";
 import { APP_NAME } from "@/lib/constants";
 import { loadOwnProfile } from "@/lib/profile/load";
 import { resumeStep } from "@/lib/profile/onboarding";
@@ -24,7 +25,8 @@ export default async function OnboardingPage() {
 
   return (
     <main className="flex flex-1 flex-col bg-page">
-      <OnboardingWizard initialStep={step} bundle={bundle} />
+      {/* Google accounts come with a name: start the name step with it (editable). */}
+      <OnboardingWizard initialStep={step} bundle={bundle} suggestedName={nameFromMetadata(data.claims.user_metadata)} />
     </main>
   );
 }

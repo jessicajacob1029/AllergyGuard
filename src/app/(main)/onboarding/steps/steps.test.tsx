@@ -137,9 +137,9 @@ describe("MedicationsStep", () => {
     const onSave = vi.fn().mockResolvedValue(null);
     render(<MedicationsStep initial={[]} onSave={onSave} onBack={() => {}} />);
 
-    await user.click(screen.getByRole("button", { name: "+ Add a medication" }));
-    await user.click(screen.getByRole("button", { name: "+ Add a medication" }));
-    await user.click(screen.getByRole("button", { name: "+ Add a medication" }));
+    await user.click(screen.getByRole("button", { name: "Add a medication" }));
+    await user.click(screen.getByRole("button", { name: "Add a medication" }));
+    await user.click(screen.getByRole("button", { name: "Add a medication" }));
     const cards = screen.getAllByRole("listitem");
     await user.type(within(cards[0]).getByLabelText("Name"), "EpiPen");
     await user.type(within(cards[0]).getByLabelText(/Dose/), "0.3 mg");
