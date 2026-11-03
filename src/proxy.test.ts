@@ -5,7 +5,7 @@ const updateSession = vi.hoisted(() => vi.fn(async () => new Response("page")));
 vi.mock("@/lib/supabase/proxy", () => ({ updateSession }));
 
 import { CSP_MODE, cspHeaderName } from "@/lib/security/csp";
-import { proxy } from "./proxy";
+import { config, proxy } from "./proxy";
 
 const CSP_HEADER = cspHeaderName(CSP_MODE);
 
@@ -49,5 +49,22 @@ describe("proxy", () => {
       expect(csp).toContain("script-src 'self' 'unsafe-inline'");
       expect(csp).not.toContain("nonce-");
     }
+  });
+});
+
+describe("proxy matcher", () => {
+  // The matcher is a path regex: the proxy (page CSP, session) runs where it matches.
+  const runs = (path: string) => new RegExp(`^${config.matcher[0]}$`).test(path);
+
+  it("skips the OCR files, which have their own policy (next.config.ts)", () => {
+    expect(runs("/tesseract/worker.min.js")).toBe(false);
+    expect(runs("/tesseract/core/tesseract-core-simd-lstm.wasm.js")).toBe(false);
+    expect(runs("/tesseract/lang/eng.traineddata.gz")).toBe(false);
+  });
+
+  it("still runs on pages, including the label photo page", () => {
+    expect(runs("/scan/label")).toBe(true);
+    expect(runs("/")).toBe(true);
+    expect(runs("/scans/123")).toBe(true);
   });
 });

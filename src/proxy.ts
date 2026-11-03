@@ -27,7 +27,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip static files, image optimisation, the service worker, and public assets.
-    "/((?!_next/static|_next/image|serwist/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
+    // Skip static files, image optimisation, the service worker, public assets and
+    // the OCR files (their own policy is in next.config.ts; no session needed).
+    "/((?!_next/static|_next/image|serwist/|tesseract/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
   ],
 };

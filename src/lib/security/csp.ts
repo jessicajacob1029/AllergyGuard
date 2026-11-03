@@ -7,8 +7,11 @@
 //   worker offline, so they can't carry a per-request nonce. They allow inline
 //   scripts instead; neither shows user-supplied text (the emergency card is
 //   drawn from the device's own IndexedDB).
-// - Phase 5 (Tesseract.js OCR, WebAssembly) will need 'wasm-unsafe-eval' in
-//   script-src, and probably worker-src blob:, when it is merged.
+// - Label photo OCR (Tesseract.js) runs in a Web Worker loaded from our own
+//   /tesseract/ files. A worker follows the policy sent with its own script,
+//   so those files get OCR_WORKER_CSP (next.config.ts) instead of the page
+//   policy: the only place 'wasm-unsafe-eval' is allowed. Pages need nothing
+//   extra (measured 2026-11-03, enforced, Chromium and WebKit).
 
 /** "report-only" while checking for violations; "enforce" once there are none. */
 export type CspMode = "report-only" | "enforce";
@@ -72,6 +75,23 @@ export function buildCsp({
     .map(([name, values]) => `${name} ${values.join(" ")}`)
     .join("; ");
 }
+
+/** Path of the self-hosted Tesseract.js files (scripts/copy-tesseract.mjs). */
+export const OCR_FILES_PATH = "/tesseract";
+
+/**
+ * Policy for the Tesseract.js worker and its files. The worker loads its core
+ * script and language data from this site and compiles WebAssembly; nothing
+ * else (no eval, no inline script, no other site, no images or frames).
+ */
+export const OCR_WORKER_CSP = [
+  "default-src 'none'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+].join("; ");
 
 /**
  * Headers for every response, including static files (next.config.ts).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCsp, createNonce, cspHeaderName, isStaticPage, SECURITY_HEADERS } from "./csp";
+import { buildCsp, createNonce, cspHeaderName, isStaticPage, OCR_WORKER_CSP, SECURITY_HEADERS } from "./csp";
 
 const SUPABASE = "https://vwnwevrwoitvnsspudqe.supabase.co";
 const parse = (csp: string) =>
@@ -47,6 +47,28 @@ describe("buildCsp", () => {
   it("only next dev gets unsafe-eval", () => {
     expect(buildCsp({ nonce: "n", supabaseUrl: SUPABASE, dev: true })).toContain("'unsafe-eval'");
     expect(buildCsp({ nonce: "n", supabaseUrl: SUPABASE })).not.toContain("'unsafe-eval'");
+  });
+});
+
+describe("OCR_WORKER_CSP (the Tesseract.js worker's own files)", () => {
+  const p = parse(OCR_WORKER_CSP);
+
+  it("allows WebAssembly and scripts from this site only: no eval, no inline", () => {
+    expect(p["script-src"]).toEqual(["'self'", "'wasm-unsafe-eval'"]);
+    expect(OCR_WORKER_CSP).not.toContain("'unsafe-eval'");
+    expect(OCR_WORKER_CSP).not.toContain("'unsafe-inline'");
+  });
+
+  it("denies everything else and can only fetch from this site", () => {
+    expect(p["default-src"]).toEqual(["'none'"]);
+    expect(p["connect-src"]).toEqual(["'self'"]);
+    expect(p["frame-ancestors"]).toEqual(["'none'"]);
+    expect(OCR_WORKER_CSP).not.toMatch(/\*|https:|data:|blob:/);
+  });
+
+  it("pages never get 'wasm-unsafe-eval'", () => {
+    expect(buildCsp({ nonce: "n", supabaseUrl: SUPABASE })).not.toContain("wasm-unsafe-eval");
+    expect(buildCsp({ nonce: null, supabaseUrl: SUPABASE })).not.toContain("wasm-unsafe-eval");
   });
 });
 

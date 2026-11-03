@@ -24,8 +24,10 @@ what applies to our stack. Background and findings: `docs/SECURITY-REVIEW.md`.
   example `await connection()`, as `not-found.tsx` does).
 - A new external origin (an API, a CDN, fonts) must be added to the right directive on purpose. Try a change as
   `CSP_MODE = "report-only"` first if you aren't sure, and check the console on every page.
-- Phase 5 (Tesseract.js, WebAssembly) will need `'wasm-unsafe-eval'` in `script-src`, and probably `worker-src
-  blob:`.
+- Label photo OCR (Tesseract.js) runs in a worker loaded from `/tesseract/`. A worker follows the policy sent with
+  its own script, so `/tesseract/*` skips the proxy and gets `OCR_WORKER_CSP` (`next.config.ts`): `default-src 'none';
+  script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'`. That is the only place `'wasm-unsafe-eval'` is allowed;
+  pages need nothing extra and no `blob:` workers (`workerBlobURL: false`). Checked enforced in Chromium and WebKit.
 
 ## Requests and input
 
