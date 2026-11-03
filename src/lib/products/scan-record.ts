@@ -32,6 +32,12 @@ export type ScanInsert = {
   ocr_text: string | null;
   /** Label photos only: 0–100, the lowest line confidence. */
   ocr_confidence: number | null;
+  /**
+   * Label photos only: the user ticked "I've compared this text with the label
+   * and it matches" (20261103010000_text_checked). Left out of barcode and
+   * paste rows, so those keep working whatever the migration's state.
+   */
+  text_checked?: boolean;
 };
 
 export type ScanRow = ScanInsert & { id: string; created_at: string };
@@ -77,9 +83,10 @@ export function toLabelScanInsert(args: {
   text: string;
   ocrText: string;
   ocrConfidence: number;
+  textChecked: boolean;
   result: CheckResult;
 }): ScanInsert {
-  const { profileId, text, ocrText, ocrConfidence, result } = args;
+  const { profileId, text, ocrText, ocrConfidence, textChecked, result } = args;
   return {
     profile_id: profileId,
     barcode: null,
@@ -96,6 +103,7 @@ export function toLabelScanInsert(args: {
     off_last_modified: null,
     ocr_text: ocrText,
     ocr_confidence: ocrConfidence,
+    text_checked: textChecked,
   };
 }
 

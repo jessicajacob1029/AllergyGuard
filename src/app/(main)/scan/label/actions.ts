@@ -34,6 +34,7 @@ export async function checkLabel(value: unknown): Promise<CheckLabelResult> {
           text: input.text,
           ocrText: input.ocrText,
           ocrConfidence: input.ocrConfidence,
+          textChecked: input.textChecked,
           result,
         })
       : toPasteScanInsert({ profileId, text: input.text, result });

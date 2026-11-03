@@ -82,6 +82,7 @@ describe("toLabelScanInsert", () => {
       text: "Sugar, milk powder",
       ocrText: "Sugar, milk\npowder",
       ocrConfidence: 88,
+      textChecked: true,
       result,
     });
     expect(row).toEqual({
@@ -100,6 +101,7 @@ describe("toLabelScanInsert", () => {
       off_last_modified: null,
       ocr_text: "Sugar, milk\npowder",
       ocr_confidence: 88,
+      text_checked: true,
     });
   });
 
@@ -107,6 +109,8 @@ describe("toLabelScanInsert", () => {
     const result = checkAllergens(null, [{ kind: "predefined", code: "milk" }]);
     const row = toScanInsert({ profileId: "p1", barcode: "5000000000000", input: "manual", lookup: { found: false }, result });
     expect(row).toMatchObject({ ocr_text: null, ocr_confidence: null });
+    // Left out (database default false), so barcode saves don't depend on the text_checked migration.
+    expect("text_checked" in row).toBe(false);
   });
 
   it("the migrations allow photo rows and require their OCR fields", () => {

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { checkAllergens, type CheckAllergen } from "@/lib/allergen/check";
+import { checkAllergens, type CheckAllergen, type CheckOptions } from "@/lib/allergen/check";
 import type { AllergenCode } from "@/lib/allergen/codes";
 import { parseProduct } from "@/lib/products/open-food-facts";
 import offProducts from "./__fixtures__/off-products.json";
 import ocrSamples from "./__fixtures__/ocr-samples.json";
+import unsafeCheckCalls from "./__fixtures__/unsafe-check-calls.json";
 import { checkLabelText, parseLabelCheckInput, type LabelCheckInput } from "./check-label";
 import { prepareOcrText } from "./prepare-text";
 import { summarizeOcr, type OcrLine } from "./summary";
@@ -18,7 +19,13 @@ type PhotoInput = Extract<LabelCheckInput, { source: "photo" }>;
 /** The photo path exactly as the app runs it: OCR text → tidy + joinOcrLines → checkLabelText. */
 function photoInput(name: string): PhotoInput {
   const s = samples[name];
-  return { source: "photo", text: prepareOcrText(s.text), ocrText: s.text, ocrConfidence: summarizeOcr(s.lines).confidence };
+  return {
+    source: "photo",
+    text: prepareOcrText(s.text),
+    ocrText: s.text,
+    ocrConfidence: summarizeOcr(s.lines).confidence,
+    textChecked: false,
+  };
 }
 
 /** The barcode path exactly as the Server Function runs it. */
@@ -85,13 +92,13 @@ describe("checkLabelText", () => {
   });
 
   it("Hindi typed into the box counts as incomplete: Caution", () => {
-    const r = checkLabelText({ source: "photo", text: "चीनी, नमक", ocrText: "x", ocrConfidence: 95 }, [p("milk")]);
+    const r = checkLabelText({ source: "photo", text: "चीनी, नमक", ocrText: "x", ocrConfidence: 95, textChecked: false }, [p("milk")]);
     expect(r.verdict).toBe("caution");
     expect(r.warnings.map((w) => w.kind)).toContain("incomplete");
   });
 
   it("low confidence never downgrades Unsafe", () => {
-    expect(checkLabelText({ source: "photo", text: "Sugar, milk powder", ocrText: "x", ocrConfidence: 20 }, [p("milk")]).verdict).toBe(
+    expect(checkLabelText({ source: "photo", text: "Sugar, milk powder", ocrText: "x", ocrConfidence: 20, textChecked: false }, [p("milk")]).verdict).toBe(
       "unsafe",
     );
   });
@@ -107,6 +114,77 @@ describe("checkLabelText", () => {
   it("an edit that adds an allergen makes it Unsafe", () => {
     const input = photoInput("off-8901262010016");
     expect(checkLabelText({ ...input, text: `${input.text} milk` }, [p("milk")]).verdict).toBe("unsafe");
+  });
+});
+
+describe("checkLabelText: a photo the user ticked as checked against the label", () => {
+  const photo = (text: string, ocrConfidence: number, textChecked: boolean): PhotoInput => ({
+    source: "photo",
+    text,
+    ocrText: text,
+    ocrConfidence,
+    textChecked,
+  });
+
+  it("low confidence without the tick stays Caution", () => {
+    const r = checkLabelText(photo("Sugar, cocoa butter, salt", 30, false), [p("milk")]);
+    expect(r.verdict).toBe("caution");
+    expect(r.warnings.map((w) => w.kind)).toEqual(["low_confidence"]);
+  });
+
+  it("with the tick, clean text is judged on its own like pasted text: Safe", () => {
+    const ticked = checkLabelText(photo("Sugar, cocoa butter, salt", 30, true), [p("milk")]);
+    expect(ticked.verdict).toBe("safe");
+    expect(ticked.warnings).toEqual([]);
+    expect(ticked).toEqual(checkLabelText({ source: "paste", text: "Sugar, cocoa butter, salt" }, [p("milk")]));
+  });
+
+  it("the tick removes only the low-confidence reason: Unsafe stays Unsafe", () => {
+    expect(checkLabelText(photo("Sugar, whey powder", 10, true), [p("milk")]).verdict).toBe("unsafe");
+  });
+
+  it("the tick keeps every other Caution: may contain, a free-from claim, Hindi", () => {
+    expect(checkLabelText(photo("Sugar. May contain milk.", 30, true), [p("milk")]).verdict).toBe("caution");
+    expect(checkLabelText(photo("Sugar, cocoa. Milk-free.", 30, true), [p("milk")]).verdict).toBe("caution");
+    const hindi = checkLabelText(photo("Sugar, दूध", 30, true), [p("milk")]);
+    expect(hindi.verdict).toBe("caution");
+    expect(hindi.warnings.map((w) => w.kind)).toContain("incomplete");
+  });
+
+  it("the tick doesn't matter when the photo was read clearly", () => {
+    const a = checkLabelText(photo("Sugar, cocoa butter, salt", 95, false), [p("milk")]);
+    expect(a.verdict).toBe("safe");
+    expect(checkLabelText(photo("Sugar, cocoa butter, salt", 95, true), [p("milk")])).toEqual(a);
+  });
+});
+
+// Never weaker: every recorded Unsafe text (labels have no allergen tags, so
+// text-only calls) stays Unsafe with the same allergens through the label
+// photo path, ticked or not, at any confidence, and through paste.
+describe("never weaker: the Unsafe corpus through the label paths", () => {
+  type RecordedCall = { text: string | null; allergens: CheckAllergen[]; options: CheckOptions };
+  const textOnly = (unsafeCheckCalls as RecordedCall[]).filter(
+    (c): c is RecordedCall & { text: string } =>
+      typeof c.text === "string" && c.text.trim() !== "" && checkAllergens(c.text, c.allergens).verdict === "unsafe",
+  );
+  const contains = (r: ReturnType<typeof checkAllergens>) =>
+    [...new Set(r.matches.filter((m) => m.kind === "contains").map((m) => m.allergen))].sort();
+
+  it("has cases to check", () => {
+    expect(textOnly.length).toBeGreaterThan(20);
+  });
+
+  it.each([
+    ["photo, not ticked, confidence 5", (text: string) => ({ source: "photo", text, ocrText: text, ocrConfidence: 5, textChecked: false })],
+    ["photo, ticked, confidence 5", (text: string) => ({ source: "photo", text, ocrText: text, ocrConfidence: 5, textChecked: true })],
+    ["photo, ticked, confidence 99", (text: string) => ({ source: "photo", text, ocrText: text, ocrConfidence: 99, textChecked: true })],
+    ["paste", (text: string) => ({ source: "paste", text })],
+  ] as [string, (t: string) => LabelCheckInput][])("%s", (_name, make) => {
+    for (const c of textOnly) {
+      const r = checkLabelText(make(c.text), c.allergens);
+      expect(r.verdict, c.text).toBe("unsafe");
+      expect(contains(r), c.text).toEqual(contains(checkAllergens(c.text, c.allergens)));
+    }
   });
 });
 
@@ -140,10 +218,11 @@ describe("checkLabelText: pasted text", () => {
 });
 
 describe("parseLabelCheckInput", () => {
-  const ok = { source: "photo", text: "Sugar", ocrText: "Sugar", ocrConfidence: 90 } as const;
+  const ok = { source: "photo", text: "Sugar", ocrText: "Sugar", ocrConfidence: 90, textChecked: false } as const;
 
-  it("accepts a photo: two strings and a number", () => {
+  it("accepts a photo: two strings, a number and the tick", () => {
     expect(parseLabelCheckInput(ok)).toEqual({ ok: true, input: ok });
+    expect(parseLabelCheckInput({ ...ok, textChecked: true })).toEqual({ ok: true, input: { ...ok, textChecked: true } });
   });
 
   it("accepts pasted text: one string", () => {
@@ -166,7 +245,10 @@ describe("parseLabelCheckInput", () => {
     ["confidence as a string", { ...ok, ocrConfidence: "90" }],
     ["confidence above 100", { ...ok, ocrConfidence: 101 }],
     ["confidence NaN", { ...ok, ocrConfidence: Number.NaN }],
-    ["no source", { text: "Sugar", ocrText: "Sugar", ocrConfidence: 90 }],
+    ["the tick as a string", { ...ok, textChecked: "true" }],
+    ["no tick field", { source: "photo", text: "Sugar", ocrText: "Sugar", ocrConfidence: 90 }],
+    ["paste with a tick", { source: "paste", text: "Sugar", textChecked: true }],
+    ["no source", { text: "Sugar", ocrText: "Sugar", ocrConfidence: 90, textChecked: false }],
     ["paste with OCR fields", { ...ok, source: "paste" }],
     ["paste with an image", { source: "paste", text: "Sugar", image: "data:image/jpeg;base64,AAAA" }],
     ["unknown source", { source: "upload", text: "Sugar" }],

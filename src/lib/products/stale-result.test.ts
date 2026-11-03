@@ -76,6 +76,12 @@ describe("currentVerdict (what lists and the result page show today)", () => {
     expect(currentVerdict(photo, MILK_ADDED, KIWI_MILK)).toEqual({ shown: "recheck_needed", saved: "safe", outOfDate: true });
   });
 
+  it("a label photo the user ticked as checked is still Re-check needed (never re-checked automatically)", () => {
+    const ticked = { ...saved, input: "photo", barcode: null, product_found: false, text_checked: true };
+    expect(canRecheck(ticked)).toBe(false);
+    expect(currentVerdict(ticked, MILK_ADDED, KIWI_MILK)).toEqual({ shown: "recheck_needed", saved: "safe", outOfDate: true });
+  });
+
   it("a barcode Open Food Facts didn't have stays as saved (Caution whatever the allergies)", () => {
     const missing = { ...saved, product_found: false, ingredients_text: null, verdict: "caution" as const };
     expect(canBeOutOfDate(missing)).toBe(false);

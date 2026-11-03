@@ -100,6 +100,22 @@ describe("VerdictView for a label photo", () => {
   });
 });
 
+describe("VerdictView: a photo whose text the user ticked as checked", () => {
+  const result = checkAllergens("Sugar, cocoa butter", MILK);
+
+  it("says 'Based on text you checked', and keeps 'Always read the label'", () => {
+    render(<VerdictView result={result} product={null} checkedAt={checkedAt} textChecked actions={null} />);
+    expect(screen.getByText("Based on text you checked")).toBeTruthy();
+    expect(screen.getByText(/You ticked that this text matches the label/)).toBeTruthy();
+    expect(screen.getByText("AllergyGuard is an aid, not medical advice. Always read the label.")).toBeTruthy();
+  });
+
+  it("says nothing about it otherwise", () => {
+    render(<VerdictView result={result} product={null} checkedAt={checkedAt} actions={null} />);
+    expect(screen.queryByText("Based on text you checked")).toBeNull();
+  });
+});
+
 describe("VerdictView: an out-of-date label photo (recheckNeeded)", () => {
   it("says 'Re-check needed' instead of the saved Safe, and labels the saved check", () => {
     const result = checkAllergens("Sugar, cocoa", MILK);

@@ -63,6 +63,11 @@ type Props = {
   textLabel?: string;
   /** Label photos: the text as first read, shown when the user changed it. */
   originalText?: string | null;
+  /**
+   * Label photos: the user ticked "I've compared this text with the label and
+   * it matches", so a doubtful read was judged on the text alone.
+   */
+  textChecked?: boolean;
   /** Shown above the product card (the product change page's "what changed"). */
   intro?: ReactNode;
   /** Shown above the actions (the scan result's "Watching for changes"). */
@@ -108,6 +113,7 @@ export function VerdictView({
   attribution,
   textLabel = "Ingredients as received",
   originalText = null,
+  textChecked = false,
   intro,
   aside,
   recheckNeeded = false,
@@ -164,6 +170,17 @@ export function VerdictView({
         )}
 
         <SectionCard tone={v.tone} label={v.why}>
+          {textChecked && (
+            <div className="mb-4 space-y-2">
+              <Pill tone="primary" icon={<CheckIcon className="size-4" />}>
+                Based on text you checked
+              </Pill>
+              <p className="text-sm text-muted">
+                The photo wasn&apos;t read clearly. You ticked that this text matches the label, so it was checked as
+                you confirmed it.
+              </p>
+            </div>
+          )}
           <p className="text-[19px] font-semibold leading-snug tracking-[-0.02em] text-ink">{result.explanation}</p>
           {(shownMatches.length > 0 || result.warnings.length > 0) && (
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="What triggered it">

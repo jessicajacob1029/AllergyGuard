@@ -37,6 +37,11 @@ const TIPS = [
 
 export const PASTE_TIP = "On iPhone, open the photo, press and hold the text, then Copy.";
 
+export const TEXT_CHECKED_LABEL = "I've compared this text with the label and it matches.";
+
+/** The tick is offered only when it changes the result: a photo read with low confidence. */
+const isLowConfidence = (read: Read) => read.summary.confidence < DEFAULT_MIN_OCR_CONFIDENCE;
+
 const noticeClass = "rounded-[18px] border border-caution-ink/20 bg-caution-band p-3.5 text-sm font-bold text-caution-ink";
 const tileClass =
   "glass grid min-h-[76px] w-full grid-cols-[46px_1fr_auto] items-center gap-3 rounded-[20px] px-3.5 py-3 text-left " +
@@ -60,6 +65,8 @@ export function LabelCapture() {
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [rect, setRect] = useState<CropRect>(DEFAULT_CROP);
   const [text, setText] = useState("");
+  // "I've compared this text with the label…": cleared by any edit or new read.
+  const [textChecked, setTextChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -100,6 +107,7 @@ export function LabelCapture() {
       });
       if (controller.signal.aborted) return;
       setText(prepareOcrText(out.text));
+      setTextChecked(false);
       setState({
         step: "review",
         read: { ocrText: out.text, summary: summarizeOcr(out.lines), boosted: boost, crop },
@@ -327,8 +335,14 @@ export function LabelCapture() {
               label="Text read from your photo"
               hint="Check it against the label and fix any mistakes before checking."
               text={text}
-              onChange={setText}
+              onChange={(t) => {
+                setText(t);
+                setTextChecked(false);
+              }}
             />
+            {isLowConfidence(state.read) && (
+              <TextCheckedBox checked={textChecked} onChange={setTextChecked} disabled={pending || text.trim() === ""} />
+            )}
             <div className="space-y-3">
               <button
                 type="button"
@@ -338,6 +352,7 @@ export function LabelCapture() {
                     text,
                     ocrText: state.read.ocrText,
                     ocrConfidence: state.read.summary.confidence,
+                    textChecked: isLowConfidence(state.read) && textChecked,
                   })
                 }
                 disabled={pending || !online || text.trim() === ""}
@@ -428,8 +443,8 @@ function PhotoReview({ read }: { read: Read }) {
     <div role="alert" className={`${noticeClass} space-y-2`}>
       <p>
         Parts of this label weren&apos;t read clearly. They may be blurred, or in another language such as Hindi, which
-        AllergyGuard can&apos;t read yet. Compare the text with the label and fix any mistakes. Your result will be
-        Caution, not Safe.
+        AllergyGuard can&apos;t read yet. Compare the text with the label and fix any mistakes. Unless you tick the box
+        under the text, your result will be Caution, not Safe.
       </p>
       {read.summary.unclearLines.length > 0 && (
         <>
@@ -443,6 +458,32 @@ function PhotoReview({ read }: { read: Read }) {
           </ul>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * The user's statement that the text matches the label. With it, a doubtful
+ * read is judged on the text alone, like pasted text (checkLabelText).
+ */
+function TextCheckedBox({ checked, onChange, disabled }: { checked: boolean; onChange: (c: boolean) => void; disabled: boolean }) {
+  return (
+    <div className="glass rounded-card p-5">
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={disabled}
+          aria-describedby="text-checked-hint"
+          className="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed"
+        />
+        <span className="text-[15px] font-bold leading-snug text-ink">{TEXT_CHECKED_LABEL}</span>
+      </label>
+      <p id="text-checked-hint" className="mt-2 pl-9 text-sm text-muted">
+        Read it line by line against the pack. With the tick, the text is checked as you typed it. Any change to the
+        text clears the tick.
+      </p>
     </div>
   );
 }

@@ -14,6 +14,8 @@ export type LabelCheckInput =
       ocrText: string;
       /** summarizeOcr().confidence for the photo (0–100). */
       ocrConfidence: number;
+      /** The user ticked "I've compared this text with the label and it matches." */
+      textChecked: boolean;
     }
   | {
       /** Text the user pasted (e.g. copied from the Photos app). No OCR confidence. */
@@ -35,13 +37,13 @@ export function parseLabelCheckInput(value: unknown): { ok: true; input: LabelCh
   if (typeof value !== "object" || value === null) return BROKEN;
   const v = value as Record<string, unknown>;
   let input: LabelCheckInput;
-  if (v.source === "photo" && sameKeys(v, ["source", "text", "ocrText", "ocrConfidence"])) {
-    const { text, ocrText, ocrConfidence } = v;
-    if (typeof text !== "string" || typeof ocrText !== "string") return BROKEN;
+  if (v.source === "photo" && sameKeys(v, ["source", "text", "ocrText", "ocrConfidence", "textChecked"])) {
+    const { text, ocrText, ocrConfidence, textChecked } = v;
+    if (typeof text !== "string" || typeof ocrText !== "string" || typeof textChecked !== "boolean") return BROKEN;
     if (typeof ocrConfidence !== "number" || !Number.isFinite(ocrConfidence) || ocrConfidence < 0 || ocrConfidence > 100) {
       return BROKEN;
     }
-    input = { source: "photo", text, ocrText, ocrConfidence };
+    input = { source: "photo", text, ocrText, ocrConfidence, textChecked };
   } else if (v.source === "paste" && sameKeys(v, ["source", "text"])) {
     if (typeof v.text !== "string") return BROKEN;
     input = { source: "paste", text: v.text };
@@ -65,16 +67,19 @@ export function parseLabelCheckInput(value: unknown): { ok: true; input: LabelCh
 
 /**
  * The verdict for a label photo or pasted text.
- * - Photo: its confidence always counts, even after the user edits the text:
- *   editing can't turn a doubtful read into Safe (decided 2026-10-28).
- * - Paste: no OCR confidence, so it is judged on the text alone, like edited
- *   OCR text (decided 2026-10-28); the verdict screen's "always read the
- *   label" disclaimer still applies.
+ * - Photo: its confidence counts, even after the user edits the text: editing
+ *   alone can't turn a doubtful read into Safe (decided 2026-10-28).
+ * - Photo the user ticked as checked ("I've compared this text with the label
+ *   and it matches", decided 2026-11-03): judged on the text alone, like
+ *   pasted text. Only the low-confidence reason goes: a match is still Unsafe,
+ *   and may-contain, incomplete or Hindi text still give Caution.
+ * - Paste: no OCR confidence, so it is judged on the text alone (decided
+ *   2026-10-28); the verdict screen's "always read the label" line still applies.
  * Text in another script (e.g. Hindi) can't be read, so it counts as incomplete.
  */
 export function checkLabelText(input: LabelCheckInput, allergens: readonly CheckAllergen[]): CheckResult {
   const incomplete = hasNonLatinLetters(input.text);
-  return input.source === "photo"
+  return input.source === "photo" && !input.textChecked
     ? checkAllergens(input.text, allergens, { ocrConfidence: input.ocrConfidence, incomplete })
     : checkAllergens(input.text, allergens, { incomplete });
 }

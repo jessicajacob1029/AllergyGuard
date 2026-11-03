@@ -10,7 +10,7 @@ const readLabelPhoto = vi.hoisted(() => vi.fn());
 vi.mock("./actions", () => ({ checkLabel }));
 vi.mock("@/lib/ocr/run-ocr", () => ({ readLabelPhoto }));
 
-import { LabelCapture, PASTE_TIP } from "./label-capture";
+import { LabelCapture, PASTE_TIP, TEXT_CHECKED_LABEL } from "./label-capture";
 
 /** What the review step needs. */
 type FakeOcr = { text: string; lines: OcrLine[] };
@@ -131,15 +131,15 @@ describe("LabelCapture: review", () => {
     expect(screen.queryByText(/weren't read clearly/)).toBeNull();
   });
 
-  it("sends only the source, the text, the OCR text and the confidence: never the photo", async () => {
+  it("sends only the source, the text, the OCR text, the confidence and the tick: never the photo", async () => {
     checkLabel.mockResolvedValue(undefined);
     const user = await toReview(CLEAR);
     await user.click(button("Check ingredients"));
     expect(checkLabel).toHaveBeenCalledTimes(1);
     const [arg, ...rest] = checkLabel.mock.calls[0];
     expect(rest).toEqual([]);
-    expect(Object.keys(arg).sort()).toEqual(["ocrConfidence", "ocrText", "source", "text"]);
-    expect(arg).toEqual({ source: "photo", text: CLEAR_PREPARED, ocrText: CLEAR.text, ocrConfidence: 93 });
+    expect(Object.keys(arg).sort()).toEqual(["ocrConfidence", "ocrText", "source", "text", "textChecked"]);
+    expect(arg).toEqual({ source: "photo", text: CLEAR_PREPARED, ocrText: CLEAR.text, ocrConfidence: 93, textChecked: false });
   });
 
   it("checks the edited text", async () => {
@@ -157,12 +157,12 @@ describe("LabelCapture: review", () => {
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("weren't read clearly");
     expect(alert.textContent).toContain("Hindi");
-    expect(alert.textContent).toContain("Your result will be Caution, not Safe.");
+    expect(alert.textContent).toContain("Unless you tick the box under the text, your result will be Caution, not Safe.");
     expect(alert.textContent).toContain("“HAART: TE, FT AT, LF q13eY”");
     await user.clear(textBox());
     await user.type(textBox(), "INGREDIENTS: Wheat flour, sugar");
     await user.click(button("Check ingredients"));
-    expect(checkLabel.mock.calls[0][0]).toMatchObject({ ocrConfidence: 25 });
+    expect(checkLabel.mock.calls[0][0]).toMatchObject({ ocrConfidence: 25, textChecked: false });
   });
 
   it("no text found: says so and won't check an empty box", async () => {
@@ -259,6 +259,55 @@ describe("LabelCapture: paste text instead", () => {
     expect(button("Check ingredients").disabled).toBe(true);
     await user.click(button(/Take a photo instead/));
     expect(button(/Take photo/)).toBeTruthy();
+  });
+});
+
+describe("LabelCapture: 'I've compared this text with the label'", () => {
+  const tick = () => screen.getByRole("checkbox", { name: TEXT_CHECKED_LABEL }) as HTMLInputElement;
+
+  it("uses the agreed wording", () => {
+    expect(TEXT_CHECKED_LABEL).toBe("I've compared this text with the label and it matches.");
+  });
+
+  it("is offered only when the photo was read with low confidence", async () => {
+    await toReview(CLEAR);
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    cleanup();
+    await toReview(BILINGUAL);
+    expect(tick().checked).toBe(false);
+  });
+
+  it("is sent when ticked", async () => {
+    checkLabel.mockResolvedValue(undefined);
+    const user = await toReview(BILINGUAL);
+    await user.click(tick());
+    await user.click(button("Check ingredients"));
+    expect(checkLabel.mock.calls[0][0]).toMatchObject({ source: "photo", ocrConfidence: 25, textChecked: true });
+  });
+
+  it("any edit to the text clears it", async () => {
+    checkLabel.mockResolvedValue(undefined);
+    const user = await toReview(BILINGUAL);
+    await user.click(tick());
+    expect(tick().checked).toBe(true);
+    await user.type(textBox(), " salt");
+    expect(tick().checked).toBe(false);
+    await user.click(button("Check ingredients"));
+    expect(checkLabel.mock.calls[0][0]).toMatchObject({ textChecked: false });
+  });
+
+  it("a new read (Boost) clears it", async () => {
+    const user = await toReview(BILINGUAL);
+    await user.click(tick());
+    readLabelPhoto.mockResolvedValueOnce(BILINGUAL);
+    await user.click(button(/Boost faded or shiny text/));
+    await screen.findByLabelText("Text read from your photo");
+    expect(tick().checked).toBe(false);
+  });
+
+  it("can't be ticked while the box is empty", async () => {
+    await toReview({ text: "", lines: [] });
+    expect(tick().disabled).toBe(true);
   });
 });
 

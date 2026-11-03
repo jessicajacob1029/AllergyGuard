@@ -36,7 +36,7 @@ export default async function ScanResultPage({ params, searchParams }: PageProps
   const { data: scan } = await supabase
     .from("scans")
     .select(
-      "profile_id, input, barcode, product_found, product_name, brands, ingredients_text, declared_allergens, declared_traces, data_notes, result, ocr_text, created_at",
+      "profile_id, input, barcode, product_found, product_name, brands, ingredients_text, declared_allergens, declared_traces, data_notes, result, ocr_text, text_checked, created_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -81,7 +81,8 @@ export default async function ScanResultPage({ params, searchParams }: PageProps
         checkedAt={scan.created_at}
         recheckNeeded={staleMode === "recheck_needed"}
         intro={staleNotice}
-        textLabel={photo ? "Text read from your photo" : "Text you pasted"}
+        textLabel={photo ? (scan.text_checked ? "Text you checked against the label" : "Text read from your photo") : "Text you pasted"}
+        textChecked={photo && scan.text_checked === true}
         notes={photo ? [] : ["Pasted text: make sure it matches the label on the pack."]}
         originalText={edited ? ocrText : null}
         actions={
