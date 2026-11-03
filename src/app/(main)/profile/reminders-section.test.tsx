@@ -42,7 +42,7 @@ const IPHONE_TAB: PushEnv = { ...ANDROID, userAgent: "Mozilla/5.0 (iPhone; CPU i
 
 const props = {
   ownerId: "u1",
-  initial: { pushEnabled: false, emailEnabled: true },
+  initial: { pushEnabled: false, emailEnabled: true, productAlertsEnabled: true },
   email: "asha@example.com",
   vapidPublicKey: "BPublicKey",
   hasDatedMedication: true,
@@ -71,7 +71,7 @@ describe("RemindersSection", () => {
     render(<RemindersSection {...props} />);
     await user.click(await screen.findByRole("button", { name: "Turn on notifications" }));
     expect(push.subscribeThisDevice).toHaveBeenCalledWith(expect.anything(), "BPublicKey");
-    expect(settings.saveReminderSettings).toHaveBeenCalledWith(expect.anything(), "u1", { pushEnabled: true, emailEnabled: true });
+    expect(settings.saveReminderSettings).toHaveBeenCalledWith(expect.anything(), "u1", { pushEnabled: true, emailEnabled: true, productAlertsEnabled: true });
     expect(await screen.findByText("Notifications are on for this device.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Send a test notification" })).toBeTruthy();
   });
@@ -107,10 +107,10 @@ describe("RemindersSection", () => {
     const user = userEvent.setup();
     vi.mocked(push.currentEndpoint).mockResolvedValue("https://push.example/1");
     countDevices.mockResolvedValue({ count: 0 });
-    render(<RemindersSection {...props} initial={{ pushEnabled: true, emailEnabled: true }} />);
+    render(<RemindersSection {...props} initial={{ pushEnabled: true, emailEnabled: true, productAlertsEnabled: true }} />);
     await user.click(await screen.findByRole("button", { name: "Turn off on this device" }));
     expect(push.unsubscribeThisDevice).toHaveBeenCalled();
-    expect(settings.saveReminderSettings).toHaveBeenCalledWith(expect.anything(), "u1", { pushEnabled: false, emailEnabled: true });
+    expect(settings.saveReminderSettings).toHaveBeenCalledWith(expect.anything(), "u1", { pushEnabled: false, emailEnabled: true, productAlertsEnabled: true });
     expect(await screen.findByRole("button", { name: "Turn on notifications" })).toBeTruthy();
   });
 
@@ -119,11 +119,26 @@ describe("RemindersSection", () => {
     render(<RemindersSection {...props} />);
     const toggle = screen.getByRole("switch", { name: "Email reminders" });
     expect(toggle.getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByText("Sent to asha@example.com")).toBeTruthy();
+    expect(screen.getByText("Reminders and alerts, sent to asha@example.com")).toBeTruthy();
     await user.click(toggle);
-    expect(settings.saveReminderSettings).toHaveBeenCalledWith(expect.anything(), "u1", { pushEnabled: false, emailEnabled: false });
+    expect(settings.saveReminderSettings).toHaveBeenCalledWith(expect.anything(), "u1", { pushEnabled: false, emailEnabled: false, productAlertsEnabled: true });
     expect(toggle.getAttribute("aria-checked")).toBe("false");
-    expect(await screen.findByText("Email reminders are off.")).toBeTruthy();
+    expect(await screen.findByText("Emails are off.")).toBeTruthy();
+  });
+
+  it("product change alerts: on by default, and a switch that saves straight away", async () => {
+    const user = userEvent.setup();
+    render(<RemindersSection {...props} />);
+    const toggle = screen.getByRole("switch", { name: "Product change alerts" });
+    expect(toggle.getAttribute("aria-checked")).toBe("true");
+    await user.click(toggle);
+    expect(settings.saveReminderSettings).toHaveBeenCalledWith(expect.anything(), "u1", {
+      pushEnabled: false,
+      emailEnabled: true,
+      productAlertsEnabled: false,
+    });
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+    expect(await screen.findByText("Product change alerts are off.")).toBeTruthy();
   });
 
   it("if the service worker never answers, says notifications aren't available (no endless spinner)", async () => {

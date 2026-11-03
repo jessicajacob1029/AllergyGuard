@@ -47,6 +47,27 @@ describe("one-click unsubscribe (POST from mail apps)", () => {
   });
 });
 
+describe("product change alert links (kind=product-alerts)", () => {
+  it("one click turns off product change alerts only", async () => {
+    const res = await POST(req("POST", `?kind=product-alerts&token=${TOKEN}`));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("Product change alerts are off.");
+    expect(rpc).toHaveBeenCalledWith("unsubscribe_product_alerts", { p_token: TOKEN });
+    expect(rpc).not.toHaveBeenCalledWith("unsubscribe_email", expect.anything());
+  });
+
+  it("an unknown kind is treated as a medication reminder link", async () => {
+    await POST(req("POST", `?kind=everything&token=${TOKEN}`));
+    expect(rpc).toHaveBeenCalledWith("unsubscribe_email", { p_token: TOKEN });
+  });
+
+  it("opening it goes to the confirm page and keeps the kind", () => {
+    const res = GET(req("GET", `?kind=product-alerts&token=${TOKEN}`));
+    expect(res.headers.get("location")).toBe(`https://app.example/unsubscribe?kind=product-alerts&token=${TOKEN}`);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
 describe("opening the one-click URL (GET)", () => {
   it("goes to the confirm page and changes nothing", async () => {
     const res = GET(req("GET", `?token=${TOKEN}`));

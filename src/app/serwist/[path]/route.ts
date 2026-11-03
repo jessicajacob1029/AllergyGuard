@@ -9,6 +9,8 @@ const revision = randomUUID();
 export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } = createSerwistRoute({
   swSrc: "src/app/sw.ts",
   useNativeEsbuild: true,
+  // No public source map for the service worker (H7 in docs/SECURITY-REVIEW.md).
+  esbuildOptions: { sourcemap: false },
   // Serwist's default globs plus woff2: without it the self-hosted font files (DM Sans, Space Mono)
   // are never precached and /emergency falls back to a system font offline.
   globPatterns: [

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { linkClass, primaryButtonClass, secondaryButtonClass } from "@/components/form-styles";
 import { AppIconTile } from "@/components/ui/icons";
 import { APP_NAME } from "@/lib/constants";
-import { loadScans } from "@/lib/products/scan-list";
+import { loadScansWithCurrentVerdict } from "@/lib/products/scan-history";
 import { loadOwnProfile } from "@/lib/profile/load";
 import { createClient } from "@/lib/supabase/server";
 import { HomeDashboard } from "./home-dashboard";
@@ -57,7 +57,7 @@ export default async function Home() {
 
   const bundle = await loadOwnProfile(supabase);
   if (!bundle || bundle.profile.onboarding_completed_at === null) redirect("/onboarding");
-  const latestScans = await loadScans(supabase, bundle.profile.id, { limit: 3 });
+  const latestScans = await loadScansWithCurrentVerdict(supabase, bundle.profile.id, { limit: 3 });
 
   return <HomeDashboard bundle={bundle} latestScans={latestScans} today={new Date().toISOString()} />;
 }

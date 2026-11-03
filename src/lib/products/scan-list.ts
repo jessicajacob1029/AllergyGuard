@@ -5,9 +5,15 @@ import type { Verdict } from "@/lib/allergen/check";
 import { SCAN_VERDICTS } from "./scan-record";
 import type { ScanLabelRow } from "./scan-label";
 
-export const SCAN_LIST_COLUMNS = "id, input, barcode, product_name, brands, verdict, created_at";
+export const SCAN_LIST_COLUMNS = "id, input, barcode, product_found, product_name, brands, verdict, created_at";
 
-export type ScanListRow = ScanLabelRow & { id: string; verdict: Verdict; created_at: string };
+export type ScanListRow = ScanLabelRow & {
+  id: string;
+  verdict: Verdict;
+  created_at: string;
+  /** False for a barcode Open Food Facts didn't have (nothing to re-check). */
+  product_found?: boolean;
+};
 
 /** Filters on /scans, in display order. `null` means All. */
 export const VERDICT_FILTERS: readonly { value: Verdict | null; label: string }[] = [
@@ -39,6 +45,7 @@ export function readScanListRows(rows: readonly Record<string, unknown>[]): Scan
         brands: str(r.brands),
         verdict: verdict as Verdict,
         created_at: r.created_at,
+        ...(typeof r.product_found === "boolean" ? { product_found: r.product_found } : {}),
       },
     ];
   });

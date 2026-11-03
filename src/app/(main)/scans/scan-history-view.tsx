@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { primaryButtonClass } from "@/components/form-styles";
+import { ChangedProductsBanner } from "@/components/scans/changed-products-banner";
 import { ScanRow } from "@/components/scans/scan-row";
 import { HeaderBand } from "@/components/ui/header-band";
 import type { Verdict } from "@/lib/allergen/check";
+import type { AlertListItem } from "@/lib/products/product-alerts";
 import { VERDICT_FILTERS, type ScanListRow } from "@/lib/products/scan-list";
+import type { CurrentVerdict } from "@/lib/products/stale-result";
 import { frameClass } from "@/components/ui/frame";
 
 /** How many rows the page shows (newest first). */
@@ -16,11 +19,24 @@ const EMPTY_FILTERED: Record<Verdict, string> = {
 };
 
 /** /scans: every saved check, newest first, with All / Safe / Caution / Unsafe filters. Pure view. */
-export function ScanHistoryView({ scans, verdict }: { scans: readonly ScanListRow[]; verdict: Verdict | null }) {
+export function ScanHistoryView({
+  scans,
+  verdict,
+  alerts = [],
+}: {
+  /** With the verdict to show today; filtering by verdict already happened (on the current verdict). */
+  scans: readonly (ScanListRow & { current?: CurrentVerdict })[];
+  verdict: Verdict | null;
+  /** Unseen product change alerts (Phase 8): a banner, and a "Changed" badge on those products' rows. */
+  alerts?: readonly AlertListItem[];
+}) {
+  const changed = new Set(alerts.map((a) => a.barcode));
   return (
     <main className="flex flex-1 flex-col">
       <HeaderBand width="medium" eyebrow="Your activity" title="Scan history" subtitle="Products checked against your profile." />
       <div className={`${frameClass("medium")} space-y-3.5 pb-6 desk:pb-12`}>
+        <ChangedProductsBanner alerts={alerts} />
+
         {/* Plain links, so a filtered view works without JavaScript and survives a reload. */}
         <nav aria-label="Filter by verdict">
           <ul className="grid grid-cols-4 gap-1.5">
@@ -46,7 +62,13 @@ export function ScanHistoryView({ scans, verdict }: { scans: readonly ScanListRo
         {scans.length > 0 ? (
           <section aria-label="Scans, newest first" className="glass rounded-card px-4 py-1.5">
             {scans.map((scan) => (
-              <ScanRow key={scan.id} scan={scan} showTime />
+              <ScanRow
+                key={scan.id}
+                scan={scan}
+                showTime
+                changed={scan.barcode !== null && changed.has(scan.barcode)}
+                current={scan.current}
+              />
             ))}
           </section>
         ) : (

@@ -140,7 +140,15 @@ async function main() {
   must(await rest(B.token, "POST", "rpc/save_push_subscription", { p_endpoint: `https://fcm.googleapis.com/fcm/send/rls-${RUN}-b`, p_p256dh: "keyB", p_auth_key: "authB", p_user_agent: "rls-test" }), "device B");
   // Only the daily job writes sent reminders: one for A, written with the service role.
   const sentA = must(await call("POST", "/rest/v1/medication_reminders", { key: SERVICE, body: { medication_id: medA.id, profile_id: profileA.id, expiry_date: "2026-11-20", stage: "30d", status: "delivered", email_result: "sent" } }), "reminder A");
-  console.log("setup: each user has a profile, scan, reaction, medication, reminder settings and a device; A has a sent reminder\n");
+  // Phase 8: a barcode scan that found the product starts a watch (database trigger); only the job writes alerts.
+  const foundScan = (profileId) => ({ ...scan(profileId), barcode: "5000159407236", product_found: true, product_name: "RLS bar", ingredients_text: "sugar, cocoa", verdict: "safe" });
+  const foundA = must(await rest(A.token, "POST", "scans", foundScan(profileA.id)), "found scan A");
+  must(await rest(B.token, "POST", "scans", foundScan(profileB.id)), "found scan B");
+  const watchA = must(await rest(A.token, "GET", "watched_products?select=id,watching,barcode"), "watch A");
+  const watchB = must(await rest(B.token, "GET", "watched_products?select=id,watching,barcode"), "watch B");
+  const alertBody = (watchId) => ({ p_alert: { watched_product_id: watchId, change_key: randomBytes(32).toString("hex"), old_verdict: "safe", new_verdict: "unsafe", summary: "now lists milk", result: { verdict: "unsafe", explanation: "x", matches: [], warnings: [], rawText: "milk" } } });
+  const alertA = must(await call("POST", "/rest/v1/rpc/claim_product_alert", { key: SERVICE, body: alertBody(watchA.id) }), "alert A");
+  console.log("setup: each user has a profile, scan, reaction, medication, reminder settings, a device and a watched product; A has a sent reminder and a product alert\n");
 
   let r;
 
@@ -267,6 +275,88 @@ async function main() {
   check("…only A's email switch changed (push still on)", rows(r) === 1 && r.data[0].email_enabled === false && r.data[0].push_enabled === true, JSON.stringify(r.data));
   r = await rest(B.token, "GET", "reminder_settings?select=email_enabled");
   check("…B's settings untouched", rows(r) === 1 && r.data[0].email_enabled === false, JSON.stringify(r.data));
+
+  console.log("\n— watched_products (Phase 8)");
+  check("the scan trigger created one watch each, watching", watchA.watching === true && watchB.watching === true && watchA.id !== watchB.id, `${watchA.barcode}`);
+  r = await rest(B.token, "GET", "watched_products?select=id");
+  check("B lists watches: sees only own", rows(r) === 1 && r.data[0].id === watchB.id, desc(r));
+  r = await rest(B.token, "GET", `watched_products?id=eq.${watchA.id}&select=*`);
+  check("B reads A's watch by id: 0 rows", rows(r) === 0, desc(r));
+  r = await rest(B.token, "GET", `watched_products?profile_id=eq.${profileA.id}&select=*`);
+  check("B reads A's watches by profile: 0 rows", rows(r) === 0, desc(r));
+  r = await rest(B.token, "PATCH", `watched_products?id=eq.${watchA.id}`, { watching: false });
+  check("B stops A's watch: nothing changed", nothing(r), desc(r));
+  r = await rest(B.token, "PATCH", `watched_products?id=eq.${watchB.id}`, { snap_ingredients_text: "edited" });
+  check("B edits own snapshot: rejected (only `watching` can change)", rejected(r), desc(r));
+  r = await rest(B.token, "PATCH", `watched_products?id=eq.${watchB.id}`, { profile_id: profileA.id });
+  check("B moves own watch to A's profile: rejected", rejected(r), desc(r));
+  r = await rest(B.token, "PATCH", `watched_products?id=eq.${watchB.id}`, { watching: false });
+  check("B stops own watch (control)", rows(r) === 1, desc(r));
+  r = await rest(B.token, "POST", "watched_products", { profile_id: profileA.id, barcode: "5000159407236", last_scanned_at: new Date().toISOString() });
+  check("B inserts a watch for A: rejected", rejected(r), desc(r));
+  r = await rest(B.token, "POST", "watched_products", { profile_id: profileB.id, barcode: "4000000000000", last_scanned_at: new Date().toISOString() });
+  check("B inserts a watch for self: rejected (only the scan trigger creates them)", rejected(r), desc(r));
+  r = await rest(B.token, "DELETE", `watched_products?id=eq.${watchA.id}`);
+  check("B deletes A's watch: nothing deleted", nothing(r), desc(r));
+
+  console.log("\n— product_alerts (Phase 8)");
+  r = await rest(A.token, "GET", "product_alerts?select=id,summary");
+  check("A reads own alert", rows(r) === 1 && r.data[0].id === alertA, desc(r));
+  r = await rest(B.token, "GET", "product_alerts?select=id");
+  check("B lists alerts: none (B has none)", rows(r) === 0, desc(r));
+  r = await rest(B.token, "GET", `product_alerts?id=eq.${alertA}&select=*`);
+  check("B reads A's alert by id: 0 rows", rows(r) === 0, desc(r));
+  r = await rest(B.token, "PATCH", `product_alerts?id=eq.${alertA}`, { seen_at: new Date().toISOString() });
+  check("B marks A's alert seen: nothing changed", nothing(r), desc(r));
+  r = await rest(A.token, "PATCH", `product_alerts?id=eq.${alertA}`, { summary: "edited", status: "delivered" });
+  check("A edits own alert's text or status: rejected (only seen_at can change)", rejected(r), desc(r));
+  r = await rest(B.token, "POST", "product_alerts", { watched_product_id: watchA.id, profile_id: profileA.id, barcode: "5000159407236", change_key: "a".repeat(64), old_verdict: "safe", new_verdict: "unsafe", summary: "x", result: {} });
+  check("B inserts an alert for A: rejected", rejected(r), desc(r));
+  r = await rest(A.token, "POST", "product_alerts", { watched_product_id: watchA.id, profile_id: profileA.id, barcode: "5000159407236", change_key: "b".repeat(64), old_verdict: "safe", new_verdict: "unsafe", summary: "x", result: {} });
+  check("A inserts an alert for self: rejected (only the job writes)", rejected(r), desc(r));
+  r = await rest(B.token, "DELETE", `product_alerts?id=eq.${alertA}`);
+  check("B deletes A's alert: nothing deleted", nothing(r), desc(r));
+  r = await rest(A.token, "PATCH", `product_alerts?id=eq.${alertA}`, { seen_at: new Date().toISOString() });
+  check("A marks own alert seen (control)", rows(r) === 1, desc(r));
+  r = await rest(A.token, "GET", "product_check_runs?select=*");
+  check("A reads the job's run log: refused", nothing(r), desc(r));
+
+  console.log("\n— the product check's functions (Phase 8)");
+  for (const [fn, body] of [
+    ["due_product_checks", { p_limit: 60, p_only_email: null, p_force: true }],
+    ["claim_product_alert", alertBody(watchA.id)],
+    ["claim_product_alert_retry", { p_alert_id: alertA }],
+    ["product_alerts_to_retry", { p_only_email: null }],
+  ]) {
+    r = await rest(B.token, "POST", `rpc/${fn}`, body);
+    check(`B calls the job's ${fn}: rejected`, rejected(r), desc(r));
+    r = await rest(null, "POST", `rpc/${fn}`, body);
+    check(`signed out calls ${fn}: rejected`, rejected(r), desc(r));
+  }
+  r = await rest(B.token, "POST", "rpc/unsubscribe_product_alerts", { p_token: randomBytes(32).toString("hex") });
+  check("B turns off product alerts with a guessed token: nothing changed (false)", r.status === 200 && r.data === false, desc(r));
+  r = await rest(null, "POST", "rpc/unsubscribe_product_alerts", { p_token: "' or 1=1 --" });
+  check("signed out with a malformed token: nothing changed (false)", r.status === 200 && r.data === false, desc(r));
+  for (const table of ["watched_products", "product_alerts", "product_check_runs"]) {
+    r = await rest(null, "GET", `${table}?select=*`);
+    check(`signed out reads ${table}: refused`, nothing(r), desc(r));
+  }
+  r = await rest(null, "POST", "rpc/unsubscribe_product_alerts", { p_token: tokenA });
+  check("signed out with A's real token: turns A's product alerts off (true)", r.status === 200 && r.data === true, desc(r));
+  r = await rest(A.token, "GET", "reminder_settings?select=product_alerts_enabled,push_enabled");
+  check("…only A's product alerts switch changed (push still on)", rows(r) === 1 && r.data[0].product_alerts_enabled === false && r.data[0].push_enabled === true, JSON.stringify(r.data));
+  r = await rest(B.token, "GET", "reminder_settings?select=product_alerts_enabled");
+  check("…B's product alerts still on", rows(r) === 1 && r.data[0].product_alerts_enabled === true, JSON.stringify(r.data));
+
+  console.log("\n— deleting the last scan of a product removes its watch (Phase 8)");
+  r = await rest(A.token, "DELETE", `scans?id=eq.${foundA.id}`);
+  check("A deletes own scan of the product", rows(r) === 1, desc(r));
+  r = await rest(A.token, "GET", "watched_products?select=id");
+  check("…A's watch is gone", rows(r) === 0, desc(r));
+  r = await rest(A.token, "GET", "product_alerts?select=id");
+  check("…and its alert with it", rows(r) === 0, desc(r));
+  r = await rest(B.token, "GET", "watched_products?select=id");
+  check("…B's watch of the same product is untouched", rows(r) === 1, desc(r));
 
   console.log("\n— A's data afterwards");
   r = await rest(A.token, "GET", `reactions?select=id,food,notes,scan_id`);

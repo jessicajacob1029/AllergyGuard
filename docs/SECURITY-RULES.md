@@ -44,6 +44,10 @@ what applies to our stack. Background and findings: `docs/SECURITY-REVIEW.md`.
 - A URL that comes from a user or browser is only used when it's on an allowlist. Push addresses must be on a known
   push service: `isKnownPushEndpoint()` in `supabase/functions/_shared/push-endpoint.ts` and
   `is_known_push_endpoint()` in the database. Keep the two in sync.
+- Be a polite client of Open Food Facts:
+  - send `USER_AGENT` from `src/lib/products/open-food-facts.ts` (app, version, site and contact);
+  - make background requests one at a time with a pause between them (the weekly job uses 1.5 s);
+  - stop on a 429.
 
 ## Cookies and CORS
 
@@ -58,8 +62,8 @@ what applies to our stack. Background and findings: `docs/SECURITY-REVIEW.md`.
 
 - Users see generic messages. Details go to server logs only. No stack traces, SQL errors or file paths in
   responses.
-- No public source maps for the app's JavaScript (`productionBrowserSourceMaps` stays off). The service worker's map
-  (`/serwist/sw.js.map`) is still public until H7 in `docs/SECURITY-REVIEW.md` is fixed.
+- No public source maps: `productionBrowserSourceMaps` stays off, and the service worker is built with
+  `sourcemap: false` (`src/app/serwist/[path]/route.ts`, H7).
 - No debug or API-docs endpoints in production.
 
 ## Dependencies

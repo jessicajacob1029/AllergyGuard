@@ -20,3 +20,13 @@ export function VerdictPill({ verdict, size = "sm" }: { verdict: Verdict; size?:
     </span>
   );
 }
+
+/** For a saved label photo / pasted text checked before an allergen was added: never shown as Safe. */
+export function RecheckNeededPill() {
+  return (
+    <span className="inline-flex min-h-[26px] shrink-0 items-center gap-1 rounded-full bg-[#ece8ef] px-2 font-mono text-[11px] font-bold uppercase tracking-[0.04em] text-[#4f4a55]">
+      <AlertIcon className="size-3.5" strokeWidth={2.4} />
+      Re-check needed
+    </span>
+  );
+}

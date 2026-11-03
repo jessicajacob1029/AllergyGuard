@@ -16,7 +16,9 @@ const FIELDS = [
   "last_modified_t",
 ].join(",");
 
-const USER_AGENT = "AllergyGuard/0.1 (allergy-checking coursework app)";
+/** Open Food Facts asks apps for a name, a version and a contact, so they can reach us instead of blocking us. */
+export const CONTACT_EMAIL = "jessicajacob1029@gmail.com";
+export const USER_AGENT = `AllergyGuard/1.0 (https://allergy-guard-nine.vercel.app; ${CONTACT_EMAIL})`;
 const DEFAULT_TIMEOUT_MS = 8000;
 
 export type Product = {
@@ -38,7 +40,7 @@ export type ProductLookup = Product | { found: false };
 
 export type FetchResult =
   | { ok: true; product: ProductLookup }
-  | { ok: false; reason: "network" | "timeout" | "bad_response" };
+  | { ok: false; reason: "network" | "timeout" | "bad_response" | "rate_limited" };
 
 const NOT_ENGLISH = "The ingredient list isn't in English, so some words may not be recognised.";
 const TO_BE_COMPLETED = "Open Food Facts says this product's ingredient list is still being completed.";
@@ -116,6 +118,8 @@ export async function fetchProduct(
     });
     // OFF answers an unknown barcode with 404 and { status: 0 }.
     if (response.status === 404) return { ok: true, product: { found: false } };
+    // Too many requests: callers should stop and try later.
+    if (response.status === 429) return { ok: false, reason: "rate_limited" };
     if (!response.ok) return { ok: false, reason: "bad_response" };
     return { ok: true, product: parseProduct(await response.json()) };
   } catch (error) {

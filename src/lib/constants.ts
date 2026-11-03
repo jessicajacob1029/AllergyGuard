@@ -4,4 +4,4 @@ export const APP_NAME = "AllergyGuard";
 export const CONTACT_EMAIL = "jessicajacob1029@gmail.com";
 
 /** Shown on /privacy and /terms; change it whenever either page changes. */
-export const LEGAL_UPDATED = "31 October 2026";
+export const LEGAL_UPDATED = "3 November 2026";

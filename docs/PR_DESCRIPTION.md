@@ -545,3 +545,56 @@ They're sent every morning at 08:00 IST.
 - [x] A medication set to expire in 7 days triggers a notification in testing (email on 2026-11-01; push test
       notification on a laptop and on an iPhone from the Home Screen app)
 - [x] Settings let the user turn notifications on or off (Profile → Reminders: email switch, push on/off per device)
+
+## Phase 8: Ingredient change alerts (in testing)
+
+Every Sunday at 08:30 IST, products you scanned in the last 6 months are checked again on Open Food Facts. If one
+has become less safe for you, you get a push notification or an email, and a banner in Scan history.
+
+### What's included
+
+- **Watched products:** one per product per profile, created by a database trigger when a barcode scan finds the
+  product. The snapshot is what you saw last.
+  - **Stop watching / Watch for changes** on the scan result.
+  - Deleting your last scan of a product removes its watch.
+- **The check:** both the snapshot and the new data go through the one `checkAllergens()`, with your **current**
+  allergens. Changing your own profile never shows up as a product change.
+  - **Alert** when the verdict gets worse (Safe → Caution/Unsafe, Caution → Unsafe), or when a new allergen of
+    yours appears.
+  - **No alert** for:
+    - formatting-only changes;
+    - improvements, which update the snapshot quietly;
+    - missing or incomplete data, which only adds a note on the result.
+  - Each change alerts once (`unique (watch, change_key)`).
+- **Open Food Facts:**
+  - a User-Agent with the app, version, site and contact;
+  - one request per product per run, 1.5 s apart;
+  - at most 60 products per call;
+  - stops on 429, or after 3 failures in a row;
+  - failed requests never change anything.
+- **Safety brake:** if more than 20% of products (and at least 5) would alert in one run, nothing is sent, the run
+  is logged and the owner gets an email.
+- **Channels:** Phase 7's push and email, with the same delivered/failed logic.
+  - Failed alerts are retried daily for 7 days.
+  - In Scan history: a banner, a "Changed since" badge and a change page (`/scans/changes/[id]`). Opening the page
+    marks the alert seen with a POST.
+- **Settings:** a "Product change alerts" switch in Profile → Reminders, on by default. The email's unsubscribe link
+  turns off product alerts only.
+- **Privacy page:** a new "Product change alerts" section.
+- **Security (H7):** the service worker no longer has a public source map.
+
+### Database
+
+- `20261103000000_product_alerts`: `watched_products`, `product_alerts`, `product_check_runs` (owner only),
+  `reminder_settings.product_alerts_enabled`, scan triggers, the job's functions (service role only) and
+  `unsubscribe_product_alerts(token)`. RLS on every table; users can only change `watching` and `seen_at`.
+
+### Testing
+
+- 763 tests. They cover:
+  - the change rule, with real `checkAllergens()`;
+  - the run with fakes: polite spacing, 429, failures, never twice, the brake, retries, dry run;
+  - the wording, the UI and the unsubscribe kinds.
+- The migration was tested on a local Postgres. The two-user RLS script has the Phase 8 checks added.
+- Live steps: `docs/PHASE-8-SETUP.md`.
+

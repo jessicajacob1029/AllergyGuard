@@ -22,6 +22,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import type { Tone } from "@/components/ui/tones";
 import { SEVERITY_LABELS } from "@/lib/allergen/codes";
 import type { ScanListRow } from "@/lib/products/scan-list";
+import type { CurrentVerdict } from "@/lib/products/stale-result";
 import { selectionLabel } from "@/lib/profile/allergen-selection";
 import type { ProfileBundle } from "@/lib/profile/types";
 
@@ -34,7 +35,7 @@ const linkActionClass =
 type Props = {
   bundle: ProfileBundle;
   /** The 3 most recent scans, newest first. */
-  latestScans?: readonly ScanListRow[];
+  latestScans?: readonly (ScanListRow & { current?: CurrentVerdict })[];
   /** "Now" as an ISO time; drawn as the date line in the phone's time zone. */
   today?: string;
 };
@@ -136,7 +137,7 @@ export function HomeDashboard({ bundle, latestScans = [], today = new Date().toI
           {latestScans.length > 0 ? (
             <div>
               {latestScans.map((scan) => (
-                <ScanRow key={scan.id} scan={scan} />
+                <ScanRow key={scan.id} scan={scan} current={scan.current} />
               ))}
             </div>
           ) : (
