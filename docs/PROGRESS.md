@@ -37,7 +37,9 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   end to end (laptop Chrome and the iPhone Home Screen app), daily job scheduled (08:00 IST), merged into the
   fork's `main` on 2026-11-01; two-user RLS test passed (53/53). Still open: a sending domain before real users
   (see "Phase 7" below).
-- [ ] Phase 8: Ingredient change alerts (weekly cron)
+- [ ] Phase 8: Ingredient change alerts (weekly cron). Built on `phase-8` (2026-11-03), function deployed but not
+  scheduled. **Waiting for:** the migration (run by the user), then the RLS script and the live tests in
+  `docs/PHASE-8-SETUP.md`. H7 (service worker source map) is fixed on the same branch.
 
 ## Now
 **Redesign v2, Google login and the desktop layout are on the fork's `main`** (2026-10-31), checked on
@@ -48,6 +50,23 @@ Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
 users: a sending domain in Resend (the test sender lands in spam and only reaches the owner's address). iPhone push
 from the Home Screen app works, and the two-user RLS test passed 53/53 (both 2026-11-01).
 Phase 5 stays paused on `phase-5`. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
+
+## Phase 8: Ingredient change alerts (2026-11-03, branch `phase-8`, not merged)
+- Plan and decisions: `docs/PHASE-8-PLAN.md`. Setup, SQL and test steps: `docs/PHASE-8-SETUP.md`.
+- **Built:**
+  - the migration `20261103000000_product_alerts.sql`, **not run yet**. It was tested on a throwaway local
+    Postgres 14 with stand-in Supabase tables: backfill, triggers, RLS, column grants, claims and the unsubscribe;
+  - the Edge Function `product-alerts`, **deployed with the Supabase CLI, not scheduled**. Its self-check passed
+    on Supabase: the app's own `checkAllergens()` runs there. Without the cron secret it returns 403;
+  - in the app: Scan history banner and badge, Watch / Stop watching on scan results, `/scans/changes/[id]`, the
+    Profile → Reminders switch, kind-aware unsubscribe, and a privacy section.
+- **Decisions:** contact email in the User-Agent; no alert for missing data; stopped watches stay stopped; a daily
+  retry; Sunday 08:30 IST; unsubscribe turns off product alerts only; **safety brake** (more than 20% and at least 5
+  products in one run → hold everything and email the owner).
+- **Allergen imports:** `src/lib/allergen/` imports now end in `.ts` (`allowImportingTsExtensions`), so Deno can
+  import the same `checkAllergens()`. No logic change. Build, 763 tests and lint passed before the deploy.
+- **Live test needs** Milk and Wheat / gluten added to the owner's profile for the duration (her only allergen is
+  kiwi), then removed. The steps are in the setup doc.
 
 ## Demo prep (2026-10-28, on the fork's `main`)
 Phase 5 is paused on branch `phase-5` (not merged). Work for the demo happens on local branch `fork-main`

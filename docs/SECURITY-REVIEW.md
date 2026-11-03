@@ -64,7 +64,7 @@ Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leake
 | D2, D4, D5 | **Fixed** | `npm audit fix` (no `--force`): `sharp` 0.35.5, `source-map-js` 1.2.2, `undici` 7.30.1, `vite` 8.3.5, `vitest` 4.1.12 |
 | D3 | **Not fixable yet** | See "npm audit after the fixes" |
 | V1 | **Cleared by itself** | The Vercel checkpoint was temporary. The live site answered 200 again later on 1 November, with no challenge header |
-| H7 | New, **not fixed** | Found while checking the rules. Suggested fix above |
+| H7 | **Fixed on `phase-8`** (live after that merge) | `esbuildOptions: { sourcemap: false }` in `src/app/serwist/[path]/route.ts`. Checked on a local production build: `/serwist/sw.js` 200 with no `sourceMappingURL` line, `/serwist/sw.js.map` 404 |
 | H8 | New, **accepted** | Found by the live scan after the merge: Vercel serves JavaScript chunks outside our headers. Negligible risk; see "vibe-check scanner after the fixes" |
 
 ### CSP

@@ -1,7 +1,30 @@
 # Phase 8 plan: ingredient change alerts
 
-Status: **awaiting approval** (2026-11-03). Nothing is built yet. Branch `phase-8` (from the fork's `main`, `3e7bc18`),
-pushed to the fork only.
+Status: **approved and built** (2026-11-03) on branch `phase-8` (from the fork's `main`, `3e7bc18`), pushed to
+the fork only. Waiting for the migration to be run; testing steps in `docs/PHASE-8-SETUP.md`.
+
+**Decisions (approved 2026-11-03):**
+1. User-Agent contact: `jessicajacob1029@gmail.com`, plus the site URL.
+2. Missing ingredient data: a note on the result only; no push or email.
+3. Stopped watches stay stopped when the product is scanned again.
+4. A daily retry for failed alerts.
+5. Sunday 08:30 IST.
+6. The unsubscribe link turns off product alerts only.
+7. **Added: safety brake.** If more than 20% of the products checked in one run, and at least 5, would alert:
+   - nothing is sent and the snapshots are kept;
+   - the watches are marked `held` and the run is logged in `product_check_runs`;
+   - jessicajacob1029@gmail.com gets an email.
+
+   That many changes at once is more likely an Open Food Facts data problem than real recipe changes. The count
+   is of products, not people: one product watched by 6 people counts once.
+
+**Changed while building:**
+- A new scan always refreshes the snapshot, even for a stopped watch (`watching` stays as it is). If you turn
+  watching back on later, it compares against what you last saw, not an older version.
+- `fetchProduct()` now reports a 429 as `rate_limited`, so the job can stop. The scan page shows "busy, try again
+  in a minute".
+- Deploy: the Supabase CLI (already signed in on this laptop) uploads the app's own files with the function, so
+  `checkAllergens()` exists once.
 
 Done when (from PLAN.md, widened as asked):
 - Editing a stored snapshot in the database so it differs from Open Food Facts triggers an alert in testing.
@@ -181,7 +204,7 @@ Reuses Phase 7's code. Only the message differs.
 
 **Other changes:**
 - `reminder_settings.product_alerts_enabled` (default on), added to the column grants.
-- A trigger on `scans` insert creates or updates the watch, and resets the snapshot unless the watch is stopped.
+- A trigger on `scans` insert creates or updates the watch, and resets the snapshot (`watching` is left as it is).
   Another on `scans` delete removes the watch when no scan of that product is left.
 - Functions for the job (service role only):
   - `due_product_checks(p_limit, p_only_email, p_force)`: due watches, with the snapshot, your allergens, your
