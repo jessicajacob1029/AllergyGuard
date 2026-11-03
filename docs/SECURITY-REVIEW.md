@@ -47,7 +47,7 @@ Effort: small (under an hour), medium (a few hours), large (a day or more).
 
 ---
 
-## Fixes (branch `security-fixes`, 1 November 2026)
+## Fixes (branch `security-fixes`, 1 November 2026; merged to the fork's `main` on 3 November)
 
 Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leaked password protection).
 
@@ -59,12 +59,13 @@ Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leake
 | H5 | **Fixed** | `poweredByHeader: false` |
 | H6 | **Fixed** | `Referrer-Policy: strict-origin-when-cross-origin` |
 | H1 | **Fixed (enforced)** | Content-Security-Policy added by `src/proxy.ts` (see "CSP" below). Run as Report-Only first; the one problem found (the 404 page) was fixed; then switched to enforcing, with no violations |
-| A1 | **Fixed in code. Database: run the SQL yourself. Edge Functions: deploy on merge** | Only real push services are accepted: `isKnownPushEndpoint()` (`supabase/functions/_shared/push-endpoint.ts`, 17 tests). Both Edge Functions delete and never contact a device whose address isn't on a known push service. Database: `is_known_push_endpoint()`, a check constraint on `push_subscriptions` and a clear error in `save_push_subscription()` (`20261101020000_push_endpoint_allowlist.sql`) |
-| A3 | **Ready: run the SQL yourself** | `20261101030000_revoke_anon_old_tables.sql` revokes the signed-out role's permissions on `profiles`, `profile_allergens`, `emergency_contacts`, `medications`, `scans` and `reactions`. Nothing in the app reads these tables signed out |
+| A1 | **Fixed, live** | Only real push services are accepted: `isKnownPushEndpoint()` (`supabase/functions/_shared/push-endpoint.ts`, 17 tests). Both Edge Functions delete and never contact a device whose address isn't on a known push service (redeployed 3 November: `send-test-push` v21, `medication-reminders` v22). Database: `is_known_push_endpoint()`, a check constraint on `push_subscriptions` and a clear error in `save_push_subscription()` (`20261101020000_push_endpoint_allowlist.sql`, run 3 November; both saved devices pass the constraint) |
+| A3 | **Fixed, live** | `20261101030000_revoke_anon_old_tables.sql` (run 3 November) revokes the signed-out role's permissions on `profiles`, `profile_allergens`, `emergency_contacts`, `medications`, `scans` and `reactions`. Signed-in access is unchanged. Nothing in the app reads these tables signed out |
 | D2, D4, D5 | **Fixed** | `npm audit fix` (no `--force`): `sharp` 0.35.5, `source-map-js` 1.2.2, `undici` 7.30.1, `vite` 8.3.5, `vitest` 4.1.12 |
 | D3 | **Not fixable yet** | See "npm audit after the fixes" |
 | V1 | **Cleared by itself** | The Vercel checkpoint was temporary. The live site answered 200 again later on 1 November, with no challenge header |
 | H7 | New, **not fixed** | Found while checking the rules. Suggested fix above |
+| H8 | New, **accepted** | Found by the live scan after the merge: Vercel serves JavaScript chunks outside our headers. Negligible risk; see "vibe-check scanner after the fixes" |
 
 ### CSP
 
@@ -114,8 +115,24 @@ Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leake
   - The two info items are expected for a local scan: no cookies on the landing page, and HSTS skipped.
   - The preview couldn't be scanned because Vercel Deployment Protection is back on, which sends the scanner to
     Vercel's login. The live site keeps the old headers until the merge.
-- **To do after the merge:** one scan of https://allergy-guard-nine.vercel.app to confirm HSTS on the live site
-  and the final counts.
+- **Live site after the merge** (3 November, one scan of https://allergy-guard-nine.vercel.app): **0 fail,
+  1 warn, 19 pass, 1 info** (before: 3 fail, 3 warn). HSTS is now confirmed on the live pages. The info item is the
+  usual "no cookies on the landing page".
+- **The warning (H8, accepted):** one script, `/_next/static/immutable/chunks/…js`, has no `nosniff` and no HSTS
+  header.
+  - **Why:** Next 16.3+ on Vercel serves JavaScript chunks as "immutable static assets". They live in one store
+    shared by all deployments, outside each deployment's routing, so the headers from `next.config.ts` don't
+    reach them. Locally they're served from `/_next/static/chunks/`, which is why the local scan passed.
+  - **Risk: negligible.** HSTS applies to the whole host: the browser learns it from any page (every page sends
+    it) and then uses HTTPS for these files too. `nosniff` matters for files that could be read as the wrong type;
+    these are our own build output, served with a JavaScript content type.
+  - **If we ever want the warning gone:** set `supportsImmutableAssets: false` in `next.config.ts`. Chunks then go
+    back to `/_next/static/chunks/?dpl=…` and get our headers. The cost is that browsers download every script
+    again after each deploy. The change also affects the service worker's cached files, so it needs the offline
+    test before merging.
+  - Source: https://nextjs.org/docs/app/api-reference/adapters/immutable-static-assets
+- After the scan, Vercel's Security Checkpoint challenged our IP again (V1), as it did after the first scan. It
+  cleared by itself last time.
 
 ### npm audit after the fixes
 
@@ -130,19 +147,32 @@ Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leake
     to `eslint@4` and `eslint-config-next@0.2.4`, which would break linting, so it wasn't applied. Wait for
     upstream updates.
 
-### Still to do before merging
+### Rollout (3 November 2026)
 
-1. **Run two migrations yourself** in Supabase → SQL Editor, in this order:
-   - `supabase/migrations/20261101020000_push_endpoint_allowlist.sql` (A1);
-   - `supabase/migrations/20261101030000_revoke_anon_old_tables.sql` (A3).
+1. **Migrations.** Jessica ran both in the SQL Editor (A1, then A3). Checked read-only afterwards:
+   - the function, the constraint (validated) and the new `save_push_subscription()` are in place, with the
+     takeover guard kept;
+   - signed-out users can't call it; signed-in users can;
+   - FCM and Apple addresses pass; `evil.example` and `fcm.googleapis.com.evil.example` don't;
+   - 0 saved devices break the rule;
+   - the signed-out role has no permissions on the 6 tables, and signed-in users still do.
 
-   Then I'll check them read-only and record them in the migration history.
-2. **Rerun `scripts/rls-two-user.mjs`.** It needs the service role key in the git-ignored `.env.rls.local`. It
-   now also checks that:
-   - signed-out reads of the 6 older tables are refused;
-   - B can't save a device whose address isn't a push service.
-3. **On merge:** redeploy `medication-reminders` and `send-test-push` with the allowlist. Then do one live
-   vibe-check scan and a phone check (push test notification, offline card).
+   Both are recorded in the migration history (`20261101020000`, `20261101030000`).
+2. **Two-user RLS test: 62/62 passed** on the live project, and both test users were deleted afterwards. New this
+   time:
+   - signed-out reads of the 6 older tables are refused (401);
+   - B can't save a device on `evil.example`, `169.254.169.254` or `fcm.googleapis.com.evil.example`
+     (400, "Unsupported push service").
+
+   (The first run stopped at check 34 on a bug in the script itself: a variable named `URL` hid the built-in
+   `URL`. Fixed in `694c66a`.)
+3. **Merged** `security-fixes` into the fork's `main` (`843e160`) after tests (722), lint and build passed.
+4. **Edge Functions redeployed** with the allowlist. Checked:
+   - `medication-reminders` still answers 403 without the cron secret;
+   - a dry run for the QA account through the schedule's own call returned 200 and sent nothing;
+   - `send-test-push` still answers 401 without a sign-in.
+5. **Live scan:** 0 fail, 1 warn (H8, accepted). See "vibe-check scanner after the fixes".
+6. **Still to do:** the phone check (send a push test notification, open the offline card). Not reported yet.
 
 ---
 
@@ -151,7 +181,7 @@ Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leake
 For the project write-up.
 
 - **Row Level Security on every table** (9 of 9). Policies are scoped to the owner through `profiles.owner_id = auth.uid()`, none use `USING (true)`, and signed-out visitors get nothing.
-- **Two-user RLS tests on the live project**: Phase 1 (38/38), Phase 6 (23/23) and Phase 7 (53/53). The script is in the repo (`scripts/rls-two-user.mjs`) and deletes its test users afterwards.
+- **Two-user RLS tests on the live project**: Phase 1 (38/38), Phase 6 (23/23), Phase 7 (53/53) and the security fixes (62/62). The script is in the repo (`scripts/rls-two-user.mjs`) and deletes its test users afterwards.
 - **Fixing what the tests find.** The Phase 7 test found a device-takeover path in `save_push_subscription()`, which was fixed the same day (`20261101010000_push_takeover_guard`).
 - **SECURITY DEFINER functions are locked down:**
   - each one has `set search_path = ''`;
