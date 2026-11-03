@@ -54,14 +54,19 @@ const SECTIONS: readonly LegalSection[] = [
     ),
   },
   {
-    // Phase 5 (label photo OCR) is not merged yet. When it is, drop "(coming soon)" and say it in the present tense.
-    title: "Label photos (coming soon)",
+    title: "Label photos and pasted text",
     body: (
-      <p>
-        Checking a label from a photo isn&apos;t available yet. When it is, photos will be read on your phone and
-        will never leave your device. Only the ingredient text read from the photo will be saved with the scan, so
-        you can check it later.
-      </p>
+      <>
+        <p>
+          When you check a label from a photo, the text is read on your phone. The photo never leaves your device and
+          isn&apos;t saved. The text reader is downloaded from our own site the first time, not from anyone else.
+        </p>
+        <p>
+          We save the ingredient text that was checked with the scan, so you can look at it later. For a photo we also
+          save the text as it was first read, how clearly it was read, and whether you ticked that the text matches
+          the label. If you paste text instead, we save the text you pasted.
+        </p>
+      </>
     ),
   },
   {

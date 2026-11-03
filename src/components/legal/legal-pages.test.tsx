@@ -28,12 +28,13 @@ describe("Privacy page", () => {
       "Where it's stored and who can see it",
       "Signing in with Google",
       "Barcode scans",
-      "Label photos (coming soon)",
+      "Label photos and pasted text",
       "Medication reminders",
       "Product change alerts",
       "Your emergency card",
       "Deleting your account",
     ]);
+    expect(document.body.textContent).not.toMatch(/coming soon/i);
   });
 
   it("states the promises the app keeps", () => {
@@ -41,8 +42,7 @@ describe("Privacy page", () => {
     const text = document.body.textContent ?? "";
     expect(text).toContain("No other user can see your data");
     expect(text).toContain("We only use your name and email");
-    expect(text).toContain("will never leave your device");
-    expect(text).toContain("isn't available yet");
+    expect(text).toContain("The photo never leaves your device and isn't saved.");
     expect(text).toContain("until you log out");
     expect(text).toContain("Resend");
     expect(text).toContain("link to turn emails off without logging in");
