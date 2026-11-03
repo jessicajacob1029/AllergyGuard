@@ -10,7 +10,7 @@
 // never less safe; a severity change never changes a verdict.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { checkAllergens, type CheckAllergen, type CheckResult } from "@/lib/allergen/check";
+import { checkAllergens, type CheckAllergen, type CheckResult, type Verdict } from "@/lib/allergen/check";
 
 export const STALE_WARNING = "Your allergies have changed since this check. This result may be out of date.";
 
@@ -64,4 +64,48 @@ export function recheckScan(scan: SavedScanInputs, allergens: readonly CheckAlle
       ? { contains: scan.declared_allergens ?? [], mayContain: scan.declared_traces ?? [] }
       : undefined,
   });
+}
+
+/** What a list shows for a scan: its verdict, or "Re-check needed" when it's out of date and can't be re-checked. */
+export type DisplayVerdict = Verdict | "recheck_needed";
+
+export type CurrentVerdict = {
+  /** The pill to show: the current verdict whenever it can be worked out. */
+  shown: DisplayVerdict;
+  /** The verdict saved with the scan ("At the time of scanning"). */
+  saved: Verdict;
+  /** An allergen was added after this check. */
+  outOfDate: boolean;
+};
+
+/**
+ * Whether new allergies can make this scan out of date. A barcode Open Food
+ * Facts didn't have is Caution whatever the allergies; everything else
+ * (found products, label photos, pasted text) can be.
+ */
+export function canBeOutOfDate(scan: Pick<SavedScanInputs, "barcode" | "product_found">): boolean {
+  return !(scan.barcode && scan.product_found === false);
+}
+
+/**
+ * The verdict to show for a saved scan today. Up to date → the saved verdict.
+ * Out of date → checkAllergens() again on the saved ingredients with the
+ * current allergies (no new lookup, nothing saved), or "recheck_needed" for a
+ * label photo / pasted text, which can't be re-checked from saved data.
+ */
+export function currentVerdict(
+  scan: SavedScanInputs & { verdict: Verdict; created_at: string },
+  allergiesChangedAt: string | null,
+  allergens: readonly CheckAllergen[],
+): CurrentVerdict {
+  const outOfDate = canBeOutOfDate(scan) && isOutOfDate(scan.created_at, allergiesChangedAt);
+  if (!outOfDate) return { shown: scan.verdict, saved: scan.verdict, outOfDate };
+  if (!canRecheck(scan)) return { shown: "recheck_needed", saved: scan.verdict, outOfDate };
+  return { shown: recheckScan(scan, allergens).verdict, saved: scan.verdict, outOfDate };
+}
+
+/** Safe / Caution / Unsafe filters use the current verdict. "Re-check needed" is never Safe: it's listed under Caution. */
+export function matchesVerdictFilter(shown: DisplayVerdict, filter: Verdict | null): boolean {
+  if (filter === null) return true;
+  return shown === "recheck_needed" ? filter === "caution" : shown === filter;
 }

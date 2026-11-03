@@ -75,3 +75,14 @@ describe("VerdictView", () => {
     expect(screen.getByText(/aid, not medical advice/)).toBeTruthy();
   });
 });
+
+describe("VerdictView: an out-of-date label photo (recheckNeeded)", () => {
+  it("says 'Re-check needed' instead of the saved Safe, and labels the saved check", () => {
+    const result = checkAllergens("Sugar, cocoa", MILK);
+    expect(result.verdict).toBe("safe");
+    render(<VerdictView result={result} product={null} checkedAt={checkedAt} recheckNeeded actions={null} />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Re-check needed");
+    expect(screen.queryByRole("heading", { level: 1, name: "Safe" })).toBeNull();
+    expect(screen.getByText("At the time of scanning")).toBeTruthy();
+  });
+});

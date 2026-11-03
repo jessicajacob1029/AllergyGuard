@@ -63,6 +63,12 @@ type Props = {
   intro?: ReactNode;
   /** Shown above the actions (the scan result's "Watching for changes"). */
   aside?: ReactNode;
+  /**
+   * The saved result is out of date and can't be re-checked (a label photo
+   * after an allergen was added): the header says "Re-check needed" instead of
+   * the saved verdict, and the cards below are labelled as the saved check.
+   */
+  recheckNeeded?: boolean;
   actions: ReactNode;
 };
 
@@ -90,8 +96,18 @@ function visibleMatches(matches: CheckResult["matches"]) {
   return matches.filter((m) => m.source === "ingredients" || !inText.has(`${m.allergen}|${m.kind}`));
 }
 
-export function VerdictView({ result, product, notes = [], checkedAt, attribution, intro, aside, actions }: Props) {
-  const v = VERDICT[result.verdict];
+export function VerdictView({ result, product, notes = [], checkedAt, attribution, intro, aside, recheckNeeded = false, actions }: Props) {
+  const v = recheckNeeded
+    ? {
+        ...VERDICT[result.verdict],
+        word: "Re-check needed",
+        tone: "neutral" as Tone,
+        icon: <AlertIcon className="size-11" />,
+        circle: "bg-[#ece8ef] text-[#4f4a55]",
+        subtitle: "Your allergies have changed since this check.",
+        why: "At the time of scanning",
+      }
+    : VERDICT[result.verdict];
   const shownMatches = visibleMatches(result.matches);
   const segments = highlightSegments(result.rawText, result.matches);
   const hasMay = segments.some((s) => s.kind === "may_contain");
@@ -101,7 +117,7 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
     <main className="flex flex-1 flex-col">
       <HeaderBand
         centered
-        title={<span className="text-[44px] tracking-[-0.05em]">{v.word}</span>}
+        title={<span className={`${recheckNeeded ? "text-[36px]" : "text-[44px]"} tracking-[-0.05em]`}>{v.word}</span>}
         subtitle={v.subtitle}
         top={
           <span className={`flex size-[92px] items-center justify-center rounded-full ${v.circle}`} aria-hidden="true">

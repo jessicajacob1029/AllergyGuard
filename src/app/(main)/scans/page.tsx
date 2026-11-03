@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { APP_NAME } from "@/lib/constants";
 import { loadUnseenAlerts } from "@/lib/products/product-alerts";
-import { loadScans, parseVerdictFilter } from "@/lib/products/scan-list";
-import { loadAllergiesChangedAt } from "@/lib/products/stale-result";
+import { loadScansWithCurrentVerdict } from "@/lib/products/scan-history";
+import { parseVerdictFilter } from "@/lib/products/scan-list";
 import { loadOwnProfile } from "@/lib/profile/load";
 import { createClient } from "@/lib/supabase/server";
 import { SCAN_HISTORY_LIMIT, ScanHistoryView } from "./scan-history-view";
@@ -24,10 +24,11 @@ export default async function ScanHistoryPage({
   if (!bundle || bundle.profile.onboarding_completed_at === null) redirect("/onboarding");
 
   // RLS limits rows to the user's own profiles; the profile filter picks this one.
-  const [scans, alerts, allergiesChangedAt] = await Promise.all([
-    loadScans(supabase, bundle.profile.id, { verdict, limit: SCAN_HISTORY_LIMIT }),
+  // Filters use today's verdict (re-checked when allergies changed since), so
+  // they're applied after loading a wider window of the latest scans.
+  const [scans, alerts] = await Promise.all([
+    loadScansWithCurrentVerdict(supabase, bundle.profile.id, { verdict, limit: SCAN_HISTORY_LIMIT, scanWindow: 300 }),
     loadUnseenAlerts(supabase, bundle.profile.id),
-    loadAllergiesChangedAt(supabase, bundle.profile.id),
   ]);
-  return <ScanHistoryView scans={scans} verdict={verdict} alerts={alerts} allergiesChangedAt={allergiesChangedAt} />;
+  return <ScanHistoryView scans={scans} verdict={verdict} alerts={alerts} />;
 }

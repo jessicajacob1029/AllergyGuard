@@ -89,17 +89,26 @@ describe("ScanHistoryView: product change alerts (Phase 8)", () => {
 });
 
 describe("ScanHistoryView: results older than the latest allergy change", () => {
-  it("marks rows checked before an allergen was added, and only those", () => {
-    // s1 was checked on 29 Oct, s2 on 28 Oct; Milk was added on 28 Oct at 18:00.
-    render(<ScanHistoryView scans={scans} verdict={null} allergiesChangedAt="2026-10-28T18:00:00Z" />);
-    const rows = within(screen.getByRole("region", { name: "Scans, newest first" })).getAllByRole("link");
-    expect(rows[0].textContent).not.toContain("Allergies changed since");
-    expect(rows[1].textContent).toContain("Allergies changed since: may be out of date");
+  it("shows the CURRENT verdict pill, with what it was when scanned", () => {
+    const rows = [{ ...scans[1], current: { shown: "unsafe" as const, saved: "safe" as const, outOfDate: true } }];
+    render(<ScanHistoryView scans={rows} verdict={null} />);
+    const row = within(screen.getByRole("region", { name: "Scans, newest first" })).getByRole("link");
+    expect(row.textContent).toContain("Unsafe");
+    expect(row.textContent).not.toMatch(/(^|[^s])Safe(?! when)/);
+    expect(row.textContent).toContain("Was Safe when scanned");
   });
 
-  it("doesn't mark a barcode Open Food Facts didn't have (it's Caution whatever the allergies)", () => {
-    const notFound = [{ ...scans[1], product_found: false }];
-    render(<ScanHistoryView scans={notFound} verdict={null} allergiesChangedAt="2026-11-03T00:00:00Z" />);
-    expect(screen.queryByText(/Allergies changed since/)).toBeNull();
+  it("no note when the re-check gives the same verdict", () => {
+    const rows = [{ ...scans[0], current: { shown: "unsafe" as const, saved: "unsafe" as const, outOfDate: true } }];
+    render(<ScanHistoryView scans={rows} verdict={null} />);
+    expect(screen.queryByText(/when scanned/)).toBeNull();
+  });
+
+  it("a label photo that can't be re-checked shows a grey 'Re-check needed' pill, never Safe", () => {
+    const photo = { id: "p1", input: "photo", barcode: null, product_name: null, brands: null, verdict: "safe" as const, created_at: "2026-10-27T10:00:00Z" };
+    render(<ScanHistoryView scans={[{ ...photo, current: { shown: "recheck_needed" as const, saved: "safe" as const, outOfDate: true } }]} verdict={null} />);
+    const row = within(screen.getByRole("region", { name: "Scans, newest first" })).getByRole("link");
+    expect(row.textContent).toContain("Re-check needed");
+    expect(row.textContent).toContain("Was Safe when scanned");
   });
 });
