@@ -222,7 +222,7 @@ async function main() {
   check("signed out saves a device: rejected", rejected(r), desc(r));
   for (const evil of ["https://evil.example/push", "https://169.254.169.254/latest/meta-data", "https://fcm.googleapis.com.evil.example/x"]) {
     r = await rest(B.token, "POST", "rpc/save_push_subscription", { p_endpoint: evil, p_p256dh: "k", p_auth_key: "a" });
-    check(`B saves a device that isn't a push service (${new URL(evil).hostname}): rejected`, rejected(r), desc(r));
+    check(`B saves a device that isn't a push service (${new globalThis.URL(evil).hostname}): rejected`, rejected(r), desc(r));
   }
   r = await rest(A.token, "GET", "push_subscriptions?select=id,endpoint,p256dh");
   check("A's device unchanged (still A's, same keys)", rows(r) === 1 && r.data[0].id === deviceA && r.data[0].p256dh === "keyA", JSON.stringify(r.data));
