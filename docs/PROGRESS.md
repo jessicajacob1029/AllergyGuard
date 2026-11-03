@@ -37,9 +37,9 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   end to end (laptop Chrome and the iPhone Home Screen app), daily job scheduled (08:00 IST), merged into the
   fork's `main` on 2026-11-01; two-user RLS test passed (53/53). Still open: a sending domain before real users
   (see "Phase 7" below).
-- [ ] Phase 8: Ingredient change alerts (weekly cron). Built on `phase-8` (2026-11-03), function deployed but not
-  scheduled. **Waiting for:** the migration (run by the user), then the RLS script and the live tests in
-  `docs/PHASE-8-SETUP.md`. H7 (service worker source map) is fixed on the same branch.
+- [x] Phase 8: Ingredient change alerts (weekly cron). Built on `phase-8`, live-tested (push, email, never twice,
+  improvement), merged into the fork's `main` on 2026-11-03 (`86838f3`); weekly job scheduled (Sunday 08:30 IST)
+  plus a daily retry; two-user RLS test passed (103/103). H7 (service worker source map) fixed on the same branch.
 
 ## Now
 **Redesign v2, Google login and the desktop layout are on the fork's `main`** (2026-10-31), checked on
@@ -49,14 +49,42 @@ Phase 6 is closed (2026-10-29). Phase 5 stays paused on `phase-5`.
 **Phase 7 is on the fork's `main`** (2026-11-01): reminders by email and push, daily at 08:00 IST. Before real
 users: a sending domain in Resend (the test sender lands in spam and only reaches the owner's address). iPhone push
 from the Home Screen app works, and the two-user RLS test passed 53/53 (both 2026-11-01).
+**Phase 8 is on the fork's `main`** (2026-11-03): product change alerts, weekly on Sundays at 08:30 IST. The same
+sending-domain note as Phase 7 applies to its emails.
 Phase 5 stays paused on `phase-5`. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
 
-## Phase 8: Ingredient change alerts (2026-11-03, branch `phase-8`, not merged)
+## Phase 8: Ingredient change alerts (2026-11-03, branch `phase-8`, merged into the fork's `main`)
+- **Status (2026-11-03):**
+  - **Merged** into the fork's `main` (`86838f3`) after tests (797), lint and build passed. Not pushed to the team repo.
+  - **Migration** `20261103000000_product_alerts` run by the user and recorded. Two-user RLS test: **103/103**.
+  - **Function** `product-alerts` redeployed from `main`; self-check passed (`checkAllergens` → unsafe, polite
+    User-Agent); 403 without the cron secret.
+  - **Schedules** (`cron.job`): `product-alerts` `*/15 3 * * 0` (Sunday 08:30–09:15 IST, up to 60 products per
+    call) and `product-alerts-retry` `5 3 * * *` (daily 08:35 IST, retries only).
+- **Live tests passed** (owner's account, steps in `docs/PHASE-8-SETUP.md`):
+  - **Push:** Amul Butter with an older snapshot → "Amul … has changed: now Unsafe for you", delivered on the
+    iPhone Home Screen app and laptop Chrome. Wording changed after this test to `It now lists milk (in "butter").
+    Product data can be wrong: always check the packet.`
+  - **Never twice:** the next run checked 5, all unchanged, nothing sent.
+  - **Email** (push off): Maggi → "now lists wheat / gluten (in "wheat")", email arrived with the new wording and
+    a product-alerts-only unsubscribe link.
+  - **Improvement:** ketchup with a snapshot that declared milk → `improved`, snapshot reset, nothing sent.
+  - **Clean-up:** Milk, Wheat / gluten and Egg removed, Kiwi back to mild (checked in the database). The two test
+    alerts stay in Scan history.
+- **Live site after the merge:** QA account, 390 and 1440 px. Scan result shows the watch box; Profile has the
+  "Product change alerts" switch; Privacy has the new section; signed-out `/scans/changes/<id>` redirects to
+  login; CSP, HSTS and `X-Frame-Options: DENY` present; no page errors. **Offline `/emergency`** with the network
+  fully cut: card, `tel:` link and no sideways scroll at both widths.
+- **Stale results (added during testing):** a scan checked before an allergen was added shows the **current**
+  verdict (checkAllergens() on the saved ingredients, no lookup, nothing saved), with "Was Safe when scanned" and
+  "At the time of scanning" underneath. Label photos and pasted text show "Re-check needed" (listed under Caution).
+  Uses `profile_allergens.created_at`; no migration.
+- **Still open:** a Resend sending domain before real users (same as Phase 7).
 - Plan and decisions: `docs/PHASE-8-PLAN.md`. Setup, SQL and test steps: `docs/PHASE-8-SETUP.md`.
 - **Built:**
-  - the migration `20261103000000_product_alerts.sql`, **not run yet**. It was tested on a throwaway local
+  - the migration `20261103000000_product_alerts.sql` (run by the user on 2026-11-03). It was first tested on a throwaway local
     Postgres 14 with stand-in Supabase tables: backfill, triggers, RLS, column grants, claims and the unsubscribe;
-  - the Edge Function `product-alerts`, **deployed with the Supabase CLI, not scheduled**. Its self-check passed
+  - the Edge Function `product-alerts`, deployed with the Supabase CLI (scheduled after the merge). Its self-check passed
     on Supabase: the app's own `checkAllergens()` runs there. Without the cron secret it returns 403;
   - in the app: Scan history banner and badge, Watch / Stop watching on scan results, `/scans/changes/[id]`, the
     Profile → Reminders switch, kind-aware unsubscribe, and a privacy section.

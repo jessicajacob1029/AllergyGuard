@@ -546,7 +546,7 @@ They're sent every morning at 08:00 IST.
       notification on a laptop and on an iPhone from the Home Screen app)
 - [x] Settings let the user turn notifications on or off (Profile → Reminders: email switch, push on/off per device)
 
-## Phase 8: Ingredient change alerts (in testing)
+## Phase 8: Ingredient change alerts
 
 Every Sunday at 08:30 IST, products you scanned in the last 6 months are checked again on Open Food Facts. If one
 has become less safe for you, you get a push notification or an email, and a banner in Scan history.
@@ -581,20 +581,44 @@ has become less safe for you, you get a push notification or an email, and a ban
 - **Settings:** a "Product change alerts" switch in Profile → Reminders, on by default. The email's unsubscribe link
   turns off product alerts only.
 - **Privacy page:** a new "Product change alerts" section.
+- **Results checked before an allergen was added:** Scan history, Home and the result page show the **current**
+  verdict. It is worked out by running `checkAllergens()` again on the saved ingredients, with no new lookup and
+  nothing saved. The saved one appears underneath as "At the time of scanning" ("Was Safe when scanned" in lists).
+  Label photos and pasted text can't be checked again, so they show "Re-check needed", listed under Caution.
+  Filters use the current verdict.
 - **Security (H7):** the service worker no longer has a public source map.
+- **Allergen imports** in `src/lib/allergen/` now end in `.ts` (`allowImportingTsExtensions`), so the Edge Function
+  uses the same `checkAllergens()`. No logic change.
 
 ### Database
 
 - `20261103000000_product_alerts`: `watched_products`, `product_alerts`, `product_check_runs` (owner only),
   `reminder_settings.product_alerts_enabled`, scan triggers, the job's functions (service role only) and
   `unsubscribe_product_alerts(token)`. RLS on every table; users can only change `watching` and `seen_at`.
+  **Already applied to the shared project; don't re-run it.**
+
+### Schedules (already set up; don't re-run)
+
+- `product-alerts`: `*/15 3 * * 0`, Sunday 08:30 to 09:15 IST, up to 60 products per call.
+- `product-alerts-retry`: `5 3 * * *`, daily at 08:35 IST, retries failed alerts only.
+- To stop either: `select cron.unschedule('product-alerts');` / `select cron.unschedule('product-alerts-retry');`.
 
 ### Testing
 
-- 763 tests. They cover:
+- 797 tests, lint and the production build pass. They cover:
   - the change rule, with real `checkAllergens()`;
   - the run with fakes: polite spacing, 429, failures, never twice, the brake, retries, dry run;
-  - the wording, the UI and the unsubscribe kinds.
-- The migration was tested on a local Postgres. The two-user RLS script has the Phase 8 checks added.
-- Live steps: `docs/PHASE-8-SETUP.md`.
+  - the wording, the UI and the unsubscribe kinds;
+  - current verdicts for results checked before an allergen was added.
+- The migration was tested on a local Postgres first. Two-user RLS test: **103/103**.
+- **Live tests passed** (steps in `docs/PHASE-8-SETUP.md`):
+  - push on the iPhone Home Screen app and laptop Chrome;
+  - email with push off;
+  - a second run sent nothing ("never twice");
+  - an improvement sent nothing.
+- **After the merge, on the live site:**
+  - the function self-check passed, and it returns 403 without the cron secret;
+  - QA account at 390 and 1440 px: the watch box, the settings switch and the privacy section are there, with no page errors;
+  - offline `/emergency` with the network fully cut: the card and the `tel:` link work.
+- **Before real users:** a Resend sending domain (same as Phase 7).
 
