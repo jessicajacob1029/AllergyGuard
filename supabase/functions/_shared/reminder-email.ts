@@ -11,7 +11,7 @@ export type ReminderEmail = {
   headers: Record<string, string>;
 };
 
-const escapeHtml = (s: string) =>
+export const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 /** The page that turns email reminders off (works without logging in). */

@@ -10,10 +10,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export type CheckBarcodeResult = { error: string };
 
-const LOOKUP_FAILED: Record<"network" | "timeout" | "bad_response", string> = {
+const LOOKUP_FAILED: Record<"network" | "timeout" | "bad_response" | "rate_limited", string> = {
   network: "We couldn't reach the product database. Check your connection and try again.",
   timeout: "The product database took too long to answer. Try again in a moment.",
   bad_response: "The product database had a problem answering. Try again in a moment.",
+  rate_limited: "The product database is busy right now. Try again in a minute.",
 };
 
 /**
