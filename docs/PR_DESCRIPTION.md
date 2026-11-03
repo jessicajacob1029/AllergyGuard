@@ -313,8 +313,21 @@ results were always Caution. Added: a **crop step** (full-size crop, shrink only
 re-read under 20 px lines), **sharpen** before OCR, an opt-in **Boost** (adaptive threshold) for faded or shiny
 labels, **`|` tidying** before `joinOcrLines()`, **Paste text instead** (judged on the text alone; migration
 `20261028010000_paste_scans.sql`), and an EXIF rotation safeguard. Choices were measured with
-`scripts/measure-ocr.mjs` (table in `docs/PROGRESS.md`). A preview-only debug panel is still in and is removed
-before this merges.
+`scripts/measure-ocr.mjs` (table in `docs/PROGRESS.md`). The preview-only debug panel used then is removed.
+
+### Finishing round (2026-11-03)
+
+- **Up to date with `main`**: redesign v2, Google login, the desktop layout and Phases 6–8 merged in. The label
+  screens use the v2 style on phones and desktop; on desktop the cropped photo sits beside the text to compare.
+- **CSP**: the OCR worker follows its own script's policy, so `/tesseract/*` gets `default-src 'none';
+  script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'`. Pages are unchanged. Checked enforced in Chromium and
+  WebKit. If the reader can't start, the app now says so after 2 minutes instead of "Reading…" forever.
+- **"I've compared this text with the label and it matches."**: offered after a low-confidence read. Ticked text is
+  judged like pasted text (Unsafe and every other Caution stay); the result says "Based on text you checked".
+  Migration `20261103010000_text_checked.sql` adds `scans.text_checked` (photo rows only).
+- **Phase 8**: photo and paste scans aren't watched and show "Re-check needed" when allergies change.
+- **Privacy page**: "Label photos and pasted text", present tense.
+- **Measuring tool**: `scripts/measure-ocr-lines.mjs` prints per-line confidence the way the app reads a photo.
 
 ### Phase 5 "Done when"
 

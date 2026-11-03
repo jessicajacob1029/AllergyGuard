@@ -23,9 +23,10 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
 - [x] Phase 4: Barcode scanning (@zxing/browser, Open Food Facts, `scans` table). Closed 2026-10-28;
   camera scan verified on the user's iPhone (see "Phase 4" below).
   **Do not start Phase 5 until the user has done the phone test.**
-- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). Paused on branch `phase-5` (not merged).
-  **When merging:** update the "Label photos (coming soon)" section on `/privacy` (present tense, drop "coming soon",
-  new "Last updated" date in `src/lib/constants.ts`) and its test.
+- [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). On branch `phase-5` (not merged). 2026-11-03: main merged
+  in, v2 screens, OCR worker CSP, "matches the label" tick, debug panel removed, Privacy page updated. Waiting for:
+  the `text_checked` migration (user), the user's phone photos and threshold rule, then the phone test. See
+  `docs/PHASE-5-PLAN.md`.
 - [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
   Closed 2026-10-29: merged into the fork's `main`, phone-tested on production, two-user RLS test passed
   (see "Phase 6" below).
@@ -51,7 +52,9 @@ users: a sending domain in Resend (the test sender lands in spam and only reache
 from the Home Screen app works, and the two-user RLS test passed 53/53 (both 2026-11-01).
 **Phase 8 is on the fork's `main`** (2026-11-03): product change alerts, weekly on Sundays at 08:30 IST. The same
 sending-domain note as Phase 7 applies to its emails.
-Phase 5 stays paused on `phase-5`. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
+**Phase 5 resumed on `phase-5`** (2026-11-03): steps 1–3 and 5–7 of `docs/PHASE-5-PLAN.md` done; step 4 measured on
+the 5 web images. Next: the user runs `20261103010000_text_checked.sql`, adds phone photos, writes the threshold
+rule; then checks, preview and phone test. Next session: run `/clear`, then say "continue from docs/PROGRESS.md".
 
 ## Phase 8: Ingredient change alerts (2026-11-03, branch `phase-8`, merged into the fork's `main`)
 - **Status (2026-11-03):**
@@ -328,6 +331,18 @@ Built on branch `phase-6` (pushed to the fork only), merged into the fork's `mai
   IST), then deleted it. Afterwards the live diary showed 0 reactions (checked read only).
 
 ## Phase 5: Ingredient label photo
+**2026-11-03, finishing round:** see `docs/PHASE-5-PLAN.md` (decisions, measurements, open questions).
+- Merged the fork's `main` into `phase-5` (7 conflicts: scan tile, scan result page, `VerdictView` and its tests,
+  docs). The two Phase 5 migrations were already live and were not run again.
+- v2 screens (phone and desktop). The debug panel is removed. Privacy section in the present tense.
+- CSP: `/tesseract/*` gets its own policy with `'wasm-unsafe-eval'`; the page policy is unchanged. Without this,
+  OCR failed on production and hung on "Reading…" (now a 2-minute limit).
+- The "I've compared this text with the label and it matches" tick; migration `20261103010000_text_checked.sql`
+  **not run yet** (the user runs it in the SQL Editor).
+- Checked: 1372 tests (never-weaker corpus also through the ticked photo and paste paths), lint, types, build; real
+  OCR under the enforced CSP in Chromium and WebKit with no violations; screens at 390 and 1440 px with no sideways
+  scroll.
+
 Built 2026-10-28 on branch `phase-5` (from `feature/full-build`). Plan approved with these decisions:
 - **A. Self-hosted OCR files** (not the jsdelivr CDN): `scripts/copy-tesseract.mjs` copies them to `public/tesseract/`
   before `dev`/`build`; git-ignored, lint-ignored and left out of the service-worker precache (`globIgnores`).
