@@ -90,6 +90,26 @@ const SECTIONS: readonly LegalSection[] = [
     ),
   },
   {
+    title: "Product change alerts",
+    body: (
+      <>
+        <p>
+          We keep a list of the products you scanned in the last 6 months, with the ingredients and allergen
+          information you saw. Every Sunday our server asks Open Food Facts for each barcode again. Open Food Facts
+          only receives the barcode number, from our server, never who you are.
+        </p>
+        <p>
+          If a product has become less safe for you, we tell you by notification or email, the same way as
+          medication reminders, and keep a note of the alert so you never get the same one twice.
+        </p>
+        <p>
+          You can turn alerts off in your profile or from the link in any alert email, stop watching one product
+          from its result, or delete its scans, which removes it from the list.
+        </p>
+      </>
+    ),
+  },
+  {
     title: "Your emergency card",
     body: (
       <p>

@@ -30,6 +30,7 @@ describe("Privacy page", () => {
       "Barcode scans",
       "Label photos (coming soon)",
       "Medication reminders",
+      "Product change alerts",
       "Your emergency card",
       "Deleting your account",
     ]);
@@ -45,6 +46,8 @@ describe("Privacy page", () => {
     expect(text).toContain("until you log out");
     expect(text).toContain("Resend");
     expect(text).toContain("link to turn emails off without logging in");
+    expect(text).toContain("only receives the barcode number, from our server, never who you are");
+    expect(text).toContain("stop watching one product");
   });
 
   it("gives the email address for deleting an account", () => {
