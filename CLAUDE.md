@@ -56,6 +56,7 @@ The full build plan lives in `docs/PLAN.md`. Only work on the phase you are aske
 - Row Level Security is enabled on every table. Users can only access profiles they own.
 - Secrets live only in environment variables. Never commit `.env*` files. The browser only uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - The UI shows a short disclaimer during onboarding: AllergyGuard is an aid, not medical advice; always read the label.
+- Follow `docs/SECURITY-RULES.md` for headers, CSP, input, URLs, errors and dependencies.
 
 ## Working style
 

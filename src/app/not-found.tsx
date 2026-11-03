@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { emergencyButtonClass, primaryButtonClass } from "@/components/form-styles";
 import { ScanIcon } from "@/components/ui/icons";
 import { StateScreen } from "@/components/ui/state-screen";
@@ -9,7 +10,10 @@ export const metadata: Metadata = { title: `Page not found · ${APP_NAME}` };
 
 // Unknown URLs and notFound() (e.g. a scan result that isn't yours). Never a
 // dead end: home, and the emergency card one tap away.
-export default function NotFound() {
+// Rendered per request (connection()) so its scripts get the CSP nonce; a
+// prerendered 404 would have none (see src/lib/security/csp.ts).
+export default async function NotFound() {
+  await connection();
   return (
     <StateScreen
       icon={<ScanIcon className="size-12" />}

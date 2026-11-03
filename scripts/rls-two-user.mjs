@@ -135,9 +135,9 @@ async function main() {
   const medB = must(await rest(B.token, "POST", "medications", { profile_id: profileB.id, name: "RLS EpiPen B", expiry_date: "2026-11-20" }), "medication B");
   const settingsA = must(await rest(A.token, "POST", "reminder_settings", { owner_id: A.id, push_enabled: true, email_enabled: true }), "settings A");
   must(await rest(B.token, "POST", "reminder_settings", { owner_id: B.id, push_enabled: false, email_enabled: true }), "settings B");
-  const endpointA = `https://push.example.invalid/rls-${RUN}-a`;
+  const endpointA = `https://fcm.googleapis.com/fcm/send/rls-${RUN}-a`;
   const deviceA = must(await rest(A.token, "POST", "rpc/save_push_subscription", { p_endpoint: endpointA, p_p256dh: "keyA", p_auth_key: "authA", p_user_agent: "rls-test" }), "device A");
-  must(await rest(B.token, "POST", "rpc/save_push_subscription", { p_endpoint: `https://push.example.invalid/rls-${RUN}-b`, p_p256dh: "keyB", p_auth_key: "authB", p_user_agent: "rls-test" }), "device B");
+  must(await rest(B.token, "POST", "rpc/save_push_subscription", { p_endpoint: `https://fcm.googleapis.com/fcm/send/rls-${RUN}-b`, p_p256dh: "keyB", p_auth_key: "authB", p_user_agent: "rls-test" }), "device B");
   // Only the daily job writes sent reminders: one for A, written with the service role.
   const sentA = must(await call("POST", "/rest/v1/medication_reminders", { key: SERVICE, body: { medication_id: medA.id, profile_id: profileA.id, expiry_date: "2026-11-20", stage: "30d", status: "delivered", email_result: "sent" } }), "reminder A");
   console.log("setup: each user has a profile, scan, reaction, medication, reminder settings and a device; A has a sent reminder\n");
@@ -214,12 +214,16 @@ async function main() {
   check("B edits A's device: rejected", nothing(r), desc(r));
   r = await rest(B.token, "DELETE", `push_subscriptions?id=eq.${deviceA}`);
   check("B deletes A's device: 0 rows deleted", rows(r) === 0, desc(r));
-  r = await rest(B.token, "POST", "push_subscriptions", { owner_id: A.id, endpoint: `https://push.example.invalid/rls-${RUN}-x`, p256dh: "k", auth_key: "a" });
+  r = await rest(B.token, "POST", "push_subscriptions", { owner_id: A.id, endpoint: `https://fcm.googleapis.com/fcm/send/rls-${RUN}-x`, p256dh: "k", auth_key: "a" });
   check("B inserts a device for A: rejected", rejected(r), desc(r));
   r = await rest(B.token, "POST", "rpc/save_push_subscription", { p_endpoint: endpointA, p_p256dh: "keyB", p_auth_key: "authB", p_user_agent: "rls-test" });
   check("B takes over A's device with A's address but other keys: rejected", rejected(r), desc(r));
   r = await rest(null, "POST", "rpc/save_push_subscription", { p_endpoint: endpointA, p_p256dh: "k", p_auth_key: "a" });
   check("signed out saves a device: rejected", rejected(r), desc(r));
+  for (const evil of ["https://evil.example/push", "https://169.254.169.254/latest/meta-data", "https://fcm.googleapis.com.evil.example/x"]) {
+    r = await rest(B.token, "POST", "rpc/save_push_subscription", { p_endpoint: evil, p_p256dh: "k", p_auth_key: "a" });
+    check(`B saves a device that isn't a push service (${new globalThis.URL(evil).hostname}): rejected`, rejected(r), desc(r));
+  }
   r = await rest(A.token, "GET", "push_subscriptions?select=id,endpoint,p256dh");
   check("A's device unchanged (still A's, same keys)", rows(r) === 1 && r.data[0].id === deviceA && r.data[0].p256dh === "keyA", JSON.stringify(r.data));
 
@@ -242,6 +246,11 @@ async function main() {
   check("A inserts a reminder record for own medication: rejected (only the job writes)", rejected(r), desc(r));
 
   console.log("\n— signed out");
+  // A3: no table permissions at all for the signed-out role (401/403, not just 0 rows).
+  for (const table of ["profiles", "profile_allergens", "emergency_contacts", "medications", "scans", "reactions"]) {
+    r = await rest(null, "GET", `${table}?select=*&limit=1`);
+    check(`signed out reads ${table}: refused (no permission)`, rejected(r), desc(r));
+  }
   for (const table of ["reactions", "reminder_settings", "push_subscriptions", "medication_reminders"]) {
     r = await rest(null, "GET", `${table}?select=*`);
     check(`signed out reads ${table}: nothing`, nothing(r), desc(r));

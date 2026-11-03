@@ -4,6 +4,7 @@
 // Pure TypeScript, no Deno or Node APIs.
 
 import { daysBetween, isIsoDate } from "./ist-date.ts";
+import { isKnownPushEndpoint } from "./push-endpoint.ts";
 import { reminderEmail, type ReminderEmail } from "./reminder-email.ts";
 import { reminderPush, type PushPayload } from "./reminder-message.ts";
 import { reminderStage, type ReminderStage } from "./reminder-stage.ts";
@@ -63,7 +64,10 @@ export function isGoneStatus(status: number | null): boolean {
   return status === 404 || status === 410;
 }
 
-/** Sends one payload to each device; deletes devices the push service reports as gone. */
+/**
+ * Sends one payload to each device; deletes devices the push service reports as
+ * gone, and devices whose address isn't a known push service (never contacted).
+ */
 export async function pushToDevices(
   devices: readonly PushDevice[],
   payload: PushPayload,
@@ -73,6 +77,11 @@ export async function pushToDevices(
   let removed = 0;
   let failed = 0;
   for (const device of devices) {
+    if (!isKnownPushEndpoint(device.endpoint)) {
+      await deps.deleteDevice(device.id);
+      removed++;
+      continue;
+    }
     const outcome = await deps.sendPush(device, payload);
     if (outcome.ok) {
       delivered++;
