@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition, type ChangeEvent, type ClipboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type ChangeEvent, type ClipboardEvent } from "react";
 import {
   formAlertClass,
   labelClass,
@@ -14,13 +14,13 @@ import { DEFAULT_MIN_OCR_CONFIDENCE } from "@/lib/allergen/check";
 import { DEFAULT_CROP, WHOLE_PHOTO, type CropRect } from "@/lib/ocr/crop";
 import { joinOcrLines } from "@/lib/ocr/ocr-text";
 import { prepareOcrText } from "@/lib/ocr/prepare-text";
-import type { OcrOutput, OcrProgress } from "@/lib/ocr/run-ocr";
+import type { OcrProgress } from "@/lib/ocr/run-ocr";
 import { summarizeOcr, type OcrSummary } from "@/lib/ocr/summary";
 import { useOnline } from "@/lib/use-online";
 import { checkLabel } from "./actions";
 import { CropBox } from "./crop-box";
 
-type Read = { ocrText: string; summary: OcrSummary; boosted: boolean; debug: OcrOutput | null };
+type Read = { ocrText: string; summary: OcrSummary; boosted: boolean };
 
 type State =
   | { step: "start" }
@@ -53,7 +53,7 @@ function progressText(p: OcrProgress): string {
  * check. Or: paste text → review → check. The photo stays in this page's
  * memory: only text (and the photo's confidence) is sent to checkLabel().
  */
-export function LabelCapture({ debug = false }: { debug?: boolean }) {
+export function LabelCapture() {
   const online = useOnline();
   const [state, setState] = useState<State>({ step: "start" });
   const [photo, setPhoto] = useState<Photo | null>(null);
@@ -96,13 +96,12 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
       const out = await readLabelPhoto(photo.blob, (progress) => setState({ step: "reading", progress }), controller.signal, {
         crop,
         boost,
-        debug,
       });
       if (controller.signal.aborted) return;
       setText(prepareOcrText(out.text));
       setState({
         step: "review",
-        read: { ocrText: out.text, summary: summarizeOcr(out.lines), boosted: boost, debug: debug ? out : null },
+        read: { ocrText: out.text, summary: summarizeOcr(out.lines), boosted: boost },
       });
     } catch (e) {
       if (controller.signal.aborted) return;
@@ -300,7 +299,6 @@ export function LabelCapture({ debug = false }: { debug?: boolean }) {
               </button>
             )}
           </div>
-          {state.read.debug && <DebugPanel out={state.read.debug} />}
         </>
       )}
 
@@ -411,67 +409,5 @@ function TextBox(props: {
         className="w-full rounded-field border-2 border-line bg-card p-3 text-base leading-relaxed text-ink focus:border-primary focus:outline-none"
       />
     </div>
-  );
-}
-
-// TEMPORARY (Phase 5 iPhone diagnosis, preview deployments only): shows exactly
-// what Tesseract got and read. Remove before merging to main.
-function DebugPanel({ out }: { out: OcrOutput }) {
-  const { info } = out;
-  const rows: [string, ReactNode][] = [
-    ["File", `${info.fileType}, ${Math.round(info.fileBytes / 1024)} KB`],
-    [
-      "EXIF",
-      info.jpeg
-        ? `orientation ${info.jpeg.orientation}, stored ${info.jpeg.width}×${info.jpeg.height}`
-        : "not a JPEG / no EXIF read",
-    ],
-    ["Decoded", `${info.decoded.width}×${info.decoded.height} via ${info.decoder}`],
-    ["Rotation", info.rotation],
-    ["Crop", `${info.crop.width}×${info.crop.height} at ${info.crop.left},${info.crop.top}`],
-    [
-      "Steps",
-      Object.entries(info.steps)
-        .filter(([, on]) => on)
-        .map(([k]) => k)
-        .join(", ") || "none",
-    ],
-    [
-      "Reads",
-      info.passes
-        .map((p) => `${p.width}×${p.height} (scale ${p.scale}), median line ${p.medianLineHeight} px${p.kept ? ", kept" : ""}`)
-        .join(" · "),
-    ],
-    ["Time", `${out.ms} ms`],
-    ["User agent", typeof navigator === "undefined" ? "" : navigator.userAgent],
-  ];
-  return (
-    <details open className="rounded-card border-2 border-dashed border-line bg-card p-3 text-xs text-ink">
-      <summary className="cursor-pointer font-extrabold">Debug (preview only)</summary>
-      {out.sentImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={out.sentImage} alt="Exact image sent to Tesseract" className="mt-2 w-full border border-line" />
-      )}
-      <table className="mt-2 w-full">
-        <tbody>
-          {rows.map(([k, v]) => (
-            <tr key={k} className="align-top">
-              <th className="pr-2 text-left font-bold">{k}</th>
-              <td className="break-all">{v}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="mt-2 font-bold">Lines (confidence · height px · text)</p>
-      <ol className="mt-1 space-y-1 font-mono">
-        {out.lines.map((l, i) => (
-          <li key={i} className="break-words">
-            {Math.round(l.confidence)} · {l.height} · {l.text}
-          </li>
-        ))}
-      </ol>
-      <p className="mt-2 font-bold">Raw text</p>
-      <pre className="mt-1 whitespace-pre-wrap break-words font-mono">{out.text}</pre>
-    </details>
   );
 }

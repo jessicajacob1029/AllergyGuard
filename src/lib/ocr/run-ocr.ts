@@ -4,7 +4,7 @@
 // this runs (like @zxing/browser in Phase 4), and its files come from our own
 // site (public/tesseract/, copied by scripts/copy-tesseract.mjs), not a CDN.
 import { cropToPixels, enlargeScale, scaleFor, WHOLE_PHOTO, type CropRect } from "./crop";
-import { readJpegInfo, swapsSides, type JpegInfo } from "./jpeg-info";
+import { readJpegInfo, swapsSides } from "./jpeg-info";
 import { grayToRgba, preprocess, type PreprocessSteps } from "./preprocess";
 import type { OcrLine } from "./summary";
 
@@ -14,34 +14,14 @@ export type OcrProgress =
   /** Reading the photo, 0–1. `pass` 2 is the enlarged second read. */
   | { stage: "reading"; progress: number; pass: 1 | 2 };
 
-/** What happened to the photo before OCR. Shown in the preview-only debug panel. */
-export type PhotoInfo = {
-  fileType: string;
-  fileBytes: number;
-  /** EXIF orientation and stored size; null if not a JPEG (e.g. PNG, HEIC). */
-  jpeg: JpegInfo | null;
-  decoder: "createImageBitmap" | "img";
-  /** Size the browser decoded to. */
-  decoded: { width: number; height: number };
-  /** "browser": already upright; "app": we rotated it (browser ignored EXIF); "not needed". */
-  rotation: "browser" | "app" | "not needed";
-  /** The crop at full size, in pixels of the upright photo. */
-  crop: { left: number; top: number; width: number; height: number };
-  steps: PreprocessSteps;
-  /** One entry per read: the image size given to Tesseract and the median line height. */
-  passes: { width: number; height: number; scale: number; medianLineHeight: number; kept: boolean }[];
-};
-
 export type OcrLineDetail = OcrLine & { height: number };
 
 export type OcrOutput = {
   text: string;
   lines: OcrLineDetail[];
-  info: PhotoInfo;
-  ms: number;
-  /** The exact image given to Tesseract for the kept read (JPEG data URL), only when asked for (debug). */
-  sentImage: string | null;
 };
+
+type CropPixels = { left: number; top: number; width: number; height: number };
 
 export type ReadOptions = {
   /** Part of the upright photo to read (fractions). Default: the whole photo. */
@@ -52,23 +32,22 @@ export type ReadOptions = {
    * print and lowers confidence, so it is opt-in. Sharpen is always on.
    */
   boost?: boolean;
-  debug?: boolean;
 };
 
 // Bump when public/tesseract/lang/eng.traineddata.gz changes, so phones that
 // cached the old language data (in IndexedDB) fetch the new one.
 const LANG_CACHE_PATH = "allergyguard-ocr-eng-best-int-1";
 
-async function decode(photo: Blob): Promise<{ image: ImageBitmap | HTMLImageElement; decoder: PhotoInfo["decoder"] }> {
+async function decode(photo: Blob): Promise<ImageBitmap | HTMLImageElement> {
   try {
-    return { image: await createImageBitmap(photo, { imageOrientation: "from-image" }), decoder: "createImageBitmap" };
+    return await createImageBitmap(photo, { imageOrientation: "from-image" });
   } catch {
     const url = URL.createObjectURL(photo);
     try {
       const img = new Image();
       img.src = url;
       await img.decode();
-      return { image: img, decoder: "img" };
+      return img;
     } finally {
       URL.revokeObjectURL(url);
     }
@@ -94,14 +73,13 @@ type Upright = {
   width: number;
   height: number;
   release: () => void;
-  info: Pick<PhotoInfo, "fileType" | "fileBytes" | "jpeg" | "decoder" | "decoded" | "rotation">;
 };
 
 /** Decodes the photo the right way up. */
 async function decodeUpright(photo: Blob): Promise<Upright> {
   const jpeg =
     photo.type === "image/jpeg" || photo.type === "" ? readJpegInfo(await photo.slice(0, 256 * 1024).arrayBuffer()) : null;
-  const { image, decoder } = await decode(photo);
+  const image = await decode(photo);
   const dw = "naturalWidth" in image ? image.naturalWidth : image.width;
   const dh = "naturalHeight" in image ? image.naturalHeight : image.height;
   if (!dw || !dh) throw new Error("empty image");
@@ -114,10 +92,7 @@ async function decodeUpright(photo: Blob): Promise<Upright> {
   // didn't: rotate it ourselves so Tesseract never reads text sideways.
   const needsRotation = jpeg !== null && jpeg.orientation !== 1;
   const ignored = needsRotation && swapsSides(jpeg.orientation) && dw === jpeg.width && dh === jpeg.height;
-  const base = { fileType: photo.type || "unknown", fileBytes: photo.size, jpeg, decoder, decoded: { width: dw, height: dh } };
-  if (!ignored) {
-    return { source: image, width: dw, height: dh, release, info: { ...base, rotation: needsRotation ? "browser" : "not needed" } };
-  }
+  if (!ignored) return { source: image, width: dw, height: dh, release };
   const canvas = document.createElement("canvas");
   canvas.width = dh;
   canvas.height = dw;
@@ -126,11 +101,11 @@ async function decodeUpright(photo: Blob): Promise<Upright> {
   applyOrientation(ctx, jpeg.orientation, canvas.width, canvas.height);
   ctx.drawImage(image, 0, 0);
   release();
-  return { source: canvas, width: dh, height: dw, release: () => {}, info: { ...base, rotation: "app" } };
+  return { source: canvas, width: dh, height: dw, release: () => {} };
 }
 
 /** The crop, scaled and cleaned up, ready for Tesseract. */
-function renderCrop(up: Upright, crop: PhotoInfo["crop"], scale: number, steps: PreprocessSteps): HTMLCanvasElement {
+function renderCrop(up: Upright, crop: CropPixels, scale: number, steps: PreprocessSteps): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(crop.width * scale));
   canvas.height = Math.max(1, Math.round(crop.height * scale));
@@ -158,7 +133,6 @@ export async function readLabelPhoto(
   options: ReadOptions = {},
 ): Promise<OcrOutput> {
   onProgress({ stage: "loading" });
-  const started = performance.now();
   const [up, { createWorker, OEM }] = await Promise.all([decodeUpright(photo), import("tesseract.js")]);
   try {
     signal?.throwIfAborted();
@@ -193,37 +167,20 @@ export async function readLabelPhoto(
             }
           }
         }
-        return { canvas, scale, text: data.text.trim(), lines, page: data.confidence, medianLineHeight: median(lines.map((l) => l.height)) };
+        return { scale, text: data.text.trim(), lines, page: data.confidence, medianLineHeight: median(lines.map((l) => l.height)) };
       };
 
       // Crop first, then scale: full size unless the crop is over the limits.
       const first = await read(scaleFor(crop.width, crop.height));
       let kept = first;
       const bigger = enlargeScale(first.scale, first.medianLineHeight, crop.width, crop.height);
-      let second: typeof first | null = null;
       if (bigger !== null) {
         // The text came out too small: read it again enlarged, keep the better read.
         pass = 2;
-        second = await read(bigger);
+        const second = await read(bigger);
         if (second.page >= first.page) kept = second;
       }
-      const passes = [first, second]
-        .filter((r): r is typeof first => r !== null)
-        .map((r) => ({
-          width: r.canvas.width,
-          height: r.canvas.height,
-          scale: Math.round(r.scale * 1000) / 1000,
-          medianLineHeight: r.medianLineHeight,
-          kept: r === kept,
-        }));
-
-      return {
-        text: kept.text,
-        lines: kept.lines,
-        info: { ...up.info, crop, steps, passes },
-        ms: Math.round(performance.now() - started),
-        sentImage: options.debug ? kept.canvas.toDataURL("image/jpeg", 0.85) : null,
-      };
+      return { text: kept.text, lines: kept.lines };
     } finally {
       signal?.removeEventListener("abort", stop);
       await worker.terminate().catch(() => {});

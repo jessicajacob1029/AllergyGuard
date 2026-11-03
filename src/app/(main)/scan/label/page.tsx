@@ -20,8 +20,7 @@ export default async function LabelPhotoPage() {
     <main className="flex flex-1 flex-col">
       <HeaderBand eyebrow="Label photo" title="Photo of the label" subtitle="Check an ingredients list against your allergies." />
       <div className={`${frameClass()} pb-6 desk:pb-12`}>
-        {/* TEMPORARY: the OCR debug panel shows everywhere except the production deployment. */}
-        <LabelCapture debug={process.env.VERCEL_ENV !== "production"} />
+        <LabelCapture />
       </div>
     </main>
   );

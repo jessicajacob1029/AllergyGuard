@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CROP, WHOLE_PHOTO } from "@/lib/ocr/crop";
-import type { OcrOutput } from "@/lib/ocr/run-ocr";
 import type { OcrLine } from "@/lib/ocr/summary";
 
 const checkLabel = vi.hoisted(() => vi.fn());
@@ -13,7 +12,7 @@ vi.mock("@/lib/ocr/run-ocr", () => ({ readLabelPhoto }));
 
 import { LabelCapture, PASTE_TIP } from "./label-capture";
 
-/** What the review step needs; the debug fields are optional for most tests. */
+/** What the review step needs. */
 type FakeOcr = { text: string; lines: OcrLine[] };
 
 const CLEAR: FakeOcr = {
@@ -56,7 +55,7 @@ async function toCrop() {
 }
 
 /** Takes a photo and reads the default box; the review step shows. */
-async function toReview(out: FakeOcr | OcrOutput) {
+async function toReview(out: FakeOcr) {
   readLabelPhoto.mockResolvedValueOnce(out);
   const user = await toCrop();
   await user.click(button("Read this part"));
@@ -100,7 +99,7 @@ describe("LabelCapture: crop step", () => {
 
   it("Read this part reads only the box, sharpened, not boosted", async () => {
     await toReview(CLEAR);
-    expect(readLabelPhoto.mock.calls[0][3]).toEqual({ crop: DEFAULT_CROP, boost: false, debug: false });
+    expect(readLabelPhoto.mock.calls[0][3]).toEqual({ crop: DEFAULT_CROP, boost: false });
   });
 
   it("the arrow keys move the box", async () => {
@@ -188,7 +187,7 @@ describe("LabelCapture: review", () => {
     readLabelPhoto.mockResolvedValueOnce({ text: "Sugar, cocoa", lines: [{ text: "Sugar, cocoa", confidence: 80 }] });
     await user.click(button(/Boost faded or shiny text/));
     await waitFor(() => expect(textBox().value).toBe("Sugar, cocoa"));
-    expect(readLabelPhoto.mock.calls[1][3]).toEqual({ crop: DEFAULT_CROP, boost: true, debug: false });
+    expect(readLabelPhoto.mock.calls[1][3]).toEqual({ crop: DEFAULT_CROP, boost: true });
     expect(screen.queryByRole("button", { name: /Boost/ })).toBeNull();
   });
 
@@ -261,43 +260,10 @@ describe("LabelCapture: paste text instead", () => {
   });
 });
 
-describe("LabelCapture: debug panel (preview deployments only)", () => {
-  const withInfo: OcrOutput = {
-    ...CLEAR,
-    lines: CLEAR.lines.map((l) => ({ ...l, height: 24 })),
-    info: {
-      fileType: "image/jpeg",
-      fileBytes: 2_400_000,
-      jpeg: { orientation: 6, width: 4032, height: 3024 },
-      decoder: "createImageBitmap",
-      decoded: { width: 3024, height: 4032 },
-      rotation: "browser",
-      crop: { left: 302, top: 403, width: 2419, height: 1210 },
-      steps: { contrast: false, sharpen: true, threshold: false },
-      passes: [{ width: 2419, height: 1210, scale: 1, medianLineHeight: 24, kept: true }],
-    },
-    ms: 3100,
-    sentImage: "data:image/jpeg;base64,AAAA",
-  };
-
-  it("is hidden by default", async () => {
-    await toReview(withInfo);
-    expect(screen.queryByText("Debug (preview only)")).toBeNull();
-  });
-
-  it("shows the image sent, crop, steps, reads and per-line confidence when enabled", async () => {
-    readLabelPhoto.mockResolvedValueOnce(withInfo);
-    const user = userEvent.setup();
-    render(<LabelCapture debug />);
-    await user.upload(screen.getByTestId("camera-input"), photo());
-    await user.click(await screen.findByRole("button", { name: "Read this part" }));
-    await screen.findByText("Debug (preview only)");
-    expect(readLabelPhoto.mock.calls[0][3]).toMatchObject({ debug: true });
-    expect(screen.getByAltText("Exact image sent to Tesseract").getAttribute("src")).toBe("data:image/jpeg;base64,AAAA");
-    expect(screen.getByText("orientation 6, stored 4032×3024")).toBeTruthy();
-    expect(screen.getByText("2419×1210 at 302,403")).toBeTruthy();
-    expect(screen.getByText("sharpen")).toBeTruthy();
-    expect(screen.getByText("2419×1210 (scale 1), median line 24 px, kept")).toBeTruthy();
-    expect(screen.getByText(/93 · 24 · milk powder/)).toBeTruthy();
+describe("LabelCapture: no debug panel", () => {
+  it("never shows one", async () => {
+    await toReview(CLEAR);
+    expect(screen.queryByText(/Debug/)).toBeNull();
+    expect(screen.queryByAltText(/sent to Tesseract/)).toBeNull();
   });
 });
