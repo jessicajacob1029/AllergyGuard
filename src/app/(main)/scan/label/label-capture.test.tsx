@@ -70,7 +70,9 @@ describe("LabelCapture: start screen", () => {
     expect(screen.getByText(/Hold the label flat/)).toBeTruthy();
     expect(screen.getByText(/drag a box around just the ingredients/)).toBeTruthy();
     expect(screen.getByText(/Hindi can't be read yet/)).toBeTruthy();
-    expect(screen.getByText(/The photo stays on your phone/)).toBeTruthy();
+    expect(screen.getByText(/Photo stays on your phone/)).toBeTruthy();
+    expect(screen.getByText(/never uploaded or saved/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Scan a barcode instead/ }).getAttribute("href")).toBe("/scan");
     expect(button(/Take photo/)).toBeTruthy();
     expect(button("Choose from photos")).toBeTruthy();
     expect(button(/Paste text instead/)).toBeTruthy();

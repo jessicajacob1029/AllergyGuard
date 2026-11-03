@@ -1,14 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition, type ChangeEvent, type ClipboardEvent } from "react";
-import {
-  formAlertClass,
-  labelClass,
-  primaryButtonClass,
-  secondaryButtonClass,
-  tertiaryButtonClass,
-} from "@/components/form-styles";
+import { useEffect, useRef, useState, useTransition, type ChangeEvent, type ClipboardEvent, type ReactNode } from "react";
+import { formAlertClass, labelClass, primaryButtonClass, secondaryButtonClass, tertiaryButtonClass } from "@/components/form-styles";
+import { BarcodeIcon, CameraIcon, ChevronRightIcon, ClipboardIcon, ImageIcon } from "@/components/ui/icons";
 import { SectionCard } from "@/components/ui/section-card";
 import { DEFAULT_MIN_OCR_CONFIDENCE } from "@/lib/allergen/check";
 import { DEFAULT_CROP, WHOLE_PHOTO, type CropRect } from "@/lib/ocr/crop";
@@ -18,9 +13,9 @@ import type { OcrProgress } from "@/lib/ocr/run-ocr";
 import { summarizeOcr, type OcrSummary } from "@/lib/ocr/summary";
 import { useOnline } from "@/lib/use-online";
 import { checkLabel } from "./actions";
-import { CropBox } from "./crop-box";
+import { CropBox, CropPreview } from "./crop-box";
 
-type Read = { ocrText: string; summary: OcrSummary; boosted: boolean };
+type Read = { ocrText: string; summary: OcrSummary; boosted: boolean; crop: CropRect };
 
 type State =
   | { step: "start" }
@@ -32,15 +27,21 @@ type State =
 type Photo = { blob: Blob; url: string };
 
 const TIPS = [
-  ["💡", "Good light, no glare or shadow on the text."],
-  ["📄", "Hold the label flat. Smooth out a crinkled packet."],
-  ["🔍", "Get close: the ingredients should fill most of the photo."],
-  ["✋", "Hold still until the photo is sharp."],
-  ["📐", "Next, you'll drag a box around just the ingredients."],
-  ["🔤", "English text only for now. Hindi can't be read yet."],
+  "Good light, no glare or shadow on the text.",
+  "Hold the label flat. Smooth out a crinkled packet.",
+  "Get close: the ingredients should fill most of the photo.",
+  "Hold still until the photo is sharp.",
+  "Next, you'll drag a box around just the ingredients.",
+  "English text only for now. Hindi can't be read yet.",
 ] as const;
 
 export const PASTE_TIP = "On iPhone, open the photo, press and hold the text, then Copy.";
+
+const noticeClass = "rounded-[18px] border border-caution-ink/20 bg-caution-band p-3.5 text-sm font-bold text-caution-ink";
+const tileClass =
+  "glass grid min-h-[76px] w-full grid-cols-[46px_1fr_auto] items-center gap-3 rounded-[20px] px-3.5 py-3 text-left " +
+  "transition hover:bg-white/80 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+const viewfinderClass = "rounded-[28px] bg-[radial-gradient(circle_at_50%_30%,#756b79,#342f37_65%,#211e23)]";
 
 function progressText(p: OcrProgress): string {
   if (p.stage === "loading") return "Getting the text reader ready… The first time, this downloads about 4 MB.";
@@ -101,7 +102,7 @@ export function LabelCapture() {
       setText(prepareOcrText(out.text));
       setState({
         step: "review",
-        read: { ocrText: out.text, summary: summarizeOcr(out.lines), boosted: boost },
+        read: { ocrText: out.text, summary: summarizeOcr(out.lines), boosted: boost, crop },
       });
     } catch (e) {
       if (controller.signal.aborted) return;
@@ -146,7 +147,7 @@ export function LabelCapture() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <input
         ref={cameraInput}
         type="file"
@@ -170,7 +171,7 @@ export function LabelCapture() {
       />
 
       {!online && (
-        <p role="status" className="rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
+        <p role="status" className={noticeClass}>
           You&apos;re offline. Checking a label needs an internet connection. Your emergency card still works.
         </p>
       )}
@@ -182,24 +183,25 @@ export function LabelCapture() {
       )}
 
       {state.step === "start" && (
-        <>
-          <SectionCard tone="primary" label="For a clear photo">
-            <ul className="space-y-3">
-              {TIPS.map(([emoji, tip]) => (
-                <li key={tip} className="flex gap-3 text-base font-semibold text-ink">
-                  <span aria-hidden="true">{emoji}</span>
-                  {tip}
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-          <p className="text-sm font-semibold text-muted">
-            The photo stays on your phone. It is never uploaded or saved; only the text is checked and kept with
-            the result.
-          </p>
+        <div className="space-y-5 desk:grid desk:grid-cols-2 desk:items-start desk:gap-5 desk:space-y-0">
           <div className="space-y-3">
+            <div className={`${viewfinderClass} relative flex aspect-[4/3] flex-col items-center justify-center gap-3 text-white/85`}>
+              {/* A stand-in ingredients panel inside the target frame. */}
+              <span
+                aria-hidden="true"
+                className="flex h-[46%] w-[72%] flex-col justify-center gap-2 rounded-[16px] border-2 border-white/90 px-5"
+              >
+                <span className="h-1.5 w-2/5 rounded-full bg-white/70" />
+                <span className="h-1.5 w-full rounded-full bg-white/40" />
+                <span className="h-1.5 w-11/12 rounded-full bg-white/40" />
+                <span className="h-1.5 w-3/4 rounded-full bg-white/40" />
+              </span>
+              <p className="absolute inset-x-0 bottom-4 text-center font-mono text-xs font-bold uppercase tracking-[0.12em] text-white">
+                Photo stays on your phone
+              </p>
+            </div>
             <button type="button" onClick={takePhoto} disabled={!online} className={primaryButtonClass}>
-              <span aria-hidden="true">📷</span>
+              <CameraIcon className="size-5" />
               Take photo
             </button>
             <button
@@ -208,29 +210,69 @@ export function LabelCapture() {
               disabled={!online}
               className={secondaryButtonClass}
             >
+              <ImageIcon className="size-5" />
               Choose from photos
             </button>
+            <p className="px-1 text-sm text-muted">
+              The photo is never uploaded or saved. Only the text is checked and kept with the result.
+            </p>
           </div>
-          <div className="space-y-2 rounded-card border border-line bg-card p-4">
-            <button type="button" onClick={startPaste} disabled={!online} className={tertiaryButtonClass}>
-              <span aria-hidden="true">📋</span>
-              Paste text instead
+
+          <div className="space-y-3">
+            <SectionCard tone="primary" label="For a clear photo">
+              <ol className="space-y-3">
+                {TIPS.map((tip, i) => (
+                  <li key={tip} className="flex gap-3 text-[15px] leading-snug text-ink">
+                    <span
+                      aria-hidden="true"
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full bg-band font-mono text-xs font-bold text-primary-ink"
+                    >
+                      {i + 1}
+                    </span>
+                    {tip}
+                  </li>
+                ))}
+              </ol>
+            </SectionCard>
+
+            <button type="button" onClick={startPaste} disabled={!online} className={tileClass}>
+              <TileIcon>
+                <ClipboardIcon className="size-6" />
+              </TileIcon>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-bold text-ink">Paste text instead</span>
+                <span className="block text-sm text-muted">{PASTE_TIP}</span>
+              </span>
+              <ChevronRightIcon className="size-5 text-muted" />
             </button>
-            <p className="text-sm font-semibold text-muted">{PASTE_TIP}</p>
+            <Link href="/scan" className={tileClass}>
+              <TileIcon>
+                <BarcodeIcon className="size-6" />
+              </TileIcon>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-bold text-ink">Scan a barcode instead</span>
+                <span className="block text-sm text-muted">Product data from Open Food Facts.</span>
+              </span>
+              <ChevronRightIcon className="size-5 text-muted" />
+            </Link>
           </div>
-          <Link href="/scan" className="block text-center text-sm font-bold text-primary-ink underline">
-            Scan a barcode instead
-          </Link>
-        </>
+        </div>
       )}
 
       {state.step === "crop" && photo && (
-        <>
-          <p className="text-base font-bold text-ink">
-            Drag the box around just the ingredients list. Leave out pictures and other text.
-          </p>
-          <CropBox src={photo.url} rect={rect} onChange={setRect} />
-          <div className="space-y-3">
+        <div className="space-y-4 desk:grid desk:grid-cols-[minmax(0,1fr)_260px] desk:items-start desk:gap-5 desk:space-y-0">
+          <div className={`${viewfinderClass} p-3`}>
+            <CropBox src={photo.url} rect={rect} onChange={setRect} />
+          </div>
+          <div className="space-y-3 desk:sticky desk:top-24">
+            <SectionCard tone="primary" label="Step 1 of 2" title="Box the ingredients">
+              <p className="text-[15px] leading-snug text-ink">
+                Drag the box around just the ingredients list. Leave out pictures and other text.
+              </p>
+              <p className="mt-2 hidden text-sm text-muted desk:block">
+                Arrow keys move the box; Shift and arrow keys resize it.
+              </p>
+            </SectionCard>
             <button type="button" onClick={() => read(rect, false)} disabled={!online} className={primaryButtonClass}>
               Read this part
             </button>
@@ -238,73 +280,103 @@ export function LabelCapture() {
               Use whole photo
             </button>
             <button type="button" onClick={takePhoto} className={tertiaryButtonClass}>
-              <span aria-hidden="true">📷</span>
+              <CameraIcon className="size-5" />
               Retake photo
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {state.step === "reading" && (
-        <>
-          <div role="status" className="flex flex-col items-center gap-3 rounded-card bg-band p-6 text-center">
+        <div className="space-y-3">
+          <div role="status" className="glass flex flex-col items-center gap-3 rounded-[28px] p-7 text-center">
             <span
               aria-hidden="true"
-              className="size-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary motion-reduce:animate-none"
+              className="size-10 animate-spin rounded-full border-4 border-primary/25 border-t-primary motion-reduce:animate-none"
             />
-            <p className="text-base font-extrabold text-primary-ink">{progressText(state.progress)}</p>
-            <p className="text-sm font-semibold text-muted">This happens on your phone.</p>
+            <p className="text-base font-bold text-ink">{progressText(state.progress)}</p>
+            <p className="text-sm text-muted">This happens on your phone.</p>
           </div>
           <button type="button" onClick={cancelReading} className={secondaryButtonClass}>
             Cancel
           </button>
-        </>
+        </div>
       )}
 
-      {state.step === "review" && (
-        <>
-          <PhotoReview read={state.read} />
-          <TextBox
-            label="Text read from your photo"
-            hint="Check it against the label and fix any mistakes before checking."
-            text={text}
-            onChange={setText}
-          />
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() =>
-                submit({
-                  source: "photo",
-                  text,
-                  ocrText: state.read.ocrText,
-                  ocrConfidence: state.read.summary.confidence,
-                })
-              }
-              disabled={pending || !online || text.trim() === ""}
-              className={primaryButtonClass}
-            >
-              {pending ? "Checking…" : "Check ingredients"}
-            </button>
-            <button type="button" onClick={() => setState({ step: "crop" })} disabled={pending} className={secondaryButtonClass}>
-              Adjust the box
-            </button>
-            <button type="button" onClick={takePhoto} disabled={pending} className={secondaryButtonClass}>
-              <span aria-hidden="true">📷</span>
-              Retake photo
-            </button>
-            {!state.read.boosted && (
-              <button type="button" onClick={() => read(rect, true)} disabled={pending || !online} className={tertiaryButtonClass}>
-                Text looks wrong? Boost faded or shiny text
-              </button>
-            )}
+      {state.step === "review" && photo && (
+        <div className="space-y-4 desk:grid desk:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] desk:items-start desk:gap-5 desk:space-y-0">
+          {/* Desktop: the cropped photo beside the text, to compare. Phones: folded away (the pack is in your hand). */}
+          <div className="hidden desk:sticky desk:top-24 desk:block">
+            <SectionCard tone="neutral" label="Your photo">
+              <CropPreview src={photo.url} rect={state.read.crop} />
+            </SectionCard>
           </div>
-        </>
+
+          <div className="space-y-4">
+            <PhotoReview read={state.read} />
+            <details className="group glass rounded-card p-4 desk:hidden">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-primary-ink [&::-webkit-details-marker]:hidden">
+                Show my photo
+                <ChevronRightIcon className="size-5 transition-transform group-open:rotate-90 motion-reduce:transition-none" />
+              </summary>
+              <div className="mt-3">
+                <CropPreview src={photo.url} rect={state.read.crop} />
+              </div>
+            </details>
+            <TextBox
+              label="Text read from your photo"
+              hint="Check it against the label and fix any mistakes before checking."
+              text={text}
+              onChange={setText}
+            />
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() =>
+                  submit({
+                    source: "photo",
+                    text,
+                    ocrText: state.read.ocrText,
+                    ocrConfidence: state.read.summary.confidence,
+                  })
+                }
+                disabled={pending || !online || text.trim() === ""}
+                className={primaryButtonClass}
+              >
+                {pending ? "Checking…" : "Check ingredients"}
+              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => setState({ step: "crop" })} disabled={pending} className={secondaryButtonClass}>
+                  Adjust the box
+                </button>
+                <button type="button" onClick={takePhoto} disabled={pending} className={secondaryButtonClass}>
+                  <CameraIcon className="size-5" />
+                  Retake photo
+                </button>
+              </div>
+              {!state.read.boosted && (
+                <button
+                  type="button"
+                  onClick={() => read(state.read.crop, true)}
+                  disabled={pending || !online}
+                  className={tertiaryButtonClass}
+                >
+                  Text looks wrong? Boost faded or shiny text
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {state.step === "paste" && (
-        <>
-          <p className="rounded-card border border-line bg-band p-3 text-sm font-semibold text-ink">{PASTE_TIP}</p>
+        <div className="space-y-4">
+          <SectionCard tone="primary" label="Paste the ingredients">
+            <p className="flex gap-3 text-[15px] leading-snug text-ink">
+              <ClipboardIcon className="mt-0.5 size-5 shrink-0 text-primary-ink" />
+              {PASTE_TIP}
+            </p>
+          </SectionCard>
           <TextBox
             label="Ingredients you pasted"
             hint="Check the pasted text matches the label. You can edit it."
@@ -323,13 +395,21 @@ export function LabelCapture() {
               {pending ? "Checking…" : "Check ingredients"}
             </button>
             <button type="button" onClick={backToStart} disabled={pending} className={secondaryButtonClass}>
-              <span aria-hidden="true">📷</span>
+              <CameraIcon className="size-5" />
               Take a photo instead
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
+  );
+}
+
+function TileIcon({ children }: { children: ReactNode }) {
+  return (
+    <span aria-hidden="true" className="flex size-[46px] items-center justify-center rounded-[14px] bg-band text-primary-ink">
+      {children}
+    </span>
   );
 }
 
@@ -337,7 +417,7 @@ export function LabelCapture() {
 function PhotoReview({ read }: { read: Read }) {
   if (read.ocrText.trim() === "") {
     return (
-      <p role="alert" className="rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
+      <p role="alert" className={noticeClass}>
         We couldn&apos;t find any text. Adjust the box around the ingredients, or retake the photo closer and in good
         light. You can also type the ingredients below.
       </p>
@@ -345,7 +425,7 @@ function PhotoReview({ read }: { read: Read }) {
   }
   if (read.summary.confidence >= DEFAULT_MIN_OCR_CONFIDENCE) return null;
   return (
-    <div role="alert" className="space-y-2 rounded-card border border-caution-ink/30 bg-caution-band p-3 text-sm font-bold text-caution-ink">
+    <div role="alert" className={`${noticeClass} space-y-2`}>
       <p>
         Parts of this label weren&apos;t read clearly. They may be blurred, or in another language such as Hindi, which
         AllergyGuard can&apos;t read yet. Compare the text with the label and fix any mistakes. Your result will be
@@ -390,11 +470,11 @@ function TextBox(props: {
   }
 
   return (
-    <div>
+    <div className="glass rounded-card p-5">
       <label htmlFor="label-text" className={labelClass}>
         {label}
       </label>
-      <p id="label-text-hint" className="mb-2 mt-1 text-sm font-semibold text-muted">
+      <p id="label-text-hint" className="mb-3 mt-1.5 text-sm text-muted">
         {hint}
       </p>
       <textarea
@@ -406,7 +486,7 @@ function TextBox(props: {
         spellCheck={false}
         autoFocus={autoFocus}
         aria-describedby="label-text-hint"
-        className="w-full rounded-field border-2 border-line bg-card p-3 text-base leading-relaxed text-ink focus:border-primary focus:outline-none"
+        className="block w-full rounded-field border border-field-line bg-white/80 p-4 text-base leading-relaxed text-ink outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/25"
       />
     </div>
   );

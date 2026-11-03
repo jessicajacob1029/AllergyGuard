@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { moveRect, resizeRect, type Corner, type CropRect } from "@/lib/ocr/crop";
 
 type Drag = { kind: "move" } | { kind: "resize"; corner: Corner };
@@ -66,10 +66,11 @@ export function CropBox({ src, rect, onChange }: { src: string; rect: CropRect; 
   const pct = (v: number) => `${v * 100}%`;
 
   return (
-    <div ref={frame} className="relative w-full select-none overflow-hidden rounded-card bg-viewfinder">
+    // Sized to the photo (capped in height so a tall photo fits the screen); the box's % are of the photo.
+    <div ref={frame} className="relative mx-auto w-fit max-w-full select-none overflow-hidden rounded-[18px]">
       {/* A local blob: URL for this device only; next/image can't optimise it. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="Your label photo" draggable={false} className="block w-full" />
+      <img src={src} alt="Your label photo" draggable={false} className="block max-h-[62vh] w-auto max-w-full desk:max-h-[70vh]" />
       <div
         role="group"
         aria-label="Crop box. Drag to move, drag a corner to resize. Arrow keys move it, Shift and arrow keys resize it."
@@ -95,6 +96,35 @@ export function CropBox({ src, rect, onChange }: { src: string; rect: CropRect; 
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Just the part of the photo that was read, to compare with the text. Drawn
+ * with CSS from the full photo (no new image is made).
+ */
+export function CropPreview({ src, rect }: { src: string; rect: CropRect }) {
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  const ratio = size ? (rect.w * size.w) / (rect.h * size.h) : undefined;
+  return (
+    <div
+      className="relative w-full overflow-hidden rounded-[14px] bg-viewfinder"
+      style={{ aspectRatio: ratio ?? "4 / 3" }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt="The part of your photo that was read"
+        draggable={false}
+        onLoad={(e) => setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+        className="absolute max-w-none"
+        style={{
+          width: `${100 / rect.w}%`,
+          left: `${(-rect.x / rect.w) * 100}%`,
+          top: `${(-rect.y / rect.h) * 100}%`,
+        }}
+      />
     </div>
   );
 }

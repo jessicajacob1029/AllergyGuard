@@ -177,6 +177,22 @@ export const TrashIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const ClipboardIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M9 4h6v3H9V4Z" />
+    <path d="M9 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H15" />
+    <path d="M8.5 12h7M8.5 16h5" />
+  </Icon>
+);
+
+export const ImageIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+    <circle cx="9" cy="10" r="1.75" />
+    <path d="m20.5 16-5-5-8.5 8.5" />
+  </Icon>
+);
+
 export const BookIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16ZM20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z" />
