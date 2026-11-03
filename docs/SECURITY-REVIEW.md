@@ -172,7 +172,8 @@ Chosen by Jessica. **Skipped for now:** A2 (Supabase cookie flags) and S1 (leake
    - a dry run for the QA account through the schedule's own call returned 200 and sent nothing;
    - `send-test-push` still answers 401 without a sign-in.
 5. **Live scan:** 0 fail, 1 warn (H8, accepted). See "vibe-check scanner after the fixes".
-6. **Still to do:** the phone check (send a push test notification, open the offline card). Not reported yet.
+6. **Phone check (Jessica, 3 November): passed.** The push test notification arrived, and the offline emergency
+   card works.
 
 ---
 
