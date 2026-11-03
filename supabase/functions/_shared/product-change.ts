@@ -141,13 +141,14 @@ function phrase(change: ChangeItem): string {
   const name = lower(change.allergen);
   switch (change.kind) {
     case "contains": {
-      const words = change.text.trim();
-      return words && words.toLowerCase() !== name ? `lists ${name} (${words})` : `lists ${name}`;
+      // The matched words, lower case and quoted: 'lists milk (in "butter")'.
+      const words = change.text.trim().toLowerCase();
+      return words && words !== name ? `lists ${name} (in "${words}")` : `lists ${name}`;
     }
     case "may_contain":
       return `says it may contain ${name}`;
     case "possible_source":
-      return `lists ${change.text.trim()}, which may come from ${name}`;
+      return `lists "${change.text.trim().toLowerCase()}", which may come from ${name}`;
   }
 }
 
@@ -156,7 +157,7 @@ function joinList(parts: string[]): string {
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
-/** "now lists milk (whey) and says it may contain peanut". At most three items. */
+/** 'now lists milk (in "whey") and says it may contain peanut'. At most three items. */
 export function describeChanges(changes: readonly ChangeItem[]): string {
   if (changes.length === 0) return "has changed";
   const parts = changes.slice(0, 3).map(phrase);

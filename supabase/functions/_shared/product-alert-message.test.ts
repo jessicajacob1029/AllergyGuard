@@ -7,7 +7,7 @@ const msg = (over: Partial<ProductAlertMessage> = {}): ProductAlertMessage => ({
   barcode: "3017620422003",
   oldVerdict: "safe",
   newVerdict: "unsafe",
-  summary: "now lists milk (whey)",
+  summary: 'now lists milk (in "whey")',
   explanation: "Not safe: contains Milk (whey).",
   ...over,
 });
@@ -27,7 +27,7 @@ describe("product alert wording", () => {
   it("push: what changed, the data warning, and a link to the change page", () => {
     expect(productAlertPush(msg())).toEqual({
       title: "Nutella has changed: now Unsafe for you",
-      body: `Open Food Facts now lists milk (whey). ${DATA_WARNING}`,
+      body: `It now lists milk (in "whey"). ${DATA_WARNING}`,
       tag: "product-alert-abc",
       url: "/scans/changes/abc",
     });

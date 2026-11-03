@@ -11,7 +11,7 @@ export type ProductAlertMessage = {
   barcode: string;
   oldVerdict: Verdict;
   newVerdict: Verdict;
-  /** From describeChanges(): "now lists milk (whey)". */
+  /** From describeChanges(): 'now lists milk (in "whey")'. */
   summary: string;
   /** The new result's plain-language explanation from checkAllergens(). */
   explanation: string;
@@ -20,7 +20,7 @@ export type ProductAlertMessage = {
 const LABEL: Record<Verdict, string> = { safe: "Safe", caution: "Caution", unsafe: "Unsafe" };
 const RANK: Record<Verdict, number> = { safe: 0, caution: 1, unsafe: 2 };
 
-export const DATA_WARNING = "Open Food Facts is edited by volunteers and can be wrong: always check the packet.";
+export const DATA_WARNING = "Product data can be wrong: always check the packet.";
 
 /** "Nutella", or "A product you scanned (3017620422003)" when Open Food Facts has no name. */
 export function productLabel(m: Pick<ProductAlertMessage, "productName" | "barcode">): string {
@@ -36,9 +36,9 @@ export function alertHeadline(m: ProductAlertMessage): string {
     : `${name} has changed: another of your allergens`;
 }
 
-/** "Open Food Facts now lists milk (whey)." */
+/** 'It now lists milk (in "whey").' */
 export function alertChangeSentence(m: Pick<ProductAlertMessage, "summary">): string {
-  return `Open Food Facts ${m.summary}.`;
+  return `It ${m.summary}.`;
 }
 
 export function changePath(alertId: string): string {

@@ -144,7 +144,7 @@ describe("runProductCheck: what happens to each watch", () => {
         watched_product_id: w.watchId,
         old_verdict: "safe",
         new_verdict: "unsafe",
-        summary: "now lists milk (whey)",
+        summary: 'now lists milk (in "whey")',
         ingredients_text: "sugar, cocoa, whey",
       }),
     );
@@ -154,7 +154,7 @@ describe("runProductCheck: what happens to each watch", () => {
 
     const [, payload] = deps.sendPush.mock.calls[0] as unknown as [unknown, { title: string; body: string; url: string }];
     expect(payload.title).toBe("Choco spread has changed: now Unsafe for you");
-    expect(payload.body).toContain("Open Food Facts now lists milk (whey).");
+    expect(payload.body).toBe('It now lists milk (in "whey"). Product data can be wrong: always check the packet.');
     expect(payload.body).toContain("always check the packet");
     expect(payload.url).toBe("/scans/changes/alert-1");
     expect(deps.sendEmail).not.toHaveBeenCalled();

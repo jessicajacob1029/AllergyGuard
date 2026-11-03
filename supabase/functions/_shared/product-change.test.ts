@@ -49,7 +49,7 @@ describe("evaluateChange", () => {
     expect(e.before.verdict).toBe("safe");
     expect(e.after.verdict).toBe("unsafe");
     expect(e.changes).toEqual([{ allergen: "Milk", kind: "contains", text: "whey" }]);
-    expect(e.summary).toBe("now lists milk (whey)");
+    expect(e.summary).toBe('now lists milk (in "whey")');
   });
 
   it("Safe → Caution from a new trace: alerts", () => {
@@ -117,15 +117,20 @@ describe("evaluateChange", () => {
 });
 
 describe("describeChanges", () => {
+  it("lower-cases and quotes the matched words (the real Amul Butter case)", () => {
+    expect(describeChanges([{ allergen: "Milk", kind: "contains", text: "Butter" }])).toBe('now lists milk (in "butter")');
+    expect(describeChanges([{ allergen: "Milk", kind: "contains", text: "MILK" }])).toBe("now lists milk");
+  });
+
   it("joins up to three changes and counts the rest", () => {
     expect(
       describeChanges([
         { allergen: "Milk", kind: "contains", text: "whey" },
         { allergen: "Peanut", kind: "may_contain", text: "peanuts" },
       ]),
-    ).toBe("now lists milk (whey) and says it may contain peanut");
+    ).toBe('now lists milk (in "whey") and says it may contain peanut');
     expect(describeChanges([{ allergen: "Soy", kind: "possible_source", text: "lecithin" }])).toBe(
-      "now lists lecithin, which may come from soy",
+      'now lists "lecithin", which may come from soy',
     );
     expect(
       describeChanges([
