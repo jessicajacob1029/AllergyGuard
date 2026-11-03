@@ -90,7 +90,11 @@ function warningPill(w: CheckWarning): ReactNode {
     case "missing_text":
       return "No ingredient list";
     case "incomplete":
-      return "Data may be incomplete";
+      return w.reason === "no_ingredients_list"
+        ? "No ingredients list found"
+        : w.reason === "too_short"
+          ? "Not a full ingredients list"
+          : "Data may be incomplete";
     case "low_confidence":
       return "Text not read clearly";
     case "no_allergens":

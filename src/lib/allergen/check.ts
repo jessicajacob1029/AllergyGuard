@@ -30,8 +30,11 @@ export type CheckOptions = {
   ocrConfidence?: number;
   /** Below this the input is doubtful. Default 70. */
   minOcrConfidence?: number;
-  /** The source says the ingredient data is incomplete. */
-  incomplete?: boolean;
+  /**
+   * The source says the ingredient data is incomplete. A reason picks the
+   * sentence shown; `true` gives the general one.
+   */
+  incomplete?: boolean | IncompleteReason;
   /**
    * Allergens the product data itself declares, as English names ("milk",
    * "soybeans", "sesame seeds"), e.g. Open Food Facts' allergen and trace
@@ -40,6 +43,13 @@ export type CheckOptions = {
    */
   declared?: { contains: readonly string[]; mayContain: readonly string[] };
 };
+
+/**
+ * Why label text counts as incomplete (Phase 5):
+ * - no_ingredients_list: a photo with no "ingredients" / "contains" heading;
+ * - too_short: pasted text with fewer than 2 items or 10 letters.
+ */
+export type IncompleteReason = "no_ingredients_list" | "too_short";
 
 export type Verdict = "unsafe" | "caution" | "safe";
 
@@ -61,7 +71,7 @@ export type AllergenMatch = {
 export type CheckWarning =
   | { kind: "missing_text" }
   | { kind: "no_allergens" }
-  | { kind: "incomplete" }
+  | { kind: "incomplete"; reason?: IncompleteReason }
   | { kind: "low_confidence"; confidence: number }
   /** An ambiguous term ("lecithin") that may come from this allergen. */
   | { kind: "possible_source"; allergen: string; term: string; text: string }
@@ -364,12 +374,18 @@ function reasonSentences(matches: readonly AllergenMatch[], warnings: readonly C
 
   for (const w of warnings) {
     if (w.kind === "missing_text") out.push("No ingredient list was found, so we can't tell if it's safe.");
-    if (w.kind === "incomplete") out.push("The ingredient list may be incomplete.");
+    if (w.kind === "incomplete") out.push(INCOMPLETE_SENTENCE[w.reason ?? "general"]);
     if (w.kind === "low_confidence") out.push("The text wasn't read clearly, so compare it with the label.");
     if (w.kind === "no_allergens") out.push("Your profile has no allergens to check against.");
   }
   return [...new Set(out)];
 }
+
+const INCOMPLETE_SENTENCE: Record<IncompleteReason | "general", string> = {
+  general: "The ingredient list may be incomplete.",
+  no_ingredients_list: "We couldn't find an ingredients list. Check the label.",
+  too_short: "This doesn't look like a full ingredients list. Check the label.",
+};
 
 function explain(
   verdict: Verdict,
@@ -419,7 +435,8 @@ export function checkAllergens(
   const warnings: CheckWarning[] = [];
   const seenWarnings = new Set<string>();
   const warnOnce = (w: CheckWarning) => {
-    const key = JSON.stringify(w);
+    // One "incomplete" per result, whatever its reason (the first one says why).
+    const key = w.kind === "incomplete" ? "incomplete" : JSON.stringify(w);
     if (!seenWarnings.has(key)) {
       seenWarnings.add(key);
       warnings.push(w);
@@ -428,7 +445,8 @@ export function checkAllergens(
 
   if (!hasReadableText(ingredientText)) warnOnce({ kind: "missing_text" });
   if (targets.length === 0) warnOnce({ kind: "no_allergens" });
-  if (options.incomplete) warnOnce({ kind: "incomplete" });
+  if (options.incomplete === true) warnOnce({ kind: "incomplete" });
+  else if (options.incomplete) warnOnce({ kind: "incomplete", reason: options.incomplete });
   if (options.ocrConfidence !== undefined) {
     const min = options.minOcrConfidence ?? DEFAULT_MIN_OCR_CONFIDENCE;
     // NaN fails this comparison too, so it counts as low.

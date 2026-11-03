@@ -618,3 +618,42 @@ describe("checkAllergens: declared allergens prove the text is incomplete", () =
     expect(r.verdict).toBe("safe");
   });
 });
+
+describe("checkAllergens: why the data is incomplete (Phase 5, 2026-11-04)", () => {
+  it("true keeps the general warning and sentence", () => {
+    const r = checkAllergens("Sugar, cocoa", MILK, { incomplete: true });
+    expect(r.verdict).toBe("caution");
+    expect(r.warnings).toEqual([{ kind: "incomplete" }]);
+    expect(r.explanation).toContain("The ingredient list may be incomplete.");
+  });
+
+  it("no_ingredients_list says so", () => {
+    const r = checkAllergens("Sugar, cocoa", MILK, { incomplete: "no_ingredients_list" });
+    expect(r.verdict).toBe("caution");
+    expect(r.warnings).toEqual([{ kind: "incomplete", reason: "no_ingredients_list" }]);
+    expect(r.explanation).toContain("We couldn't find an ingredients list. Check the label.");
+    expect(r.explanation).not.toContain("may be incomplete");
+  });
+
+  it("too_short says so", () => {
+    const r = checkAllergens("Sugar", MILK, { incomplete: "too_short" });
+    expect(r.explanation).toContain("This doesn't look like a full ingredients list. Check the label.");
+  });
+
+  it("a reason never downgrades Unsafe", () => {
+    expect(checkAllergens("Sugar, whey", MILK, { incomplete: "no_ingredients_list" }).verdict).toBe("unsafe");
+  });
+
+  it("only one incomplete warning, even when declared allergens also show the text is incomplete", () => {
+    const r = checkAllergens("Sugar, cocoa", [p("egg")], {
+      incomplete: "no_ingredients_list",
+      declared: { contains: ["milk"], mayContain: [] },
+    });
+    expect(r.warnings.filter((w) => w.kind === "incomplete")).toEqual([{ kind: "incomplete", reason: "no_ingredients_list" }]);
+  });
+
+  it("false and undefined add nothing", () => {
+    expect(checkAllergens("Sugar, cocoa", MILK, { incomplete: false }).verdict).toBe("safe");
+    expect(checkAllergens("Sugar, cocoa", MILK).verdict).toBe("safe");
+  });
+});
