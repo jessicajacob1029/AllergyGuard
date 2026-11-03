@@ -52,3 +52,38 @@ describe("ScanHistoryView", () => {
     expect(screen.getByText("No Caution results.")).toBeTruthy();
   });
 });
+
+describe("ScanHistoryView: product change alerts (Phase 8)", () => {
+  const alert = {
+    id: "a1",
+    barcode: "8901030865237",
+    productName: "Ketchup",
+    summary: "now lists milk (whey)",
+    newVerdict: "unsafe" as const,
+    createdAt: "2026-11-01T03:00:00Z",
+  };
+
+  it("shows a banner linking to each changed product, and badges its rows", () => {
+    render(<ScanHistoryView scans={scans} verdict={null} alerts={[alert]} />);
+    const banner = within(screen.getByRole("region", { name: "1 product you scanned has changed" }));
+    const link = banner.getByRole("link");
+    expect(link.getAttribute("href")).toBe("/scans/changes/a1");
+    expect(link.textContent).toContain("Open Food Facts now lists milk (whey).");
+    expect(link.textContent).toContain("Unsafe");
+
+    const rows = within(screen.getByRole("region", { name: "Scans, newest first" })).getAllByRole("link");
+    expect(rows[0].textContent).not.toContain("Changed since");
+    expect(rows[1].textContent).toContain("Changed since");
+  });
+
+  it("shows nothing extra without unseen alerts", () => {
+    render(<ScanHistoryView scans={scans} verdict={null} />);
+    expect(screen.queryByText(/you scanned (has|have) changed/)).toBeNull();
+    expect(screen.queryByText("Changed since")).toBeNull();
+  });
+
+  it("counts several changed products", () => {
+    render(<ScanHistoryView scans={scans} verdict={null} alerts={[alert, { ...alert, id: "a2", barcode: "8901262010016" }]} />);
+    expect(screen.getByRole("heading", { name: "2 products you scanned have changed" })).toBeTruthy();
+  });
+});

@@ -59,6 +59,10 @@ type Props = {
   checkedAt: string;
   /** Data attribution shown at the bottom, e.g. Open Food Facts. */
   attribution?: ReactNode;
+  /** Shown above the product card (the product change page's "what changed"). */
+  intro?: ReactNode;
+  /** Shown above the actions (the scan result's "Watching for changes"). */
+  aside?: ReactNode;
   actions: ReactNode;
 };
 
@@ -86,7 +90,7 @@ function visibleMatches(matches: CheckResult["matches"]) {
   return matches.filter((m) => m.source === "ingredients" || !inText.has(`${m.allergen}|${m.kind}`));
 }
 
-export function VerdictView({ result, product, notes = [], checkedAt, attribution, actions }: Props) {
+export function VerdictView({ result, product, notes = [], checkedAt, attribution, intro, aside, actions }: Props) {
   const v = VERDICT[result.verdict];
   const shownMatches = visibleMatches(result.matches);
   const segments = highlightSegments(result.rawText, result.matches);
@@ -107,6 +111,7 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
       />
 
       <div className={`${frameClass()} space-y-3.5 pb-6 desk:pb-12`}>
+        {intro}
         {product && (
           <div className="glass gradient-soft rounded-card p-6">
             <p className="eyebrow">Scanned product</p>
@@ -188,6 +193,8 @@ export function VerdictView({ result, product, notes = [], checkedAt, attributio
             </>
           )}
         </SectionCard>
+
+        {aside}
 
         <div className="space-y-3">{actions}</div>
 

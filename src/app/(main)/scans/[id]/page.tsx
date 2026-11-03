@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { primaryButtonClass, secondaryButtonClass, tertiaryButtonClass } from "@/components/form-styles";
+import { WatchControl } from "@/components/scans/watch-control";
 import { VerdictView } from "@/components/verdict/verdict-view";
 import { APP_NAME } from "@/lib/constants";
+import { loadWatch, watchNote } from "@/lib/products/product-alerts";
 import { readStoredResult } from "@/lib/products/scan-record";
+import { loadReminderSettings } from "@/lib/reminders/settings";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: `Scan result · ${APP_NAME}` };
@@ -23,7 +26,7 @@ export default async function ScanResultPage({ params }: PageProps<"/scans/[id]"
   // RLS: only the owner's scans are visible, so another user's id is "not found".
   const { data: scan } = await supabase
     .from("scans")
-    .select("input, barcode, product_found, product_name, brands, data_notes, result, created_at")
+    .select("profile_id, input, barcode, product_found, product_name, brands, data_notes, result, created_at")
     .eq("id", id)
     .maybeSingle();
   if (!scan) notFound();
@@ -33,6 +36,10 @@ export default async function ScanResultPage({ params }: PageProps<"/scans/[id]"
 
   // Label photo / pasted text rows (from Phase 5 testing) have no barcode: no product card.
   const fromBarcode = typeof scan.barcode === "string" && scan.barcode !== "";
+
+  // Phase 8: products found by a barcode scan are watched for changes.
+  const watch = fromBarcode && scan.product_found ? await loadWatch(supabase, scan.profile_id, scan.barcode) : null;
+  const alertsEnabled = watch ? (await loadReminderSettings(supabase, data.claims.sub)).productAlertsEnabled : true;
 
   return (
     <VerdictView
@@ -53,6 +60,17 @@ export default async function ScanResultPage({ params }: PageProps<"/scans/[id]"
             </a>{" "}
             (ODbL).
           </>
+        )
+      }
+      aside={
+        watch && (
+          <WatchControl
+            scanId={id}
+            watchId={watch.id}
+            watching={watch.watching}
+            note={watchNote(watch)}
+            alertsEnabled={alertsEnabled}
+          />
         )
       }
       actions={

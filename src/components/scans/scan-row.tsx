@@ -10,7 +10,16 @@ import type { ScanListRow } from "@/lib/products/scan-list";
  * two lines and the brand / barcode line is never cut off. On narrow phones
  * (under 360px) the verdict moves under the text so the name keeps its width.
  */
-export function ScanRow({ scan, showTime = false }: { scan: ScanListRow; showTime?: boolean }) {
+export function ScanRow({
+  scan,
+  showTime = false,
+  changed = false,
+}: {
+  scan: ScanListRow;
+  showTime?: boolean;
+  /** Phase 8: Open Food Facts changed this product since (an unseen alert). */
+  changed?: boolean;
+}) {
   const { title, subtitle } = scanLabel(scan);
   const Icon = scan.input === "photo" || scan.input === "paste" ? CameraIcon : BarcodeIcon;
   return (
@@ -24,6 +33,11 @@ export function ScanRow({ scan, showTime = false }: { scan: ScanListRow; showTim
       <span className="min-w-0">
         <span className="line-clamp-2 break-words text-[15px] font-bold leading-snug">{title}</span>
         {subtitle && <span className="block break-words text-sm text-muted">{subtitle}</span>}
+        {changed && (
+          <span className="mt-1 inline-flex rounded-[8px] bg-caution-band px-2 py-0.5 text-xs font-bold text-caution-ink">
+            Changed since
+          </span>
+        )}
         {showTime && (
           <span className="block text-sm text-muted">
             <LocalTime iso={scan.created_at} format="listTime" />
