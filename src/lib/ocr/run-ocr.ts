@@ -38,6 +38,31 @@ export type ReadOptions = {
 // cached the old language data (in IndexedDB) fetch the new one.
 const LANG_CACHE_PATH = "allergyguard-ocr-eng-best-int-1";
 
+/**
+ * Longest wait for the text reader to start (first time: about 7 MB to
+ * download on a phone). Tesseract.js never settles createWorker() if its
+ * WebAssembly fails to start inside the worker (e.g. blocked by the CSP), so
+ * without a limit the screen would say "Reading…" forever.
+ */
+export const WORKER_START_TIMEOUT_MS = 120_000;
+
+/** `work`, or a rejection after `ms` or as soon as `signal` aborts, whichever comes first. */
+async function withTimeLimit<T>(work: Promise<T>, ms: number, signal?: AbortSignal): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let onAbort: (() => void) | undefined;
+  const giveUp = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("The text reader didn't start in time")), ms);
+    onAbort = () => reject(signal?.reason);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+  try {
+    return await Promise.race([work, giveUp]);
+  } finally {
+    clearTimeout(timer);
+    if (onAbort) signal?.removeEventListener("abort", onAbort);
+  }
+}
+
 async function decode(photo: Blob): Promise<ImageBitmap | HTMLImageElement> {
   try {
     return await createImageBitmap(photo, { imageOrientation: "from-image" });
@@ -141,16 +166,22 @@ export async function readLabelPhoto(
 
     const origin = window.location.origin;
     let pass: 1 | 2 = 1;
-    const worker = await createWorker("eng", OEM.LSTM_ONLY, {
-      workerPath: `${origin}/tesseract/worker.min.js`,
-      workerBlobURL: false,
-      corePath: `${origin}/tesseract/core`,
-      langPath: `${origin}/tesseract/lang`,
-      cachePath: LANG_CACHE_PATH,
-      logger: (m) => {
-        if (m.status === "recognizing text") onProgress({ stage: "reading", progress: m.progress, pass });
-      },
-    });
+    const worker = await withTimeLimit(
+      createWorker("eng", OEM.LSTM_ONLY, {
+        workerPath: `${origin}/tesseract/worker.min.js`,
+        workerBlobURL: false,
+        corePath: `${origin}/tesseract/core`,
+        langPath: `${origin}/tesseract/lang`,
+        cachePath: LANG_CACHE_PATH,
+        logger: (m) => {
+          if (m.status === "recognizing text") onProgress({ stage: "reading", progress: m.progress, pass });
+        },
+        // Errors reach the caller through the rejected promise; don't also throw them uncaught.
+        errorHandler: (e) => console.error("Tesseract worker error", e),
+      }),
+      WORKER_START_TIMEOUT_MS,
+      signal,
+    );
     const stop = () => void worker.terminate();
     signal?.addEventListener("abort", stop, { once: true });
     try {
