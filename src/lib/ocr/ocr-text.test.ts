@@ -36,6 +36,9 @@ describe("joinOcrLines: when to join", () => {
     ["next line starts lowercase", "May contain traces of\npeanuts.", "May contain traces of peanuts."],
     ["Windows line breaks (Open Food Facts)", "Sugar,\r\nmilk solids", "Sugar, milk solids"],
     ["keeps the hyphen of a split “-free” claim", "Milk-\nfree chocolate", "Milk-free chocolate"],
+    ["ends with a colon (2026-11-04)", "Made in a factory that also handles:\nMilk, Wheat", "Made in a factory that also handles: Milk, Wheat"],
+    ["a heading's colon", "Ingredients:\nSugar, salt", "Ingredients: Sugar, salt"],
+    ["a colon and OCR's trailing space", "Contains: \nMilk", "Contains: Milk"],
   ])("%s", (_name, input, expected) => {
     expect(joinOcrLines(input)).toBe(expected);
   });
@@ -67,6 +70,25 @@ describe("joinOcrLines: when to keep the line break", () => {
 });
 
 describe("joinOcrLines: verdicts after joining", () => {
+  it("“Made in a factory that also handles:⏎Milk, Wheat” gives Caution, not Unsafe (2026-11-04)", () => {
+    const text = "Ingredients: Potatoes, Vegetable Oils, Salt.\nAllergy Advice\nMade in a factory that also handles:\nMilk, Wheat";
+    // Without joining, the line break ends the shared-facility span: milk reads as an ingredient.
+    expect(checkAllergens(text, [p("milk"), p("wheat_gluten")]).verdict).toBe("unsafe");
+    const r = checkAllergens(joinOcrLines(text), [p("milk"), p("wheat_gluten")]);
+    expect(r.verdict).toBe("caution");
+    expect(r.matches.map((m) => m.kind)).toEqual(["may_contain", "may_contain"]);
+  });
+
+  it("a colon never joins across a blank line (a new paragraph)", () => {
+    expect(joinOcrLines("Made in a factory that also handles:\n\nMilk, Wheat")).toBe(
+      "Made in a factory that also handles:\n\nMilk, Wheat",
+    );
+  });
+
+  it("“Contains:⏎Milk” stays Unsafe", () => {
+    expect(checkAllergens(joinOcrLines("Ingredients: Sugar.\nContains:\nMilk"), [p("milk")]).verdict).toBe("unsafe");
+  });
+
   it("“May contain traces of peanuts⏎Milk solids, sugar” stays Unsafe for milk", () => {
     const r = checkAllergens(joinOcrLines("May contain traces of peanuts\nMilk solids, sugar"), [p("milk")]);
     expect(r.verdict).toBe("unsafe");
@@ -121,6 +143,23 @@ describe("joinOcrLines never weakens a Phase 3 or Phase 4 Unsafe case", () => {
     "recorded case %i: %s",
     (_i, _label, c) => {
       expectNotWeaker(c.text, c.allergens, c.options);
+    },
+  );
+
+  // The same corpus with a line break after every colon, as a label might wrap
+  // ("Ingredients:⏎…", "Contains:⏎…"), so the colon rule is really exercised.
+  const withColonBreaks = calls.filter((c) => c.text?.includes(":"));
+  it("has cases with a colon", () => {
+    expect(withColonBreaks.length).toBeGreaterThan(5);
+  });
+  it.each(withColonBreaks.map((c, i) => [i, JSON.stringify(c.text).slice(0, 60), c] as const))(
+    "recorded case with a break after each colon %i: %s",
+    (_i, _label, c) => {
+      const broken = (c.text as string).replace(/:\s*/g, ":\n");
+      const before = checkAllergens(c.text, c.allergens, c.options);
+      const after = checkAllergens(joinOcrLines(broken), c.allergens, c.options);
+      expect(STRENGTH[after.verdict], JSON.stringify(broken)).toBeGreaterThanOrEqual(STRENGTH[before.verdict]);
+      expect(containsAllergens(after)).toEqual(expect.arrayContaining(containsAllergens(before)));
     },
   );
 

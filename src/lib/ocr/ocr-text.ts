@@ -35,6 +35,12 @@ export function joinOcrLines(text: string): string {
       line = prev + " " + nextStart;
       continue;
     }
+    // "also handles:⏎Milk, Wheat" → "also handles: Milk, Wheat": a list follows its colon,
+    // so a shared-facility warning keeps the allergens it names (decided 2026-11-04).
+    if (prev.endsWith(":")) {
+      line = prev + " " + nextStart;
+      continue;
+    }
     // "Emulsifier (⏎soy" → "Emulsifier (soy"
     if (/[([]$/.test(prev)) {
       line = prev + nextStart;
