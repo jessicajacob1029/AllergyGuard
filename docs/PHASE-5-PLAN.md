@@ -42,7 +42,7 @@ today's threshold of 70.
 | Photo | Area read | Real lines | Junk lines | Lowest | Accuracy | Verdict | Ticked |
 |---|---|---|---|---|---|---|---|
 | 1 Nutrition panel, no ingredients | whole | 40–94 (mixed panels) | 17–49 | 17 | n/a | Caution | Caution (was **Safe**) |
-| 2 Walkers, ingredients + allergy box | crop | 65–96 | none | 65 | 99% | **Unsafe** (should be Caution) | Unsafe |
+| 2 Walkers, ingredients + allergy box | crop | 65–96 | none | 65 | 99% | Caution (was Unsafe) | Caution |
 | 2 Walkers | whole | 30–96 | 30–49 | 30 | n/a | Caution (was Unsafe) | Caution |
 | 3 Ojas, ingredients (white on black) | crop, re-read ×2 | 77–91 | none | 77 | 99% | Safe | Safe |
 | 3 Ojas, Hindi heading | whole, re-read ×2 | 30–94 | 24 (Hindi) | 24 | n/a | Caution | Safe |
@@ -67,8 +67,9 @@ Verdicts updated 2026-11-04, after the two rules below.
 - **`joinOcrLines()` joins a line ending with ":" to the next one**, never across a blank line. "Made in a factory
   that also handles:⏎Milk, Wheat" is Caution. The never-weaker corpus passes, also with a line break after every
   colon (only 6 corpus texts have a colon).
-  - **Still open:** in the cropped Walkers read, Tesseract left a blank line after "handles:", so it is still
-    Unsafe. Allowing a colon to join across one blank line would fix it.
+  - **2026-11-05:** a line ending with ":" also joins across ONE blank line (never two). The cropped Walkers read
+    (Tesseract left a blank line after "handles:") is now Caution and is a test; the never-weaker corpus passes,
+    also with a blank line after every colon.
 
 ## Open questions for the user (2026-11-03)
 
