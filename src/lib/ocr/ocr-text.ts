@@ -18,7 +18,16 @@ export function joinOcrLines(text: string): string {
     const prev = line.trimEnd();
     const nextStart = next.trimStart();
 
-    // Blank line = new paragraph: never join.
+    // "also handles:⏎⏎Milk, Wheat": OCR often puts a list in its own paragraph
+    // after a colon. A colon joins across ONE blank line (decided 2026-11-05),
+    // never two.
+    const afterBlank = parts[i + 3];
+    if (prev.endsWith(":") && nextStart === "" && afterBlank !== undefined && afterBlank.trim() !== "") {
+      line = prev + " " + afterBlank.trimStart();
+      i += 2;
+      continue;
+    }
+    // Blank line = new paragraph: never join (the colon case above is the only exception).
     if (prev === "" || nextStart === "") {
       out += line + lineBreak;
       line = next;

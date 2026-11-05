@@ -139,6 +139,7 @@ for (const c of cases) {
     verdictNoTick: verdict(false),
     verdictTicked: verdict(true),
     text,
+    ocrText: kept.text,
   };
   report.push(row);
 

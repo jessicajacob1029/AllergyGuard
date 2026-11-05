@@ -5,6 +5,7 @@ import { parseProduct } from "@/lib/products/open-food-facts";
 import offProducts from "./__fixtures__/off-products.json";
 import unsafeCheckCalls from "./__fixtures__/unsafe-check-calls.json";
 import { joinOcrLines } from "./ocr-text";
+import { prepareOcrText } from "./prepare-text";
 
 const p = (code: AllergenCode): CheckAllergen => ({ kind: "predefined", code });
 
@@ -79,10 +80,32 @@ describe("joinOcrLines: verdicts after joining", () => {
     expect(r.matches.map((m) => m.kind)).toEqual(["may_contain", "may_contain"]);
   });
 
-  it("a colon never joins across a blank line (a new paragraph)", () => {
+  it("a colon joins across ONE blank line, never two (2026-11-05)", () => {
     expect(joinOcrLines("Made in a factory that also handles:\n\nMilk, Wheat")).toBe(
-      "Made in a factory that also handles:\n\nMilk, Wheat",
+      "Made in a factory that also handles: Milk, Wheat",
     );
+    expect(joinOcrLines("Made in a factory that also handles:\r\n \r\nMilk")).toBe("Made in a factory that also handles: Milk");
+    expect(joinOcrLines("Made in a factory that also handles:\n\n\nMilk, Wheat")).toBe(
+      "Made in a factory that also handles:\n\n\nMilk, Wheat",
+    );
+    expect(joinOcrLines("Allergy advice:\n\n")).toBe("Allergy advice:\n\n");
+  });
+
+  it("other lines still never join across a blank line", () => {
+    expect(joinOcrLines("Sugar,\n\nmilk solids")).toBe("Sugar,\n\nmilk solids");
+  });
+
+  it("the cropped Walkers photo (real Tesseract output, web image 2) is Caution for milk and wheat, not Unsafe", () => {
+    const ocr =
+      "Ready Salted Potato Crisps\n\nIngredients: Potatoas, Vegetable Oils\n\n(Sunflower, Rapeseed, in varying\n" +
+      "roportions), Salt. :\n\nAllergy Advice\n\nMade in a factory that also handles:\n\nMilk, Wheat, Gluten, Barley, Soya,\n\n" +
+      "Celery, Mustard";
+    const allergens = [p("milk"), p("wheat_gluten")];
+    expect(checkAllergens(ocr, allergens).verdict).toBe("unsafe");
+    const r = checkAllergens(prepareOcrText(ocr), allergens);
+    expect(r.verdict).toBe("caution");
+    expect(r.matches.length).toBeGreaterThan(0);
+    expect(r.matches.every((m) => m.kind === "may_contain")).toBe(true);
   });
 
   it("“Contains:⏎Milk” stays Unsafe", () => {
@@ -156,6 +179,18 @@ describe("joinOcrLines never weakens a Phase 3 or Phase 4 Unsafe case", () => {
     "recorded case with a break after each colon %i: %s",
     (_i, _label, c) => {
       const broken = (c.text as string).replace(/:\s*/g, ":\n");
+      const before = checkAllergens(c.text, c.allergens, c.options);
+      const after = checkAllergens(joinOcrLines(broken), c.allergens, c.options);
+      expect(STRENGTH[after.verdict], JSON.stringify(broken)).toBeGreaterThanOrEqual(STRENGTH[before.verdict]);
+      expect(containsAllergens(after)).toEqual(expect.arrayContaining(containsAllergens(before)));
+    },
+  );
+
+  // And with a blank line after every colon (OCR's own paragraph break).
+  it.each(withColonBreaks.map((c, i) => [i, JSON.stringify(c.text).slice(0, 60), c] as const))(
+    "recorded case with a blank line after each colon %i: %s",
+    (_i, _label, c) => {
+      const broken = (c.text as string).replace(/:\s*/g, ":\n\n");
       const before = checkAllergens(c.text, c.allergens, c.options);
       const after = checkAllergens(joinOcrLines(broken), c.allergens, c.options);
       expect(STRENGTH[after.verdict], JSON.stringify(broken)).toBeGreaterThanOrEqual(STRENGTH[before.verdict]);
