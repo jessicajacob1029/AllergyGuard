@@ -25,7 +25,7 @@ To resume in a fresh session: run `/clear`, then say "continue from docs/PROGRES
   **Do not start Phase 5 until the user has done the phone test.**
 - [ ] Phase 5: Ingredient label photo (Tesseract.js OCR). On branch `phase-5` (not merged). 2026-11-03: main merged
   in, v2 screens, OCR worker CSP, "matches the label" tick, debug panel removed, Privacy page updated. Waiting for:
-  the `text_checked` migration (user), the user's phone photos and threshold rule, then the phone test. See
+  the user's phone test on the preview (migration run; threshold kept at 70 for now). See
   `docs/PHASE-5-PLAN.md`.
 - [x] Phase 6: Reaction diary (`reactions` table, `/diary` list, add, view, edit, delete; log from a scan).
   Closed 2026-10-29: merged into the fork's `main`, phone-tested on production, two-user RLS test passed
@@ -332,6 +332,13 @@ Built on branch `phase-6` (pushed to the fork only), merged into the fork's `mai
 
 ## Phase 5: Ingredient label photo
 **2026-11-03, finishing round:** see `docs/PHASE-5-PLAN.md` (decisions, measurements, open questions).
+- **2026-11-05, step 8:** the user skipped the phone-photo measurement. The rule stays: threshold 70 on the weakest
+  line with letters or digits, border/symbol lines ignored; tune it after the phone test. Checks: build, 1422 tests,
+  lint, app and functions type checks; precache has no Tesseract files. **Offline `/emergency` passed** at 390 and
+  1440 px with the network fully cut (seeded test card, `tel:` link, no sideways scroll). `text_checked` migration
+  run by the user (2026-11-04). Pushed to the fork's `phase-5` (`6367a9f`). Preview:
+  `https://allergy-guard-git-phase-5-j-deploys.vercel.app` (behind Vercel Deployment Protection). Next: the user's
+  phone test.
 - Merged the fork's `main` into `phase-5` (7 conflicts: scan tile, scan result page, `VerdictView` and its tests,
   docs). The two Phase 5 migrations were already live and were not run again.
 - v2 screens (phone and desktop). The debug panel is removed. Privacy section in the present tense.
